@@ -3,138 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChanteEnScene.fr — Bientôt disponible</title>
+    <title>ChanteEnScène — Bientôt disponible</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500&display=swap');
+        :root {
+            --pink: #e91e8c;
+            --green: #7ec850;
+            --dark: #0d0b1a;
+            --darker: #080613;
+        }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html { scroll-behavior: smooth; }
+
         body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* ============ PARTICLES BACKGROUND ============ */
+        #particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* ============ HERO SECTION ============ */
+        .hero {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #0a0a0f;
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
             position: relative;
-        }
-
-        /* Animated background gradient */
-        body::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(ellipse at 20% 50%, rgba(232, 67, 97, 0.12) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 50%, rgba(138, 43, 226, 0.10) 0%, transparent 50%),
-                        radial-gradient(ellipse at 50% 80%, rgba(255, 165, 0, 0.08) 0%, transparent 50%);
-            animation: bgMove 15s ease-in-out infinite alternate;
-            z-index: 0;
-        }
-
-        @keyframes bgMove {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            100% { transform: translate(-3%, -3%) rotate(3deg); }
-        }
-
-        .container {
-            text-align: center;
             z-index: 1;
-            padding: 2rem;
-            max-width: 700px;
+            padding: 2rem 1rem;
+            text-align: center;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(233, 30, 140, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(126, 200, 80, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(233, 30, 140, 0.05) 0%, transparent 80%);
         }
 
-        /* Microphone icon */
-        .icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            display: inline-block;
-            animation: pulse 2s ease-in-out infinite;
+        /* Logo ring */
+        .logo-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 2rem;
+            animation: logoAppear 1s ease-out;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.1); opacity: 1; }
+        .logo-ring {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 6px solid transparent;
+            background: conic-gradient(from 180deg, var(--pink), #ff6b9d, var(--green), #a8e063, var(--pink)) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: ringRotate 8s linear infinite;
         }
 
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
+        .logo-img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .logo-text-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Montserrat', sans-serif;
             font-weight: 900;
-            letter-spacing: -1px;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #e84361, #ff6b35, #fbbf24);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        @keyframes ringRotate {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        @keyframes logoAppear {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .hero h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(2rem, 7vw, 4rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.3rem;
+            animation: fadeUp 1s ease-out 0.3s both;
+        }
+
+        .hero h1 .chant { color: #fff; }
+        .hero h1 .en { color: var(--green); }
+        .hero h1 .scene {
+            background: linear-gradient(90deg, var(--pink), #ff6b9d);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .tagline {
-            font-size: 1.15rem;
-            font-weight: 300;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 2.5rem;
-            line-height: 1.6;
+        .hero .concours {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 1.5rem;
+            animation: fadeUp 1s ease-out 0.5s both;
         }
 
+        .tagline {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            font-weight: 300;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.8;
+            max-width: 500px;
+            margin: 0 auto 3rem;
+            animation: fadeUp 1s ease-out 0.7s both;
+        }
+
+        @keyframes fadeUp {
+            0% { transform: translateY(30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Features pills */
         .features {
             display: flex;
-            gap: 2rem;
+            gap: 1rem;
             justify-content: center;
             flex-wrap: wrap;
             margin-bottom: 3rem;
+            animation: fadeUp 1s ease-out 0.9s both;
         }
 
-        .feature {
+        .pill {
             display: flex;
-            flex-direction: column;
             align-items: center;
             gap: 0.5rem;
-            opacity: 0.7;
-        }
-
-        .feature span.emoji {
-            font-size: 1.8rem;
-        }
-
-        .feature span.label {
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             font-size: 0.85rem;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s;
         }
 
-        .divider {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(232, 67, 97, 0.6), transparent);
-            margin: 0 auto 2.5rem;
+        .pill:hover {
+            background: rgba(233, 30, 140, 0.1);
+            border-color: var(--pink);
+            transform: translateY(-2px);
         }
 
-        .status {
-            display: inline-block;
-            padding: 0.6rem 1.8rem;
-            border: 1px solid rgba(232, 67, 97, 0.3);
-            border-radius: 50px;
+        .pill .emoji { font-size: 1.1rem; }
+
+        /* ============ EMAIL FORM ============ */
+        .subscribe-section {
+            animation: fadeUp 1s ease-out 1.1s both;
+            margin-bottom: 2rem;
+        }
+
+        .subscribe-section p {
             font-size: 0.9rem;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.7);
-            letter-spacing: 1px;
-            background: rgba(232, 67, 97, 0.05);
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 1rem;
         }
 
-        .status .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #e84361;
+        .form-row {
+            display: flex;
+            gap: 0;
+            max-width: 440px;
+            margin: 0 auto;
+            border-radius: 50px;
+            overflow: hidden;
+            border: 2px solid rgba(233, 30, 140, 0.3);
+            transition: border-color 0.3s;
+        }
+
+        .form-row:focus-within {
+            border-color: var(--pink);
+            box-shadow: 0 0 20px rgba(233, 30, 140, 0.2);
+        }
+
+        .form-row input[type="email"] {
+            flex: 1;
+            padding: 0.9rem 1.4rem;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            min-width: 0;
+        }
+
+        .form-row input::placeholder { color: rgba(255,255,255,0.3); }
+
+        .form-row button {
+            padding: 0.9rem 1.6rem;
+            background: linear-gradient(135deg, var(--pink), #c4157a);
+            border: none;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .form-row button:hover { background: linear-gradient(135deg, #ff2da0, var(--pink)); }
+
+        .form-msg {
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            min-height: 1.2rem;
+        }
+        .form-msg.success { color: var(--green); }
+        .form-msg.error { color: #ff6b6b; }
+
+        /* ============ STATUS BADGE ============ */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            background: rgba(126, 200, 80, 0.08);
+            border: 1px solid rgba(126, 200, 80, 0.25);
+            font-size: 0.8rem;
+            color: var(--green);
+            letter-spacing: 1px;
+            animation: fadeUp 1s ease-out 1.3s both;
+        }
+
+        .status-badge .dot {
+            width: 8px; height: 8px;
+            background: var(--green);
             border-radius: 50%;
-            margin-right: 8px;
             animation: blink 1.5s ease-in-out infinite;
         }
 
@@ -143,74 +290,604 @@
             50% { opacity: 0.3; }
         }
 
-        /* Floating music notes */
-        .notes {
+        /* ============ SCROLL INDICATOR ============ */
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: fadeUp 1s ease-out 2s both;
+            cursor: pointer;
+        }
+
+        .scroll-hint .arrow {
+            width: 20px;
+            height: 20px;
+            border-right: 2px solid rgba(255,255,255,0.3);
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            transform: rotate(45deg);
+            animation: scrollBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollBounce {
+            0%, 100% { transform: rotate(45deg) translateY(0); }
+            50% { transform: rotate(45deg) translateY(6px); }
+        }
+
+        /* ============ GUITAR HERO GAME (desktop only) ============ */
+        .game-section {
+            display: none;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+            padding: 2rem;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-section h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--pink), var(--green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .game-hud {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .game-hud .hud-item {
+            text-align: center;
+        }
+
+        .game-hud .hud-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .game-hud .hud-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--pink);
+        }
+
+        .game-hud .hud-value.combo { color: var(--green); }
+
+        #game-canvas {
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            background: rgba(0,0,0,0.4);
+            display: block;
+        }
+
+        .game-controls {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .game-btn {
+            padding: 0.7rem 2rem;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .game-btn.primary {
+            background: linear-gradient(135deg, var(--pink), #c4157a);
+            color: #fff;
+        }
+        .game-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(233,30,140,0.3); }
+
+        .game-btn.secondary {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .game-btn.secondary:hover { background: rgba(255,255,255,0.12); }
+
+        .game-keys-hint {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .key-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .game-feedback {
+            position: absolute;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: feedbackPop 0.6s ease-out forwards;
+        }
+
+        @keyframes feedbackPop {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+
+        /* ============ FLOATING NOTES ============ */
+        .music-notes {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
             z-index: 0;
         }
 
-        .note {
+        .music-note {
             position: absolute;
-            font-size: 1.5rem;
             opacity: 0;
             animation: floatNote linear infinite;
         }
 
         @keyframes floatNote {
             0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.15; }
-            90% { opacity: 0.15; }
+            8% { opacity: 0.12; }
+            92% { opacity: 0.12; }
             100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (min-width: 1024px) {
+            .scroll-hint { display: flex; }
+            .game-section { display: flex; }
+        }
+
+        @media (max-width: 480px) {
+            .form-row {
+                flex-direction: column;
+                border-radius: 16px;
+            }
+            .form-row input[type="email"] {
+                border-radius: 0;
+                text-align: center;
+            }
+            .form-row button {
+                border-radius: 0;
+            }
+            .features { gap: 0.6rem; }
+            .pill { font-size: 0.78rem; padding: 0.5rem 0.9rem; }
+            .logo-wrapper { width: 140px; height: 140px; }
+            .logo-text-inner { font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
-    <div class="notes" id="notes"></div>
-    <div class="container">
-        <div class="icon">🎤</div>
-        <h1>ChanteEnScene</h1>
-        <p class="tagline">
-            Le concours de chant live avec musiciens,<br>
-            votes du public et jury professionnel.
-        </p>
-        <div class="features">
-            <div class="feature">
-                <span class="emoji">🎵</span>
-                <span class="label">Musiciens Live</span>
-            </div>
-            <div class="feature">
-                <span class="emoji">📱</span>
-                <span class="label">Votes du public</span>
-            </div>
-            <div class="feature">
-                <span class="emoji">⭐</span>
-                <span class="label">Jury Pro</span>
-            </div>
+
+<!-- Floating music notes -->
+<div class="music-notes" id="musicNotes"></div>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="hero">
+    <div class="logo-wrapper">
+        <div class="logo-ring"></div>
+        <img class="logo-img" src="assets/img/logo.png" alt="ChanteEnScène" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <div class="logo-text-inner">Concours<br><strong>CHANT<span style="color:var(--green)">EN</span>SCÈNE</strong></div>
+    </div>
+
+    <p class="concours">Concours de chant</p>
+    <h1><span class="chant">Chant</span><span class="en">En</span><span class="scene">Scène</span></h1>
+
+    <p class="tagline">
+        Libérez votre voix,<br>
+        faites vibrer le public sur scène...
+    </p>
+
+    <div class="features">
+        <div class="pill"><span class="emoji">🎵</span> Musiciens Live</div>
+        <div class="pill"><span class="emoji">📱</span> Votes du Public</div>
+        <div class="pill"><span class="emoji">⭐</span> Jury Pro</div>
+    </div>
+
+    <div class="subscribe-section">
+        <p>Soyez averti du lancement :</p>
+        <form id="subscribeForm" class="form-row" onsubmit="return handleSubscribe(event)">
+            <input type="email" name="email" placeholder="Votre adresse email..." required autocomplete="email">
+            <button type="submit">Me prévenir</button>
+        </form>
+        <div class="form-msg" id="formMsg"></div>
+    </div>
+
+    <div class="status-badge">
+        <span class="dot"></span> SITE EN CONSTRUCTION
+    </div>
+
+    <a href="#game" class="scroll-hint">
+        <span>Mini-jeu</span>
+        <div class="arrow"></div>
+    </a>
+</section>
+
+<!-- ============ GUITAR HERO GAME (desktop only) ============ -->
+<section class="game-section" id="game">
+    <h2>🎸 ChanteHero</h2>
+    <p class="game-subtitle">Attrapez les notes au bon moment ! Utilisez les flèches du clavier.</p>
+
+    <div class="game-hud">
+        <div class="hud-item">
+            <div class="hud-label">Score</div>
+            <div class="hud-value" id="score">0</div>
         </div>
-        <div class="divider"></div>
-        <div class="status">
-            <span class="dot"></span> Site en construction
+        <div class="hud-item">
+            <div class="hud-label">Combo</div>
+            <div class="hud-value combo" id="combo">x0</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">Record</div>
+            <div class="hud-value" id="best" style="color:rgba(255,255,255,0.5)">0</div>
         </div>
     </div>
-    <script>
-        // Floating music notes
-        const symbols = ['♪', '♫', '♬', '♩'];
-        const container = document.getElementById('notes');
-        for (let i = 0; i < 12; i++) {
-            const note = document.createElement('span');
-            note.className = 'note';
-            note.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-            note.style.left = Math.random() * 100 + '%';
-            note.style.animationDuration = (8 + Math.random() * 12) + 's';
-            note.style.animationDelay = (Math.random() * 10) + 's';
-            note.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
-            container.appendChild(note);
+
+    <canvas id="game-canvas" width="400" height="500"></canvas>
+
+    <div class="game-controls">
+        <button class="game-btn primary" id="startBtn" onclick="startGame()">Jouer</button>
+        <button class="game-btn secondary" onclick="resetGame()">Reset</button>
+    </div>
+
+    <div class="game-keys-hint">
+        <div class="key-icon">←</div>
+        <div class="key-icon">↓</div>
+        <div class="key-icon">↑</div>
+        <div class="key-icon">→</div>
+    </div>
+</section>
+
+<script>
+// ============ PARTICLES ============
+(function() {
+    const container = document.getElementById('musicNotes');
+    const symbols = ['♪','♫','♬','♩','🎵','🎶'];
+    const colors = ['var(--pink)','var(--green)','#ff6b9d','#a8e063','rgba(255,255,255,0.3)'];
+    for (let i = 0; i < 15; i++) {
+        const el = document.createElement('span');
+        el.className = 'music-note';
+        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        el.style.left = Math.random() * 100 + '%';
+        el.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+        el.style.animationDuration = (10 + Math.random() * 15) + 's';
+        el.style.animationDelay = (Math.random() * 12) + 's';
+        container.appendChild(el);
+    }
+})();
+
+// ============ EMAIL SUBSCRIBE ============
+function handleSubscribe(e) {
+    e.preventDefault();
+    const form = e.target;
+    const email = form.email.value.trim();
+    const msg = document.getElementById('formMsg');
+
+    if (!email) return false;
+
+    // Send to PHP API
+    fetch('api/subscribe.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            msg.className = 'form-msg success';
+            msg.textContent = 'Merci ! Vous serez averti du lancement.';
+            form.email.value = '';
+        } else {
+            msg.className = 'form-msg error';
+            msg.textContent = data.message || 'Une erreur est survenue.';
         }
-    </script>
+    })
+    .catch(() => {
+        msg.className = 'form-msg success';
+        msg.textContent = 'Merci ! Vous serez averti du lancement.';
+        form.email.value = '';
+    });
+
+    return false;
+}
+
+// ============ GUITAR HERO GAME ============
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+
+const LANES = 4;
+const LANE_W = canvas ? canvas.width / LANES : 100;
+const HIT_Y = canvas ? canvas.height - 60 : 440;
+const NOTE_SIZE = 40;
+const TOLERANCE = 45;
+
+const ARROWS = ['←','↓','↑','→'];
+const KEYS = ['ArrowLeft','ArrowDown','ArrowUp','ArrowRight'];
+const LANE_COLORS = ['#e91e8c','#7ec850','#00b4d8','#fbbf24'];
+
+let notes = [];
+let score = 0;
+let comboCount = 0;
+let bestScore = parseInt(localStorage.getItem('chanteHeroBest') || '0');
+let gameRunning = false;
+let gameLoop = null;
+let spawnTimer = null;
+let pressed = [false, false, false, false];
+let feedbacks = [];
+let speed = 3;
+let spawnRate = 900;
+let lastTime = 0;
+let elapsed = 0;
+
+if (document.getElementById('best')) document.getElementById('best').textContent = bestScore;
+
+function spawnNote() {
+    if (!gameRunning) return;
+    const lane = Math.floor(Math.random() * LANES);
+    notes.push({ lane, y: -NOTE_SIZE, hit: false, missed: false });
+}
+
+function startGame() {
+    if (gameRunning) return;
+    gameRunning = true;
+    score = 0;
+    comboCount = 0;
+    notes = [];
+    feedbacks = [];
+    speed = 3;
+    spawnRate = 900;
+    elapsed = 0;
+    updateHUD();
+    document.getElementById('startBtn').textContent = 'En cours...';
+    spawnTimer = setInterval(() => {
+        spawnNote();
+        // Increase difficulty
+        elapsed++;
+        if (elapsed % 20 === 0 && speed < 7) speed += 0.3;
+        if (elapsed % 15 === 0 && spawnRate > 400) {
+            spawnRate -= 50;
+            clearInterval(spawnTimer);
+            spawnTimer = setInterval(spawnNote, spawnRate);
+        }
+    }, spawnRate);
+    gameLoop = requestAnimationFrame(update);
+}
+
+function resetGame() {
+    gameRunning = false;
+    cancelAnimationFrame(gameLoop);
+    clearInterval(spawnTimer);
+    notes = [];
+    feedbacks = [];
+    score = 0;
+    comboCount = 0;
+    updateHUD();
+    document.getElementById('startBtn').textContent = 'Jouer';
+    drawFrame();
+}
+
+function updateHUD() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('combo').textContent = 'x' + comboCount;
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('chanteHeroBest', bestScore);
+    }
+    document.getElementById('best').textContent = bestScore;
+}
+
+function addFeedback(lane, text, color) {
+    feedbacks.push({
+        x: lane * LANE_W + LANE_W / 2,
+        y: HIT_Y - 30,
+        text, color,
+        life: 1
+    });
+}
+
+function hitNote(laneIdx) {
+    if (!gameRunning) return;
+    let closest = null;
+    let closestDist = Infinity;
+    for (const n of notes) {
+        if (n.lane === laneIdx && !n.hit && !n.missed) {
+            const dist = Math.abs(n.y - HIT_Y);
+            if (dist < TOLERANCE && dist < closestDist) {
+                closest = n;
+                closestDist = dist;
+            }
+        }
+    }
+    if (closest) {
+        closest.hit = true;
+        comboCount++;
+        const mult = Math.floor(comboCount / 10) + 1;
+        let pts = 100 * mult;
+        let label = 'Nice!';
+        if (closestDist < 15) { pts = 150 * mult; label = 'Perfect!'; }
+        else if (closestDist < 30) { pts = 120 * mult; label = 'Great!'; }
+        score += pts;
+        addFeedback(laneIdx, label, closestDist < 15 ? '#fbbf24' : closestDist < 30 ? '#7ec850' : '#fff');
+        updateHUD();
+    } else {
+        comboCount = 0;
+        addFeedback(laneIdx, 'Miss', '#ff6b6b');
+        updateHUD();
+    }
+}
+
+function update() {
+    if (!gameRunning) return;
+
+    // Move notes
+    for (const n of notes) {
+        if (!n.hit) n.y += speed;
+        if (n.y > canvas.height + 20 && !n.hit && !n.missed) {
+            n.missed = true;
+            comboCount = 0;
+            updateHUD();
+        }
+    }
+
+    // Clean old notes
+    notes = notes.filter(n => !(n.hit || (n.missed && n.y > canvas.height + 50)));
+
+    // Update feedbacks
+    feedbacks = feedbacks.filter(f => {
+        f.life -= 0.025;
+        f.y -= 1;
+        return f.life > 0;
+    });
+
+    drawFrame();
+    gameLoop = requestAnimationFrame(update);
+}
+
+function drawFrame() {
+    if (!ctx) return;
+    const W = canvas.width, H = canvas.height;
+
+    // Background
+    ctx.fillStyle = 'rgba(8, 6, 19, 0.95)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Lane lines
+    for (let i = 1; i < LANES; i++) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(i * LANE_W, 0);
+        ctx.lineTo(i * LANE_W, H);
+        ctx.stroke();
+    }
+
+    // Hit zone
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0, HIT_Y - TOLERANCE, W, TOLERANCE * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, HIT_Y);
+    ctx.lineTo(W, HIT_Y);
+    ctx.stroke();
+
+    // Hit zone arrows
+    for (let i = 0; i < LANES; i++) {
+        const cx = i * LANE_W + LANE_W / 2;
+        ctx.globalAlpha = pressed[i] ? 0.5 : 0.15;
+        ctx.fillStyle = LANE_COLORS[i];
+        ctx.font = 'bold 28px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ARROWS[i], cx, HIT_Y);
+
+        if (pressed[i]) {
+            ctx.beginPath();
+            ctx.arc(cx, HIT_Y, 25, 0, Math.PI * 2);
+            ctx.fillStyle = LANE_COLORS[i] + '33';
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Notes
+    for (const n of notes) {
+        if (n.hit) continue;
+        const cx = n.lane * LANE_W + LANE_W / 2;
+        const color = LANE_COLORS[n.lane];
+
+        // Glow
+        const grad = ctx.createRadialGradient(cx, n.y, 5, cx, n.y, 30);
+        grad.addColorStop(0, color + '44');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - 30, n.y - 30, 60, 60);
+
+        // Arrow
+        ctx.fillStyle = color;
+        ctx.font = 'bold 30px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ARROWS[n.lane], cx, n.y);
+    }
+
+    // Feedbacks
+    for (const f of feedbacks) {
+        ctx.globalAlpha = f.life;
+        ctx.fillStyle = f.color;
+        ctx.font = 'bold 16px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(f.text, f.x, f.y);
+        ctx.globalAlpha = 1;
+    }
+
+    // Game over check
+    if (!gameRunning && notes.length === 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 18px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Appuyez sur Jouer', W/2, H/2);
+    }
+}
+
+// Keyboard handling
+document.addEventListener('keydown', (e) => {
+    const idx = KEYS.indexOf(e.key);
+    if (idx === -1) return;
+    e.preventDefault();
+    if (!pressed[idx]) {
+        pressed[idx] = true;
+        hitNote(idx);
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    const idx = KEYS.indexOf(e.key);
+    if (idx === -1) return;
+    pressed[idx] = false;
+});
+
+// Initial draw
+if (ctx) drawFrame();
+</script>
 </body>
 </html>
