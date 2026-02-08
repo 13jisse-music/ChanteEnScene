@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-pink: #e91e8c;
+  --color-pink-light: #ff6b9d;
+  --color-green: #7ec850;
+  --color-green-light: #a8e063;
+  --color-dark: #0d0b1a;
+  --color-darker: #080613;
+  --color-card: #161228;
+  --color-border: #2a2545;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-montserrat);
+}
+
+body {
+  background: var(--color-dark);
+  color: #ffffff;
+}
+
+/* Gradient text utility */
+.text-gradient-pink {
+  background: linear-gradient(90deg, #e91e8c, #ff6b9d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #e91e8c, #ff6b9d, #7ec850);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Logo ring animation */
+@keyframes ring-rotate {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.animate-ring {
+  animation: ring-rotate 8s linear infinite;
+}
+
+/* Floating music notes */
+@keyframes float-note {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.12; }
+  92% { opacity: 0.12; }
+  100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+}
+
+.animate-float-note {
+  animation: float-note linear infinite;
+}
+
+/* Fade up entrance */
+@keyframes fade-up {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s ease-out both;
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(233, 30, 140, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(233, 30, 140, 0.4); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
