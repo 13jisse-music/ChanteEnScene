@@ -1,0 +1,17 @@
+# Credentials & environment
+.env
+
+# SFTP config (contient le mot de passe)
+.vscode/sftp.json
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Dependencies
+/vendor/
+/node_modules/
