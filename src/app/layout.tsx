@@ -3,6 +3,7 @@ import { Inter, Montserrat } from "next/font/google";
 import PublicNav from "@/components/PublicNav";
 import BokehBackground from "@/components/BokehBackground";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import InstallPrompt from "@/components/InstallPrompt";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ServiceWorkerRegistrar />
+        <InstallPrompt />
         <BokehBackground />
         <PublicNav />
         {children}
