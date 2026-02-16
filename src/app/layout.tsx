@@ -40,6 +40,7 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <head suppressHydrationWarning>
         <meta name="theme-color" content="#e91e8c" />
+        <link rel="apple-touch-icon" href="/images/pwa-icon-192.png" />
       </head>
       <body
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}

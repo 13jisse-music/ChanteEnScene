@@ -13,6 +13,9 @@ export default function InstallPrompt() {
   const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
+    // Hide on localhost (dev)
+    if (window.location.hostname === 'localhost') return
+
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) return
 
@@ -66,7 +69,7 @@ export default function InstallPrompt() {
             </p>
             <p className="text-xs text-white/50 mt-1">
               {isIOS
-                ? 'Appuyez sur le bouton partage puis "Sur l\'écran d\'accueil"'
+                ? <>Appuyez sur <svg className="inline w-4 h-4 -mt-0.5 text-[#007AFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> puis <strong className="text-white/70">&quot;Sur l&apos;écran d&apos;accueil&quot;</strong></>
                 : 'Accédez au concours comme une vraie appli, même hors ligne !'}
             </p>
           </div>
