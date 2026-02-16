@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import ChatbotAdmin from '@/components/ChatbotAdmin'
