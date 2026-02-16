@@ -1,0 +1,28 @@
+{
+  "name": "ChanteEnScene Live",
+  "short_name": "CES Live",
+  "description": "Suivez le concours en direct et votez pour vos candidats !",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0b1a",
+  "theme_color": "#e91e8c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

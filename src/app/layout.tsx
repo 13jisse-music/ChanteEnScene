@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
+import PublicNav from "@/components/PublicNav";
+import BokehBackground from "@/components/BokehBackground";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,6 +22,12 @@ export const metadata: Metadata = {
   description:
     "Libérez votre voix, faites vibrer le public sur scène. Concours de chant live avec musiciens, votes du public et jury professionnel.",
   keywords: ["concours", "chant", "musique", "live", "Aubagne", "ChanteEnScène"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "CES Live",
+  },
 };
 
 export default function RootLayout({
@@ -26,11 +36,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
+      <head suppressHydrationWarning>
+        <meta name="theme-color" content="#e91e8c" />
+      </head>
       <body
-        className={`${inter.variable} ${montserrat.variable} font-sans antialiased bg-[#0d0b1a] text-white`}
+        className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
+        suppressHydrationWarning
       >
+        <ServiceWorkerRegistrar />
+        <BokehBackground />
+        <PublicNav />
         {children}
+        <ChatbotWidget />
       </body>
     </html>
   );

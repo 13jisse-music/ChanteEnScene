@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="10">
+  <title>ChanteEnScene — Hors ligne</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d0b1a;
+      color: #f0eaf7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 400px;
+    }
+    .logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+    .logo .green { color: #7ec850; }
+    .logo .pink { color: #e91e8c; }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+      color: #e91e8c;
+    }
+    p {
+      font-size: 0.9rem;
+      color: rgba(240, 234, 247, 0.5);
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+    .dots {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+    .dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e91e8c;
+      animation: dot 1.4s ease-in-out infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes dot {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      Chant<span class="green">En</span><span class="pink">Scene</span>
+    </div>
+    <div class="icon">📡</div>
+    <h1>En attente de connexion...</h1>
+    <p>
+      Le réseau est temporairement indisponible.<br>
+      La page se rechargera automatiquement.
+    </p>
+    <div class="dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</body>
+</html>

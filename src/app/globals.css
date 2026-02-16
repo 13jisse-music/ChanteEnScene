@@ -9,16 +9,25 @@
   --color-darker: #080613;
   --color-card: #161228;
   --color-border: #2a2545;
+  --color-light-bg: #fefcfb;
+  --color-light-text: #1a1a2e;
+  --color-surface: #1a1232;
+  --color-surface-border: #2e2555;
+  --color-text-primary: #f0eaf7;
+  --color-text-secondary: #a899c2;
+  --color-text-muted: #6b5d85;
+  --color-gold: #f5a623;
+  --color-bg-public: #110d1f;
   --font-sans: var(--font-inter);
   --font-display: var(--font-montserrat);
 }
 
 body {
-  background: var(--color-dark);
-  color: #ffffff;
+  background: var(--color-bg-public);
+  color: var(--color-text-primary);
 }
 
-/* Gradient text utility */
+/* Gradient text utilities */
 .text-gradient-pink {
   background: linear-gradient(90deg, #e91e8c, #ff6b9d);
   -webkit-background-clip: text;
@@ -28,6 +37,13 @@ body {
 
 .text-gradient-brand {
   background: linear-gradient(135deg, #e91e8c, #ff6b9d, #7ec850);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(90deg, #f5a623, #e8732a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -46,8 +62,8 @@ body {
 /* Floating music notes */
 @keyframes float-note {
   0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-  8% { opacity: 0.12; }
-  92% { opacity: 0.12; }
+  8% { opacity: 0.25; }
+  92% { opacity: 0.25; }
   100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
 }
 
@@ -73,4 +89,115 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Slide animations */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+/* Bokeh background animations */
+@keyframes bokeh-drift {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  33% { transform: translateX(20px) translateY(-15px); }
+  66% { transform: translateX(-10px) translateY(10px); }
+}
+
+.animate-bokeh-drift {
+  animation: bokeh-drift ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.animate-sparkle {
+  animation: sparkle ease-in-out infinite;
+}
+
+/* Glowing ring rotation for feature icons */
+@keyframes glow-ring-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-glow-ring {
+  animation: glow-ring-rotate 6s linear infinite;
+}
+
+/* Countdown number pop animation */
+@keyframes countdown-pop {
+  0% { transform: scale(2); opacity: 0; }
+  30% { transform: scale(1); opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+.animate-countdown-pop {
+  animation: countdown-pop 1s ease-out both;
+}
+
+/* 3D coin spin for winner reveal */
+@keyframes coin-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+/* Winner lock-in pulse when coin stops on winner */
+@keyframes winner-lock-in {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-winner-lock-in {
+  animation: winner-lock-in 0.6s ease-out both;
+}
+
+/* Swipe hint animation */
+@keyframes swipe-hint {
+  0% { opacity: 0; transform: translateX(20px); }
+  20% { opacity: 1; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(-10px); }
+  70% { opacity: 1; transform: translateX(10px); }
+  90% { opacity: 0.5; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+.animate-swipe-hint {
+  animation: swipe-hint 1.8s ease-in-out both;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print,
+  nav,
+  .bokeh-bg,
+  .floating-notes,
+  [aria-label="Chatbot"],
+  .fixed.bottom-24 {
+    display: none !important;
+  }
+  .text-gradient-gold,
+  .text-gradient-pink {
+    -webkit-text-fill-color: initial;
+    background: none;
+  }
 }
