@@ -4,6 +4,7 @@ import PublicNav from "@/components/PublicNav";
 import BokehBackground from "@/components/BokehBackground";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallPrompt from "@/components/InstallPrompt";
+import SplashScreen from "@/components/SplashScreen";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import "./globals.css";
 
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CES Live",
+    title: "ChanteEnScene",
   },
 };
 
@@ -47,6 +48,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ServiceWorkerRegistrar />
+        <SplashScreen />
         <InstallPrompt />
         <BokehBackground />
         <PublicNav />

@@ -1,10 +1,10 @@
 {
-  "name": "ChanteEnScene Live",
-  "short_name": "CES Live",
+  "name": "ChanteEnScene",
+  "short_name": "ChanteEnScene",
   "description": "Suivez le concours en direct et votez pour vos candidats !",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0b1a",
+  "background_color": "#1a0a12",
   "theme_color": "#e91e8c",
   "orientation": "portrait",
   "icons": [
