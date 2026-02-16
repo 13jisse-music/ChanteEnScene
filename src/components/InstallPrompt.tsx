@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -21,7 +21,7 @@ export default function InstallPrompt() {
 
   // Fetch the active session for push subscription
   useEffect(() => {
-    createBrowserClient()
+    createClient()
       .from('sessions')
       .select('id')
       .eq('is_active', true)
