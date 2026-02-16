@@ -31,6 +31,7 @@ const NAV_ITEMS: { href: string; label: string; icon: string; section?: string }
   { href: '/admin/photos', label: 'Photos', icon: '📸' },
   { href: '/admin/sponsors', label: 'Sponsors', icon: '🤝' },
   { href: '/admin/chatbot', label: 'Chatbot FAQ', icon: '💬' },
+  { href: '/admin/social', label: 'Réseaux sociaux', icon: '📣' },
   // Dev
   { href: '/admin/seed', label: 'Données test', icon: '🧪', section: 'Dev' },
   // Aide

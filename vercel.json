@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/jury-recap",
+      "schedule": "0 10 * * 1"
+    }
+  ]
+}
