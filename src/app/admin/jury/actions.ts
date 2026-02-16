@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { juryInvitationEmail } from '@/lib/emails'
 
 export async function addJuror(sessionId: string, firstName: string, lastName: string, role: string, email: string, appUrl: string) {
@@ -78,7 +78,7 @@ export async function sendJuryInvitation(jurorId: string, appUrl: string) {
     loginUrl,
   })
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to: juror.email,
     subject,

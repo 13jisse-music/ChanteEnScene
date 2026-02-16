@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { candidateApprovedEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
 
@@ -44,7 +44,7 @@ export async function updateCandidateStatus(candidateId: string, status: string)
           profileUrl,
         })
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM_EMAIL,
           to: candidate.email,
           subject,

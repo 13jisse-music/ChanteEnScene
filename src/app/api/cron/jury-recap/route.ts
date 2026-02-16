@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { juryWeeklyRecapEmail } from '@/lib/emails'
 
 // Protect cron with a secret key
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
       })
 
       try {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM_EMAIL,
           to: juror.email,
           subject,

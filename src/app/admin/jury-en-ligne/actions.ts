@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 
 export async function promoteToSemifinalist(candidateId: string) {
   const supabase = createAdminClient()
@@ -183,7 +183,7 @@ export async function sendMp3Reminder(candidateId: string, sessionId: string) {
   }
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM_EMAIL,
       to: [candidate.email],
       subject: 'Rappel : envoyez votre playback MP3 — ChanteEnScène',

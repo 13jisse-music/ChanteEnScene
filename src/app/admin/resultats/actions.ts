@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 
 // ─── Email HTML builders ───
 
@@ -269,7 +269,7 @@ export async function sendSelectionNotifications(sessionId: string) {
     }
 
     try {
-      const { error } = await resend.emails.send({
+      const { error } = await getResend().emails.send({
         from: FROM_EMAIL,
         to: candidate.email,
         subject: 'Félicitations ! Vous êtes sélectionné(e) pour la demi-finale — ChanteEnScène',
@@ -300,7 +300,7 @@ export async function sendSelectionNotifications(sessionId: string) {
     }
 
     try {
-      const { error } = await resend.emails.send({
+      const { error } = await getResend().emails.send({
         from: FROM_EMAIL,
         to: candidate.email,
         subject: 'Merci pour votre participation — ChanteEnScène',

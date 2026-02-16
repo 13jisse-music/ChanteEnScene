@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { sendPushNotifications } from '@/lib/push'
-import { resend, FROM_EMAIL } from '@/lib/resend'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
 
 // ─── Huis-clos semifinal actions ───
 
@@ -573,7 +573,7 @@ export async function sendFinaleNotifications(sessionId: string) {
     }
 
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM_EMAIL,
         to: [candidate.email],
         subject: 'Félicitations ! Vous êtes finaliste — ChanteEnScène',
@@ -600,7 +600,7 @@ export async function sendFinaleNotifications(sessionId: string) {
     }
 
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM_EMAIL,
         to: [candidate.email],
         subject: 'Bravo pour votre parcours — ChanteEnScène',
