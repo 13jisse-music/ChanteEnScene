@@ -26,8 +26,8 @@ const PUBLIC_SLIDES: Slide[] = [
           <Stat value="Mobile" label="App PWA" />
         </div>
         <div className="mt-6">
-          <DynamicQR url="https://chante-en-scene.vercel.app" />
-          <p className="text-white/30 text-xs mt-2">Scannez pour visiter le site</p>
+          <DynamicQR url="https://chante-en-scene.vercel.app/presentation" />
+          <p className="text-white/30 text-xs mt-2">Scannez pour suivre la présentation sur votre téléphone</p>
         </div>
         <p className="text-white/30 text-sm mt-4">
           Aubagne — Édition 2026
