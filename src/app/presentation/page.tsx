@@ -1,19 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import QRCode from 'qrcode'
 
-interface Slide {
-  title: string
-  subtitle?: string
-  icon: string
-  content: React.ReactNode
-  accent: string
-}
+/* ═══════════════════════════════════════════════════ */
+/* PARTIE 1 — CÔTÉ PUBLIC                              */
+/* ═══════════════════════════════════════════════════ */
 
-const SLIDES: Slide[] = [
-  /* ═══════════════════════════════════ */
-  /* 1. INTRO */
-  /* ═══════════════════════════════════ */
+const PUBLIC_SLIDES: Slide[] = [
+  /* 1. INTRO + QR */
   {
     title: 'ChanteEnScène',
     icon: '🎤',
@@ -25,21 +20,23 @@ const SLIDES: Slide[] = [
           Une solution complète pour organiser un concours de chant,
           des inscriptions en ligne jusqu&apos;à la grande finale sur scène.
         </p>
-        <div className="grid grid-cols-3 gap-6 mt-8">
+        <div className="grid grid-cols-3 gap-6 mt-6">
           <Stat value="100%" label="En ligne" />
           <Stat value="Temps réel" label="Votes & scoring" />
           <Stat value="Mobile" label="App PWA" />
         </div>
-        <p className="text-white/30 text-sm mt-8">
+        <div className="mt-6">
+          <DynamicQR url="https://chantenscene.fr" />
+          <p className="text-white/30 text-xs mt-2">Scannez pour visiter le site</p>
+        </div>
+        <p className="text-white/30 text-sm mt-4">
           Aubagne — Édition 2026
         </p>
       </div>
     ),
   },
 
-  /* ═══════════════════════════════════ */
   /* 2. PARCOURS DU CONCOURS */
-  /* ═══════════════════════════════════ */
   {
     title: 'Le parcours du concours',
     icon: '🗺️',
@@ -77,9 +74,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
   /* 3. INSCRIPTIONS */
-  /* ═══════════════════════════════════ */
   {
     title: 'Inscriptions en ligne',
     icon: '📝',
@@ -107,9 +102,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
   /* 4. GALERIE CANDIDATS */
-  /* ═══════════════════════════════════ */
   {
     title: 'Galerie candidats',
     icon: '🎭',
@@ -137,9 +130,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 5. SYSTEME DE VOTES */
-  /* ═══════════════════════════════════ */
+  /* 5. SYSTÈME DE VOTES */
   {
     title: 'Système de votes',
     icon: '❤️',
@@ -161,7 +152,7 @@ const SLIDES: Slide[] = [
             title="⚡ Temps réel"
             items={[
               'Compteur de votes en direct',
-              'Mise à jour instantanée (Supabase Realtime)',
+              'Mise à jour instantanée',
               'Votes live pendant les événements',
               'Résultats visibles immédiatement',
             ]}
@@ -180,9 +171,274 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 6. JURY EN LIGNE */
-  /* ═══════════════════════════════════ */
+  /* 6. EXPÉRIENCE LIVE */
+  {
+    title: "L'expérience live",
+    icon: '🔴',
+    accent: '#ef4444',
+    subtitle: 'Ce que vit le public sur son téléphone pendant le spectacle',
+    content: (
+      <div className="max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FeatureBox
+            title="❤️ Vote en direct"
+            items={[
+              'Le candidat sur scène apparaît sur le téléphone',
+              'Bouton "Je soutiens" pour voter',
+              '1 vote par appareil, sans compte',
+              'Compteur de votes en temps réel',
+            ]}
+          />
+          <FeatureBox
+            title="📸 Mode Reporter"
+            items={[
+              'Le public prend des photos pendant le spectacle',
+              "Jusqu'à 5 photos par spectateur",
+              'Photos envoyées en modération admin',
+              'Les meilleures publiées dans la galerie officielle',
+            ]}
+          />
+          <FeatureBox
+            title="🎉 Révélation du vainqueur"
+            items={[
+              'Countdown dramatique sur tous les écrans',
+              'Animation de pièce 3D tournante',
+              'Explosion de confettis synchronisée',
+              'Photo et nom du gagnant en plein écran',
+            ]}
+          />
+          <FeatureBox
+            title="📡 Notifications & partage"
+            items={[
+              'Notifications push : "Candidat sur scène", "Vote ouvert"',
+              'Partage sur WhatsApp, Facebook, X, Instagram',
+              'Inscription newsletter pour être informé',
+              'Tout fonctionne en temps réel (WebSocket)',
+            ]}
+          />
+        </div>
+        <div className="mt-5 bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-xl p-4 text-center">
+          <p className="text-white/70 text-sm">
+            Les spectateurs n&apos;ont qu&apos;à scanner un QR code ou taper l&apos;URL pour participer.
+          </p>
+          <p className="text-white/40 text-xs mt-1">
+            Aucun téléchargement, aucun compte — tout se passe dans le navigateur.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+
+  /* 7. GALERIE PHOTOS */
+  {
+    title: 'Galerie photos',
+    icon: '📸',
+    accent: '#8b5cf6',
+    subtitle: 'Souvenirs et partage après le concours',
+    content: (
+      <div className="max-w-5xl mx-auto">
+        <Screenshot src="/images/presentation/galerie-photos.png" alt="Galerie photos publique" />
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <h4 className="font-bold text-sm text-white mb-2">📸 Vue publique</h4>
+            <ul className="space-y-1">
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Galerie avec filtres par candidat/événement</li>
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Partage sur les réseaux sociaux</li>
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Lightbox plein écran</li>
+            </ul>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <h4 className="font-bold text-sm text-white mb-2">⚙️ Vue admin</h4>
+            <ul className="space-y-1">
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Upload multiple par drag-and-drop</li>
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Tags par candidat ou événement</li>
+              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Publier / dépublier / modérer</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
+  /* 8. CHATBOT FAQ */
+  {
+    title: 'Chatbot FAQ',
+    icon: '💬',
+    accent: '#e91e8c',
+    subtitle: 'Un assistant automatique pour répondre aux questions',
+    content: (
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="space-y-4">
+            <FeatureBox
+              title="🤖 Réponses intelligentes"
+              items={[
+                '20 questions/réponses pré-configurées',
+                'Reconnaissance synonymes (24 groupes sémantiques)',
+                'Détection des salutations automatique',
+                'Réponse de secours avec email de contact',
+              ]}
+            />
+            <div className="bg-[#e91e8c]/10 border border-[#e91e8c]/20 rounded-xl p-3 text-center">
+              <p className="text-[#e91e8c] font-bold text-sm">Widget flottant</p>
+              <p className="text-white/40 text-xs mt-1">Visible sur toutes les pages publiques</p>
+            </div>
+          </div>
+          <Screenshot src="/images/presentation/chatbot.png" alt="Chatbot FAQ en action" />
+        </div>
+      </div>
+    ),
+  },
+
+  /* 9. APPLICATION MOBILE PWA */
+  {
+    title: 'Application mobile',
+    icon: '📱',
+    accent: '#7ec850',
+    subtitle: 'Progressive Web App — Fonctionne comme une vraie app',
+    content: (
+      <div className="max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <FeatureBox
+            title="📲 Installation"
+            items={[
+              "Installable sur l'écran d'accueil",
+              'Icône et splash screen personnalisés',
+              'Fonctionne comme une app native',
+              'Aucun store requis',
+            ]}
+          />
+          <FeatureBox
+            title="📡 Temps réel"
+            items={[
+              'Votes en direct pendant les événements',
+              'Notifications push',
+              'Mise à jour instantanée des scores',
+              'Streaming et interaction live',
+            ]}
+          />
+          <FeatureBox
+            title="🌐 Accessibilité"
+            items={[
+              'Fonctionne sur tous les smartphones',
+              'Page hors-ligne de secours',
+              'Chargement rapide (Service Worker)',
+              'Responsive : mobile, tablette, desktop',
+            ]}
+          />
+        </div>
+      </div>
+    ),
+  },
+]
+
+/* ═══════════════════════════════════════════════════ */
+/* SÉPARATEUR                                          */
+/* ═══════════════════════════════════════════════════ */
+
+const SEPARATOR_SLIDE: Slide = {
+  title: 'Côté organisateur',
+  icon: '⚙️',
+  accent: '#f5a623',
+  subtitle: "Tout ce qui se passe dans les coulisses",
+  content: (
+    <div className="text-center max-w-xl mx-auto space-y-6">
+      <p className="text-white/50 text-lg">
+        Découvrez les outils de gestion et de pilotage réservés aux organisateurs du concours.
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        <Stat value="16+" label="Modules admin" />
+        <Stat value="Temps réel" label="Pilotage live" />
+        <Stat value="100%" label="Automatisé" />
+      </div>
+    </div>
+  ),
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* PARTIE 2 — CÔTÉ ADMIN                               */
+/* ═══════════════════════════════════════════════════ */
+
+const ADMIN_SLIDES: Slide[] = [
+  /* ADMIN : VUE D'ENSEMBLE */
+  {
+    title: 'Administration',
+    icon: '⚙️',
+    accent: '#e91e8c',
+    subtitle: "Un tableau de bord complet pour tout gérer",
+    content: (
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <Screenshot src="/images/presentation/admin-dashboard.png" alt="Dashboard admin" />
+          <div className="space-y-4">
+            <FeatureBox
+              title="📊 Dashboard"
+              items={[
+                "Vue d'ensemble : candidats, votes, phase en cours",
+                'Stepper visuel de progression des phases',
+                'Accès rapide à toutes les sections',
+              ]}
+            />
+            <FeatureBox
+              title="🏗️ 16+ modules"
+              items={[
+                'Configuration, Sessions, Candidats, Jury',
+                'Régie en ligne, Régie demi-finale, Régie finale',
+                'Stats, Export MP3, Photos, Chatbot, Résultats',
+              ]}
+            />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-3">
+          <ScreenshotCard src="/images/presentation/admin-candidats.png" label="Candidats" />
+          <ScreenshotCard src="/images/presentation/admin-config.png" label="Configuration" />
+          <ScreenshotCard src="/images/presentation/admin-jury.png" label="Jury" />
+          <ScreenshotCard src="/images/presentation/stats-enligne.png" label="Stats en ligne" />
+          <ScreenshotCard src="/images/presentation/fiabilite-jury.png" label="Fiabilité jury" />
+        </div>
+      </div>
+    ),
+  },
+
+  /* ADMIN : WORKFLOW COMPLET */
+  {
+    title: 'Le workflow complet',
+    icon: '🔄',
+    accent: '#e91e8c',
+    subtitle: "De la configuration au palmarès, tout se pilote depuis l'admin",
+    content: (
+      <div className="max-w-4xl mx-auto">
+        <div className="space-y-3">
+          {[
+            { n: '1', icon: '⚙️', title: 'Configurer', desc: "Session, catégories d'âge, critères jury, poids scoring, dates, lieu", color: '#8b5cf6' },
+            { n: '2', icon: '⭐', title: 'Créer les jurés', desc: "Ajouter les jurés, générer les QR codes, envoyer les liens d'accès", color: '#f5a623' },
+            { n: '3', icon: '📝', title: 'Ouvrir les inscriptions', desc: "Les candidats s'inscrivent, l'admin approuve ou refuse", color: '#e91e8c' },
+            { n: '4', icon: '📱', title: 'Lancer le vote en ligne', desc: 'Le jury note les vidéos, le public vote par like, suivre les stats', color: '#3b82f6' },
+            { n: '5', icon: '🎵', title: 'Sélectionner & préparer', desc: 'Choisir les demi-finalistes, suivre les uploads MP3, relancer', color: '#7ec850' },
+            { n: '6', icon: '🎬', title: 'Piloter la demi-finale', desc: 'Check-in, lineup, live, votes, sélection finalistes', color: '#f5a623' },
+            { n: '7', icon: '🏟️', title: 'Piloter la finale', desc: 'Feuille de route, scoring pondéré, révélation vainqueur + confetti', color: '#e91e8c' },
+            { n: '8', icon: '🏆', title: 'Post-compétition', desc: 'Résultats, galerie photos, export MP3, archivage', color: '#f5a623' },
+          ].map((s) => (
+            <div key={s.n} className="flex items-center gap-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+              <span
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                style={{ background: `${s.color}20`, color: s.color }}
+              >
+                {s.n}
+              </span>
+              <span className="text-xl shrink-0">{s.icon}</span>
+              <div className="min-w-0">
+                <p className="text-white text-sm font-semibold">{s.title}</p>
+                <p className="text-white/40 text-xs">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+
+  /* JURY EN LIGNE */
   {
     title: 'Jury en ligne',
     icon: '⭐',
@@ -220,9 +476,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 7. STATS & ANALYTICS */
-  /* ═══════════════════════════════════ */
+  /* STATS & ANALYTICS */
   {
     title: 'Statistiques & Analytics',
     icon: '📊',
@@ -238,7 +492,7 @@ const SLIDES: Slide[] = [
               items={[
                 'Verdicts jury par catégorie (camembert)',
                 'Répartition des votes publics & partages',
-                'Timeline d\'activité par jour',
+                "Timeline d'activité par jour",
                 'Top 5 jury vs public vs partages',
               ]}
             />
@@ -260,9 +514,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 8. EMAILS AUTOMATIQUES */
-  /* ═══════════════════════════════════ */
+  /* EMAILS AUTOMATIQUES */
   {
     title: 'Emails automatiques',
     icon: '📧',
@@ -275,7 +527,7 @@ const SLIDES: Slide[] = [
             <FeatureBox
               title="📬 Emails envoyés automatiquement"
               items={[
-                'Confirmation d\'inscription',
+                "Confirmation d'inscription",
                 'Sélection en demi-finale',
                 'Relance pour upload MP3',
                 'Récapitulatif jury (newsletter auto)',
@@ -297,9 +549,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 9. SELECTION & MP3 */
-  /* ═══════════════════════════════════ */
+  /* SÉLECTION & MP3 */
   {
     title: 'Sélection & Suivi MP3',
     icon: '🎵',
@@ -334,9 +584,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 10. CHECK-IN DEMI-FINALE */
-  /* ═══════════════════════════════════ */
+  /* CHECK-IN */
   {
     title: 'Check-in candidats',
     icon: '📋',
@@ -372,14 +620,12 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 11. REGIE DEMI-FINALE */
-  /* ═══════════════════════════════════ */
+  /* RÉGIE DEMI-FINALE */
   {
     title: 'Régie demi-finale',
     icon: '🎬',
     accent: '#7ec850',
-    subtitle: 'Pilotage complet de l\'événement en direct',
+    subtitle: "Pilotage complet de l'événement en direct",
     content: (
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -399,7 +645,7 @@ const SLIDES: Slide[] = [
                 'Appeler sur scène en 1 clic',
                 'Ouvrir / fermer les votes',
                 'Compteur de votes en direct',
-                'Boutons d\'incident (pause, absent, rejouer)',
+                "Boutons d'incident (pause, absent, rejouer)",
               ]}
             />
             <FeatureBox
@@ -415,9 +661,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 12. GRANDE FINALE */
-  /* ═══════════════════════════════════ */
+  /* GRANDE FINALE */
   {
     title: 'Grande finale',
     icon: '🏟️',
@@ -430,7 +674,7 @@ const SLIDES: Slide[] = [
             title="🎤 Performances"
             items={[
               'Lineup séquentiel sur scène',
-              'Progression par catégorie (Enfant → Ado → Adulte)',
+              'Progression par catégorie',
               'Feuille de route avec estimation durée',
               'Gestion technique (MP3, timings)',
             ]}
@@ -458,262 +702,49 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 13. EXPERIENCE LIVE (PUBLIC) */
-  /* ═══════════════════════════════════ */
+  /* COMMUNICATION & RÉSEAUX SOCIAUX */
   {
-    title: 'L\'expérience live',
-    icon: '🔴',
-    accent: '#ef4444',
-    subtitle: 'Ce que vit le public sur son téléphone pendant le spectacle',
+    title: 'Communication automatisée',
+    icon: '📣',
+    accent: '#3b82f6',
+    subtitle: 'Publication automatique sur Facebook et Instagram',
     content: (
       <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <FeatureBox
-            title="❤️ Vote en direct"
+            title="🤖 Publications automatiques"
             items={[
-              'Le candidat sur scène apparaît sur le téléphone',
-              'Bouton "Je soutiens" pour voter',
-              '1 vote par appareil, sans compte',
-              'Compteur de votes en temps réel',
+              'Bienvenue aux nouveaux candidats dès leur inscription',
+              'Countdown demi-finale et finale (J-7 à J-1)',
+              'Rappels de vote chaque jeudi',
+              'Promo hebdo chaque lundi',
             ]}
           />
           <FeatureBox
-            title="📸 Mode Reporter"
+            title="📱 Multi-plateforme"
             items={[
-              'Le public prend des photos pendant le spectacle',
-              'Jusqu\'à 5 photos par spectateur',
-              'Photos envoyées en modération admin',
-              'Les meilleures publiées dans la galerie officielle',
+              'Publication simultanée Facebook + Instagram',
+              'Texte + image + lien vers le site',
+              'Hashtags et emojis automatiques',
+              'Calendrier des publications dans l\'admin',
             ]}
           />
           <FeatureBox
-            title="🎉 Révélation du vainqueur"
+            title="🔔 Notifications push"
             items={[
-              'Countdown dramatique sur tous les écrans',
-              'Animation de pièce 3D tournante',
-              'Explosion de confettis synchronisée',
-              'Photo et nom du gagnant en plein écran',
+              'Envoi ciblé : public, jury, ou tous',
+              '"Candidat sur scène", "Vote ouvert"...',
+              'Redirection vers la page concernée',
+              'Depuis l\'interface admin en 1 clic',
             ]}
           />
           <FeatureBox
-            title="📡 Notifications & partage"
+            title="✍️ Publication manuelle"
             items={[
-              'Notifications push : "Candidat sur scène", "Vote ouvert"',
-              'Partage sur WhatsApp, Facebook, X, Instagram',
-              'Inscription newsletter pour être informé',
-              'Tout fonctionne en temps réel (WebSocket)',
-            ]}
-          />
-        </div>
-        <div className="mt-5 bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-xl p-4 text-center">
-          <p className="text-white/70 text-sm">
-            Les spectateurs n&apos;ont qu&apos;à scanner un QR code ou taper l&apos;URL pour participer.
-          </p>
-          <p className="text-white/40 text-xs mt-1">
-            Aucun téléchargement, aucun compte — tout se passe dans le navigateur.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-
-  /* ═══════════════════════════════════ */
-  /* 14. GALERIE PHOTOS */
-  /* ═══════════════════════════════════ */
-  {
-    title: 'Galerie photos',
-    icon: '📸',
-    accent: '#8b5cf6',
-    subtitle: 'Souvenirs et partage après le concours',
-    content: (
-      <div className="max-w-5xl mx-auto">
-        <Screenshot src="/images/presentation/galerie-photos.png" alt="Galerie photos publique" />
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <h4 className="font-bold text-sm text-white mb-2">📸 Vue publique</h4>
-            <ul className="space-y-1">
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Galerie avec filtres par candidat/événement</li>
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Partage sur les réseaux sociaux</li>
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Lightbox plein écran</li>
-            </ul>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <h4 className="font-bold text-sm text-white mb-2">⚙️ Vue admin</h4>
-            <ul className="space-y-1">
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Upload multiple par drag-and-drop</li>
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Tags par candidat ou événement</li>
-              <li className="text-white/50 text-xs flex items-start gap-2"><span className="text-[#8b5cf6] mt-0.5 text-[10px]">●</span>Publier / dépublier / modérer</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  /* ═══════════════════════════════════ */
-  /* 14. ADMIN — VUE D'ENSEMBLE */
-  /* ═══════════════════════════════════ */
-  {
-    title: 'Administration',
-    icon: '⚙️',
-    accent: '#e91e8c',
-    subtitle: 'Un tableau de bord complet pour tout gérer',
-    content: (
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <Screenshot src="/images/presentation/admin-dashboard.png" alt="Dashboard admin" />
-          <div className="space-y-4">
-            <FeatureBox
-              title="📊 Dashboard"
-              items={[
-                'Vue d\'ensemble : candidats, votes, phase en cours',
-                'Stepper visuel de progression des phases',
-                'Accès rapide à toutes les sections',
-              ]}
-            />
-            <FeatureBox
-              title="🏗️ 16+ modules"
-              items={[
-                'Configuration, Sessions, Candidats, Jury',
-                'Régie en ligne, Régie demi-finale, Régie finale',
-                'Stats en ligne, Stats marketing, Fiabilité jury',
-                'Export MP3, Photos, Sponsors, Chatbot, Résultats',
-              ]}
-            />
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-3">
-          <ScreenshotCard src="/images/presentation/admin-candidats.png" label="Candidats" />
-          <ScreenshotCard src="/images/presentation/admin-config.png" label="Configuration" />
-          <ScreenshotCard src="/images/presentation/admin-jury.png" label="Jury" />
-          <ScreenshotCard src="/images/presentation/stats-enligne.png" label="Stats en ligne" />
-          <ScreenshotCard src="/images/presentation/fiabilite-jury.png" label="Fiabilité jury" />
-        </div>
-      </div>
-    ),
-  },
-
-  /* ═══════════════════════════════════ */
-  /* 15. ADMIN — DETAIL WORKFLOW */
-  /* ═══════════════════════════════════ */
-  {
-    title: 'Admin : le workflow complet',
-    icon: '🔄',
-    accent: '#e91e8c',
-    subtitle: 'De la configuration au palmarès, tout se pilote depuis l\'admin',
-    content: (
-      <div className="max-w-4xl mx-auto">
-        <div className="space-y-3">
-          {[
-            { n: '1', icon: '⚙️', title: 'Configurer', desc: 'Session, catégories d\'âge, critères jury, poids scoring, dates, lieu', color: '#8b5cf6' },
-            { n: '2', icon: '⭐', title: 'Créer les jurés', desc: 'Ajouter les jurés, générer les QR codes, envoyer les liens d\'accès', color: '#f5a623' },
-            { n: '3', icon: '📝', title: 'Ouvrir les inscriptions', desc: 'Les candidats s\'inscrivent, l\'admin approuve ou refuse', color: '#e91e8c' },
-            { n: '4', icon: '📱', title: 'Lancer le vote en ligne', desc: 'Le jury note les vidéos, le public vote par like, suivre les stats', color: '#3b82f6' },
-            { n: '5', icon: '🎵', title: 'Sélectionner & préparer', desc: 'Choisir les demi-finalistes, suivre les uploads MP3, relancer', color: '#7ec850' },
-            { n: '6', icon: '🎬', title: 'Piloter la demi-finale', desc: 'Check-in, lineup, live, votes, sélection finalistes', color: '#f5a623' },
-            { n: '7', icon: '🏟️', title: 'Piloter la finale', desc: 'Feuille de route, scoring pondéré, révélation vainqueur + confetti', color: '#e91e8c' },
-            { n: '8', icon: '🏆', title: 'Post-compétition', desc: 'Résultats, galerie photos, export MP3, archivage', color: '#f5a623' },
-          ].map((s) => (
-            <div key={s.n} className="flex items-center gap-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
-              <span
-                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-                style={{ background: `${s.color}20`, color: s.color }}
-              >
-                {s.n}
-              </span>
-              <span className="text-xl shrink-0">{s.icon}</span>
-              <div className="min-w-0">
-                <p className="text-white text-sm font-semibold">{s.title}</p>
-                <p className="text-white/40 text-xs">{s.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-
-  /* ═══════════════════════════════════ */
-  /* 16. CHATBOT FAQ */
-  /* ═══════════════════════════════════ */
-  {
-    title: 'Chatbot FAQ',
-    icon: '💬',
-    accent: '#e91e8c',
-    subtitle: 'Un assistant automatique pour répondre aux questions',
-    content: (
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          <div className="space-y-4">
-            <FeatureBox
-              title="🤖 Réponses intelligentes"
-              items={[
-                '20 questions/réponses pré-configurées',
-                'Reconnaissance synonymes (24 groupes sémantiques)',
-                'Détection des salutations automatique',
-                'Réponse de secours avec email de contact',
-              ]}
-            />
-            <FeatureBox
-              title="⚙️ Gestion admin"
-              items={[
-                'Créer, modifier, supprimer des Q/R',
-                'Activer/désactiver une question',
-                'Réinitialiser avec les FAQ par défaut',
-                'Lié à la session active (multi-tenant)',
-              ]}
-            />
-            <div className="bg-[#e91e8c]/10 border border-[#e91e8c]/20 rounded-xl p-3 text-center">
-              <p className="text-[#e91e8c] font-bold text-sm">Widget flottant</p>
-              <p className="text-white/40 text-xs mt-1">Visible sur toutes les pages publiques, masqué en admin</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <Screenshot src="/images/presentation/chatbot.png" alt="Chatbot FAQ en action" />
-            <Screenshot src="/images/presentation/admin-chatbot.png" alt="Gestion FAQ admin" />
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  /* ═══════════════════════════════════ */
-  /* 17. APPLICATION MOBILE PWA */
-  /* ═══════════════════════════════════ */
-  {
-    title: 'Application mobile',
-    icon: '📱',
-    accent: '#7ec850',
-    subtitle: 'Progressive Web App — Fonctionne comme une vraie app',
-    content: (
-      <div className="max-w-3xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <FeatureBox
-            title="📲 Installation"
-            items={[
-              'Installable sur l\'écran d\'accueil',
-              'Icône et splash screen personnalisés',
-              'Fonctionne comme une app native',
-              'Aucun store (App Store/Play Store) requis',
-            ]}
-          />
-          <FeatureBox
-            title="📡 Temps réel"
-            items={[
-              'Votes en direct pendant les événements',
-              'Notifications push (jury)',
-              'Mise à jour instantanée des scores',
-              'Streaming et interaction live',
-            ]}
-          />
-          <FeatureBox
-            title="🌐 Accessibilité"
-            items={[
-              'Fonctionne sur tous les smartphones',
-              'Page hors-ligne de secours',
-              'Chargement rapide (Service Worker)',
-              'Responsive : mobile, tablette, desktop',
+              'Personnaliser le message avant publication',
+              'Prévisualisation des prochains posts',
+              'Prompts image pour ChatGPT/DALL-E',
+              'Historique des publications (logs)',
             ]}
           />
         </div>
@@ -721,9 +752,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 18. STACK TECHNIQUE */
-  /* ═══════════════════════════════════ */
+  /* STACK TECHNIQUE */
   {
     title: 'Stack technique',
     icon: '🛠️',
@@ -761,9 +790,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  /* ═══════════════════════════════════ */
-  /* 19. MERCI */
-  /* ═══════════════════════════════════ */
+  /* MERCI */
   {
     title: 'Merci',
     icon: '🎶',
@@ -779,6 +806,7 @@ const SLIDES: Slide[] = [
         <p className="text-white/50 text-lg">
           Le concours de chant d&apos;Aubagne — Édition 2026
         </p>
+        <DynamicQR url="https://chantenscene.fr" />
         <div className="space-y-2">
           <p className="text-white/40 text-sm">contact@chantenscene.fr</p>
           <p className="text-white/40 text-sm">chantenscene.fr</p>
@@ -788,12 +816,26 @@ const SLIDES: Slide[] = [
   },
 ]
 
+/* ═══════════════════════════════════════════════════ */
+/* ASSEMBLAGE FINAL                                     */
+/* ═══════════════════════════════════════════════════ */
+
+const SLIDES: Slide[] = [...PUBLIC_SLIDES, SEPARATOR_SLIDE, ...ADMIN_SLIDES]
+
+const PART_1_END = PUBLIC_SLIDES.length // index du séparateur
+
+/* ═══════════════════════════════════════════════════ */
+/* PAGE COMPONENT                                       */
+/* ═══════════════════════════════════════════════════ */
+
 export default function PresentationPage() {
   const [current, setCurrent] = useState(0)
+  const touchStartX = useRef(0)
 
   const next = useCallback(() => setCurrent((c) => Math.min(c + 1, SLIDES.length - 1)), [])
   const prev = useCallback(() => setCurrent((c) => Math.max(c - 1, 0)), [])
 
+  // Clavier
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next() }
@@ -804,10 +846,28 @@ export default function PresentationPage() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [next, prev])
 
+  // Swipe tactile
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) next()
+      else prev()
+    }
+  }
+
   const slide = SLIDES[current]
+  const isPartAdmin = current > PART_1_END
+  const partLabel = current === PART_1_END ? '' : isPartAdmin ? 'Admin' : 'Public'
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0618] flex flex-col overflow-hidden">
+    <div
+      className="fixed inset-0 z-[100] bg-[#0a0618] flex flex-col overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Progress bar */}
       <div className="h-1 bg-white/5 shrink-0">
         <div
@@ -820,8 +880,15 @@ export default function PresentationPage() {
       </div>
 
       {/* Slide content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-8 py-6 md:py-8 overflow-y-auto">
         <div className="w-full max-w-5xl animate-fade-up" key={current}>
+          {/* Part label */}
+          {partLabel && (
+            <p className="text-center text-[10px] uppercase tracking-widest text-white/20 mb-2">
+              {partLabel}
+            </p>
+          )}
+
           {/* Icon */}
           <div className="text-center mb-2">
             <span className="text-4xl">{slide.icon}</span>
@@ -848,21 +915,25 @@ export default function PresentationPage() {
       </div>
 
       {/* Bottom bar */}
-      <div className="shrink-0 px-8 py-3 flex items-center justify-between border-t border-white/5">
+      <div className="shrink-0 px-4 md:px-8 py-3 flex items-center justify-between border-t border-white/5">
         {/* Left: slide number */}
         <p className="text-white/20 text-sm font-mono">
           {current + 1} / {SLIDES.length}
         </p>
 
         {/* Center: dots */}
-        <div className="hidden md:flex items-center gap-1.5">
+        <div className="hidden md:flex items-center gap-1">
           {SLIDES.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               className="w-2 h-2 rounded-full transition-all"
               style={{
-                background: i === current ? slide.accent : 'rgba(255,255,255,0.1)',
+                background: i === current
+                  ? slide.accent
+                  : i === PART_1_END
+                    ? 'rgba(245,166,35,0.3)'
+                    : 'rgba(255,255,255,0.1)',
                 transform: i === current ? 'scale(1.4)' : 'scale(1)',
               }}
             />
@@ -892,7 +963,35 @@ export default function PresentationPage() {
   )
 }
 
-/* ═══ Sub-components ═══ */
+/* ═══════════════════════════════════════════════════ */
+/* SUB-COMPONENTS                                       */
+/* ═══════════════════════════════════════════════════ */
+
+interface Slide {
+  title: string
+  subtitle?: string
+  icon: string
+  content: React.ReactNode
+  accent: string
+}
+
+function DynamicQR({ url }: { url: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    if (canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, url, {
+        width: 180,
+        margin: 2,
+        color: { dark: '#1a1533', light: '#ffffff' },
+      })
+    }
+  }, [url])
+  return (
+    <div className="inline-block bg-white rounded-2xl p-3 shadow-lg shadow-black/30">
+      <canvas ref={canvasRef} />
+    </div>
+  )
+}
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -938,7 +1037,7 @@ function Screenshot({ src, alt }: { src: string; alt: string }) {
       <img
         src={src}
         alt={alt}
-        className="w-full h-auto object-contain"
+        className="w-full h-auto object-contain max-h-[50vh]"
         loading="lazy"
       />
     </div>
