@@ -173,12 +173,15 @@ export default function SocialAdminPage() {
     'w-full bg-[#0d0b1a] border border-[#2a2545] rounded-xl p-3 text-white placeholder:text-white/20 focus:border-[#e91e8c] focus:outline-none'
 
   const TYPE_COLORS: Record<string, string> = {
-    countdown_registration: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-    new_candidates: 'bg-green-500/20 text-green-300 border-green-500/30',
-    candidate_count: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    voting_reminder: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    new_candidate_welcome: 'bg-green-500/20 text-green-300 border-green-500/30',
+    new_candidates_welcome: 'bg-green-500/20 text-green-300 border-green-500/30',
+    new_candidates_wave: 'bg-green-500/20 text-green-300 border-green-500/30',
+    countdown_registration_close: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
     countdown_semifinal: 'bg-red-500/20 text-red-300 border-red-500/30',
     countdown_final: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    voting_reminder: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    countdown_voting_close: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+    weekly_promo: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   }
 
   return (

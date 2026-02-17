@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 interface SessionConfig {
   registration_open_date?: string
   registration_close_date?: string
+  voting_close_date?: string
   semifinal_date?: string
   final_date?: string
   [key: string]: unknown
@@ -16,6 +17,7 @@ interface PreviewPost {
   message: string
   link?: string
   suggested_image_prompt?: string
+  priority: number
 }
 
 function daysUntil(dateStr: string): number {
@@ -26,101 +28,134 @@ function daysUntil(dateStr: string): number {
 
 function generateAllPossiblePosts(
   session: { name: string; slug: string; config: SessionConfig; status: string },
-  candidateCount: number,
-  newCandidates: { stage_name: string; first_name: string; last_name: string }[],
+  totalCandidates: number,
+  newCandidates: { stage_name: string; first_name: string; last_name: string; slug: string }[],
   siteUrl: string
 ): PreviewPost[] {
   const posts: PreviewPost[] = []
   const config = session.config || {}
   const sessionUrl = `${siteUrl}/${session.slug}`
 
-  // Countdown inscriptions
-  if (config.registration_open_date) {
-    const days = daysUntil(config.registration_open_date)
-    if (days > 0) {
-      posts.push({
-        type: 'countdown_registration',
-        label: `Countdown inscriptions (J-${days})`,
-        message: `⏳ J-${days} avant l'ouverture des inscriptions pour ${session.name} !\n\nPréparez votre plus belle chanson, bientôt ce sera à vous de briller sur scène ! 🎤✨\n\n${sessionUrl}`,
-        link: sessionUrl,
-        suggested_image_prompt: `Affiche promotionnelle colorée pour un concours de chant "${session.name}", style moderne et festif, avec un compte à rebours J-${days}, micro doré, notes de musique, couleurs rose vif et violet foncé`,
-      })
-    }
-  }
-
-  // Nouveaux candidats
+  // ── 1. Nouveaux candidats ───────────────────────────────────
   if (newCandidates.length > 0) {
     if (newCandidates.length === 1) {
       const c = newCandidates[0]
       const name = c.stage_name || `${c.first_name} ${c.last_name}`
       posts.push({
-        type: 'new_candidates',
-        label: `Nouveau candidat : ${name}`,
-        message: `🎵 Nouveau candidat : ${name} rejoint l'aventure ${session.name} !\n\nDécouvrez son profil et votez pour vos favoris 👉 ${sessionUrl}/candidats`,
-        link: `${sessionUrl}/candidats`,
-        suggested_image_prompt: `Affiche "Bienvenue" pour un nouveau candidat dans un concours de chant, style élégant avec projecteur sur scène, micro, nom "${name}", couleurs rose et violet`,
+        type: 'new_candidate_welcome',
+        label: `Bienvenue : ${name}`,
+        priority: 1,
+        message: `🎤 Bienvenue à ${name} qui rejoint l'aventure ${session.name} ! Bonne chance ! 🍀\n\nDécouvrez son profil 👉 ${sessionUrl}/candidats/${c.slug}\n\n#ChanteEnScène #ConcoursDeChant`,
+        link: `${sessionUrl}/candidats/${c.slug}`,
+        suggested_image_prompt: `Affiche "BIENVENUE" pour un concours de chant, style moderne avec projecteur sur scène, micro doré, nom "${name}", confettis, couleurs rose vif #e91e8c et violet foncé #1a1232`,
       })
     } else {
+      const names = newCandidates.map(c => c.stage_name || c.first_name).join(', ')
       posts.push({
-        type: 'new_candidates',
+        type: 'new_candidates_welcome',
         label: `${newCandidates.length} nouveaux candidats`,
-        message: `🎵 ${newCandidates.length} nouveaux candidats cette semaine pour ${session.name} !\n\nDécouvrez-les et votez pour vos favoris 👉 ${sessionUrl}/candidats`,
+        priority: 1,
+        message: `🎤 ${newCandidates.length} nouveaux candidats rejoignent ${session.name} !\n\nBienvenue à ${names} ! Bonne chance à tous ! 🍀\n\nDécouvrez-les 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
         link: `${sessionUrl}/candidats`,
-        suggested_image_prompt: `Affiche promotionnelle concours de chant avec "${newCandidates.length} nouveaux candidats", silhouettes sur scène, ambiance concert, couleurs rose et violet`,
+        suggested_image_prompt: `Affiche concours de chant avec "${newCandidates.length} nouveaux candidats", silhouettes sur scène, ambiance concert festive, couleurs rose #e91e8c et violet #1a1232`,
       })
     }
   }
 
-  // Compteur candidats
-  if (candidateCount > 0) {
-    posts.push({
-      type: 'candidate_count',
-      label: `Compteur : ${candidateCount} candidats`,
-      message: `🎤 Déjà ${candidateCount} candidats inscrits à ${session.name}, et vous ?\n\nIl est encore temps de tenter votre chance ! Inscrivez-vous maintenant 👉 ${sessionUrl}/inscription`,
-      link: `${sessionUrl}/inscription`,
-      suggested_image_prompt: `Affiche dynamique concours de chant avec le chiffre "${candidateCount}" en grand, micro, foule en ombre, texte "Et vous ?", couleurs rose et violet`,
-    })
+  // ── 2. Countdown fermeture inscriptions ─────────────────────
+  if (config.registration_close_date && totalCandidates >= 5 && session.status === 'registration_open') {
+    const days = daysUntil(config.registration_close_date)
+    if (days > 0) {
+      posts.push({
+        type: 'countdown_registration_close',
+        label: `Fermeture inscriptions J-${days}`,
+        priority: 2,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour s'inscrire à ${session.name} !\n\nNe manquez pas votre chance de monter sur scène ! 🎤\n\nInscription 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #DernièreChance`,
+        link: `${sessionUrl}/inscription`,
+        suggested_image_prompt: `Affiche "J-${days}" urgente pour un concours de chant, sablier, micro, texte "Dernière chance de s'inscrire", couleurs rose #e91e8c et violet #1a1232`,
+      })
+    }
   }
 
-  // Rappel de vote
-  if (candidateCount > 0) {
-    posts.push({
-      type: 'voting_reminder',
-      label: 'Rappel de vote',
-      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${sessionUrl}/candidats`,
-      link: `${sessionUrl}/candidats`,
-      suggested_image_prompt: `Affiche "VOTEZ !" pour un concours de chant, style moderne avec main qui vote, étoiles, micro, couleurs rose vif et violet foncé`,
-    })
-  }
-
-  // Countdown demi-finale
+  // ── 3. Countdown demi-finale ────────────────────────────────
   if (config.semifinal_date) {
     const days = daysUntil(config.semifinal_date)
     if (days > 0) {
       posts.push({
         type: 'countdown_semifinal',
-        label: `Countdown demi-finale (J-${days})`,
-        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? Rendez-vous bientôt pour le découvrir ! 🎶\n\n${sessionUrl}/live`,
+        label: `Demi-finale J-${days}`,
+        priority: 2,
+        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? 🎶\n\n${sessionUrl}/live\n\n#ChanteEnScène #DemiFinale`,
         link: `${sessionUrl}/live`,
-        suggested_image_prompt: `Affiche "DEMI-FINALE J-${days}" pour un concours de chant sur scène, ambiance suspense, projecteurs, flammes, couleurs rose et violet intense`,
+        suggested_image_prompt: `Affiche "DEMI-FINALE J-${days}" pour un concours de chant, ambiance suspense, projecteurs, flammes, couleurs rose #e91e8c et violet intense #1a1232`,
       })
     }
   }
 
-  // Countdown finale
+  // ── 4. Countdown finale ─────────────────────────────────────
   if (config.final_date) {
     const days = daysUntil(config.final_date)
     if (days > 0) {
       posts.push({
         type: 'countdown_final',
-        label: `Countdown finale (J-${days})`,
-        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? Ne manquez pas ça ! 🎤🔥\n\n${sessionUrl}/live`,
+        label: `Finale J-${days}`,
+        priority: 2,
+        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? 🎤🔥\n\n${sessionUrl}/live\n\n#ChanteEnScène #Finale`,
         link: `${sessionUrl}/live`,
-        suggested_image_prompt: `Affiche "GRANDE FINALE J-${days}" spectaculaire pour un concours de chant, trophée doré, confettis, scène illuminée, couleurs rose et or`,
+        suggested_image_prompt: `Affiche "GRANDE FINALE J-${days}" spectaculaire, trophée doré, confettis, scène illuminée, couleurs rose #e91e8c et or`,
       })
     }
   }
 
+  // ── 5. Rappel de vote ───────────────────────────────────────
+  if (totalCandidates > 0 && ['registration_open', 'registration_closed'].includes(session.status)) {
+    posts.push({
+      type: 'voting_reminder',
+      label: 'Rappel de vote',
+      priority: 3,
+      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #Votez`,
+      link: `${sessionUrl}/candidats`,
+      suggested_image_prompt: `Affiche "VOTEZ !" pour un concours de chant, main qui vote, étoiles, micro, style moderne, couleurs rose vif #e91e8c et violet foncé #1a1232`,
+    })
+  }
+
+  // ── 6. Countdown fermeture votes ────────────────────────────
+  if (config.voting_close_date && ['registration_open', 'registration_closed'].includes(session.status)) {
+    const days = daysUntil(config.voting_close_date)
+    if (days > 0) {
+      posts.push({
+        type: 'countdown_voting_close',
+        label: `Fermeture votes J-${days}`,
+        priority: 2,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour voter à ${session.name} !\n\nFaites entendre votre voix 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #DernierJourDeVote`,
+        link: `${sessionUrl}/candidats`,
+        suggested_image_prompt: `Affiche "DERNIER JOUR DE VOTE" urgente, urne de vote, micro, sablier, couleurs rose #e91e8c et violet #1a1232`,
+      })
+    }
+  }
+
+  // ── 7. Promo hebdo ──────────────────────────────────────────
+  if (session.status === 'registration_open') {
+    posts.push({
+      type: 'weekly_promo',
+      label: 'Promo inscriptions',
+      priority: 4,
+      message: `🎵 Les inscriptions pour ${session.name} sont ouvertes !\n\nVous avez du talent ? Tentez votre chance et montez sur scène ! 🎤✨\n\nInscrivez-vous 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #ConcoursDeChant #LaSceneEstAToi`,
+      link: `${sessionUrl}/inscription`,
+      suggested_image_prompt: `Affiche promotionnelle "INSCRIPTIONS OUVERTES" pour un concours de chant, micro doré, notes de musique flottantes, scène illuminée, couleurs rose #e91e8c et violet #1a1232`,
+    })
+  } else if (['registration_closed', 'semifinal', 'final'].includes(session.status)) {
+    posts.push({
+      type: 'weekly_promo',
+      label: 'Promo compétition',
+      priority: 4,
+      message: `🎵 ${session.name} bat son plein ! ${totalCandidates} candidats en lice !\n\nSuivez la compétition et votez pour vos favoris 🗳️🎤\n\n👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant #VoteEnDirect`,
+      link: `${sessionUrl}/candidats`,
+      suggested_image_prompt: `Affiche "VOTEZ POUR VOS FAVORIS" avec foule en silhouette, micro, lumières de concert, texte "${totalCandidates} candidats", couleurs rose #e91e8c et violet #1a1232`,
+    })
+  }
+
+  posts.sort((a, b) => a.priority - b.priority)
   return posts
 }
 
@@ -133,7 +168,7 @@ export async function GET() {
 
   const admin = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chanteenscene.fr'
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const { data: sessions } = await admin
     .from('sessions')
@@ -149,7 +184,7 @@ export async function GET() {
   for (const session of sessions) {
     const config = (session.config || {}) as SessionConfig
 
-    const { count: candidateCount } = await admin
+    const { count: totalCandidates } = await admin
       .from('candidates')
       .select('*', { count: 'exact', head: true })
       .eq('session_id', session.id)
@@ -157,14 +192,14 @@ export async function GET() {
 
     const { data: newCandidates } = await admin
       .from('candidates')
-      .select('first_name, last_name, stage_name')
+      .select('first_name, last_name, stage_name, slug')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
-      .gte('created_at', oneWeekAgo)
+      .gte('created_at', oneDayAgo)
 
     const posts = generateAllPossiblePosts(
       { name: session.name, slug: session.slug, config, status: session.status },
-      candidateCount || 0,
+      totalCandidates || 0,
       newCandidates || [],
       siteUrl
     )

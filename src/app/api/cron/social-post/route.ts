@@ -12,24 +12,17 @@ function isAuthorized(request: Request): boolean {
 interface SessionConfig {
   registration_open_date?: string
   registration_close_date?: string
+  voting_close_date?: string
   semifinal_date?: string
   final_date?: string
-  jury_online_voting_closed?: boolean
   [key: string]: unknown
 }
 
-type PostType =
-  | 'countdown_registration'
-  | 'candidate_count'
-  | 'new_candidates'
-  | 'voting_reminder'
-  | 'countdown_semifinal'
-  | 'countdown_final'
-
 interface GeneratedPost {
-  type: PostType
+  type: string
   message: string
   link?: string
+  priority: number // Plus bas = plus prioritaire
 }
 
 function daysUntil(dateStr: string): number {
@@ -40,8 +33,8 @@ function daysUntil(dateStr: string): number {
 
 function generatePosts(
   session: { name: string; slug: string; config: SessionConfig; status: string },
-  candidateCount: number,
-  newCandidatesThisWeek: { stage_name: string; first_name: string; last_name: string }[],
+  totalCandidates: number,
+  newCandidatesSinceYesterday: { stage_name: string; first_name: string; last_name: string; slug: string }[],
   siteUrl: string
 ): GeneratedPost[] {
   const posts: GeneratedPost[] = []
@@ -49,78 +42,118 @@ function generatePosts(
   const sessionUrl = `${siteUrl}/${session.slug}`
   const dayOfWeek = new Date().getDay() // 0=dimanche
 
-  // Countdown avant ouverture des inscriptions
-  if (config.registration_open_date && session.status === 'draft') {
-    const days = daysUntil(config.registration_open_date)
-    if (days > 0 && days % 10 === 0) {
-      posts.push({
-        type: 'countdown_registration',
-        message: `⏳ J-${days} avant l'ouverture des inscriptions pour ${session.name} !\n\nPréparez votre plus belle chanson, bientôt ce sera à vous de briller sur scène ! 🎤✨\n\n${sessionUrl}`,
-        link: sessionUrl,
-      })
-    }
-  }
-
-  // Nouveau(x) candidat(s) cette semaine
-  if (newCandidatesThisWeek.length > 0 && session.status === 'registration_open') {
-    if (newCandidatesThisWeek.length === 1) {
-      const c = newCandidatesThisWeek[0]
+  // ── 1. Nouveaux candidats (priorité haute) ──────────────────
+  if (newCandidatesSinceYesterday.length > 0 && session.status === 'registration_open') {
+    if (newCandidatesSinceYesterday.length === 1) {
+      const c = newCandidatesSinceYesterday[0]
       const name = c.stage_name || `${c.first_name} ${c.last_name}`
       posts.push({
-        type: 'new_candidates',
-        message: `🎵 Nouveau candidat : ${name} rejoint l'aventure ${session.name} !\n\nDécouvrez son profil et votez pour vos favoris 👉 ${sessionUrl}/candidats`,
+        type: 'new_candidate_welcome',
+        priority: 1,
+        message: `🎤 Bienvenue à ${name} qui rejoint l'aventure ${session.name} ! Bonne chance ! 🍀\n\nDécouvrez son profil 👉 ${sessionUrl}/candidats/${c.slug}\n\n#ChanteEnScène #ConcoursDeChant`,
+        link: `${sessionUrl}/candidats/${c.slug}`,
+      })
+    } else if (newCandidatesSinceYesterday.length <= 5) {
+      const names = newCandidatesSinceYesterday.map(c => c.stage_name || c.first_name).join(', ')
+      posts.push({
+        type: 'new_candidates_welcome',
+        priority: 1,
+        message: `🎤 ${newCandidatesSinceYesterday.length} nouveaux candidats rejoignent ${session.name} !\n\nBienvenue à ${names} ! Bonne chance à tous ! 🍀\n\nDécouvrez-les 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
         link: `${sessionUrl}/candidats`,
       })
     } else {
       posts.push({
-        type: 'new_candidates',
-        message: `🎵 ${newCandidatesThisWeek.length} nouveaux candidats cette semaine pour ${session.name} !\n\nDécouvrez-les et votez pour vos favoris 👉 ${sessionUrl}/candidats`,
+        type: 'new_candidates_wave',
+        priority: 1,
+        message: `🔥 ${newCandidatesSinceYesterday.length} nouveaux candidats ont rejoint ${session.name} ! La compétition s'annonce intense !\n\nDécouvrez-les tous 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
         link: `${sessionUrl}/candidats`,
       })
     }
   }
 
-  // Compteur de candidats (chaque lundi)
-  if (dayOfWeek === 1 && candidateCount > 0 && session.status === 'registration_open') {
-    posts.push({
-      type: 'candidate_count',
-      message: `🎤 Déjà ${candidateCount} candidats inscrits à ${session.name}, et vous ?\n\nIl est encore temps de tenter votre chance ! Inscrivez-vous maintenant 👉 ${sessionUrl}/inscription`,
-      link: `${sessionUrl}/inscription`,
-    })
+  // ── 2. Countdown fermeture inscriptions (après 5+ inscrits) ─
+  if (config.registration_close_date && totalCandidates >= 5 && session.status === 'registration_open') {
+    const days = daysUntil(config.registration_close_date)
+    if ([30, 14, 7, 3, 1].includes(days)) {
+      posts.push({
+        type: 'countdown_registration_close',
+        priority: 2,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour s'inscrire à ${session.name} !\n\nNe manquez pas votre chance de monter sur scène ! 🎤\n\nInscription 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #DernièreChance`,
+        link: `${sessionUrl}/inscription`,
+      })
+    }
   }
 
-  // Rappel de vote (chaque jeudi)
-  if (dayOfWeek === 4 && candidateCount > 0 && ['registration_open', 'registration_closed'].includes(session.status)) {
-    posts.push({
-      type: 'voting_reminder',
-      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${sessionUrl}/candidats`,
-      link: `${sessionUrl}/candidats`,
-    })
-  }
-
-  // Countdown demi-finale
+  // ── 3. Countdown demi-finale (J-7 à J-1) ───────────────────
   if (config.semifinal_date) {
     const days = daysUntil(config.semifinal_date)
     if (days > 0 && days <= 7) {
       posts.push({
         type: 'countdown_semifinal',
-        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? Rendez-vous bientôt pour le découvrir ! 🎶\n\n${sessionUrl}/live`,
+        priority: 2,
+        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? 🎶\n\n${sessionUrl}/live\n\n#ChanteEnScène #DemiFinale`,
         link: `${sessionUrl}/live`,
       })
     }
   }
 
-  // Countdown finale
+  // ── 4. Countdown finale (J-7 à J-1) ────────────────────────
   if (config.final_date) {
     const days = daysUntil(config.final_date)
     if (days > 0 && days <= 7) {
       posts.push({
         type: 'countdown_final',
-        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? Ne manquez pas ça ! 🎤🔥\n\n${sessionUrl}/live`,
+        priority: 2,
+        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? 🎤🔥\n\n${sessionUrl}/live\n\n#ChanteEnScène #Finale`,
         link: `${sessionUrl}/live`,
       })
     }
   }
+
+  // ── 5. Rappel de vote (jeudi, quand les votes sont ouverts) ─
+  if (dayOfWeek === 4 && totalCandidates > 0 && ['registration_open', 'registration_closed'].includes(session.status)) {
+    posts.push({
+      type: 'voting_reminder',
+      priority: 3,
+      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #Votez`,
+      link: `${sessionUrl}/candidats`,
+    })
+  }
+
+  // ── 6. Countdown fermeture des votes ────────────────────────
+  if (config.voting_close_date && ['registration_open', 'registration_closed'].includes(session.status)) {
+    const days = daysUntil(config.voting_close_date)
+    if ([7, 3, 1].includes(days)) {
+      posts.push({
+        type: 'countdown_voting_close',
+        priority: 2,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour voter à ${session.name} !\n\nFaites entendre votre voix 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #DernierJourDeVote`,
+        link: `${sessionUrl}/candidats`,
+      })
+    }
+  }
+
+  // ── 7. Promo hebdo (lundi) ──────────────────────────────────
+  if (dayOfWeek === 1) {
+    if (session.status === 'registration_open') {
+      posts.push({
+        type: 'weekly_promo',
+        priority: 4,
+        message: `🎵 Les inscriptions pour ${session.name} sont ouvertes !\n\nVous avez du talent ? Tentez votre chance et montez sur scène ! 🎤✨\n\nInscrivez-vous 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #ConcoursDeChant #LaSceneEstAToi`,
+        link: `${sessionUrl}/inscription`,
+      })
+    } else if (['registration_closed', 'semifinal', 'final'].includes(session.status)) {
+      posts.push({
+        type: 'weekly_promo',
+        priority: 4,
+        message: `🎵 ${session.name} bat son plein ! ${totalCandidates} candidats en lice !\n\nSuivez la compétition et votez pour vos favoris 🗳️🎤\n\n👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant #VoteEnDirect`,
+        link: `${sessionUrl}/candidats`,
+      })
+    }
+  }
+
+  // Trier par priorité (plus bas = plus prioritaire)
+  posts.sort((a, b) => a.priority - b.priority)
 
   return posts
 }
@@ -136,9 +169,8 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  // Récupérer les sessions actives
   const { data: sessions } = await supabase
     .from('sessions')
     .select('id, name, slug, config, status')
@@ -153,31 +185,31 @@ export async function GET(request: Request) {
   for (const session of sessions) {
     const config = (session.config || {}) as SessionConfig
 
-    // Compter les candidats approuvés
-    const { count: candidateCount } = await supabase
+    // Total candidats approuvés
+    const { count: totalCandidates } = await supabase
       .from('candidates')
       .select('*', { count: 'exact', head: true })
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
 
-    // Nouveaux candidats cette semaine
+    // Nouveaux candidats depuis hier (24h)
     const { data: newCandidates } = await supabase
       .from('candidates')
-      .select('first_name, last_name, stage_name')
+      .select('first_name, last_name, stage_name, slug')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
-      .gte('created_at', oneWeekAgo)
+      .gte('created_at', oneDayAgo)
 
     const posts = generatePosts(
       { name: session.name, slug: session.slug, config, status: session.status },
-      candidateCount || 0,
+      totalCandidates || 0,
       newCandidates || [],
       siteUrl
     )
 
     const sessionResults: { type: string; success: boolean; error?: string }[] = []
 
-    // Publier max 1 post par jour par session pour ne pas spammer
+    // Publier max 1 post par jour par session
     const postToPublish = posts[0]
     if (postToPublish) {
       try {
@@ -191,7 +223,7 @@ export async function GET(request: Request) {
           error: fbError,
         })
 
-        // Log dans Supabase pour éviter les doublons
+        // Log dans Supabase
         await supabase.from('social_posts_log').insert({
           session_id: session.id,
           post_type: postToPublish.type,
@@ -199,7 +231,7 @@ export async function GET(request: Request) {
           facebook_post_id: fbOk && 'id' in result.facebook! ? result.facebook.id : null,
           instagram_post_id: result.instagram && 'id' in result.instagram ? result.instagram.id : null,
           error: fbError || (result.instagram && 'error' in result.instagram ? result.instagram.error : null),
-        }).then(() => {})  // fire-and-forget
+        }).then(() => {})
       } catch (err) {
         sessionResults.push({
           type: postToPublish.type,
