@@ -187,7 +187,7 @@ export default function InstallPrompt() {
   if (phase === 'notify' && (!('Notification' in window) || !('PushManager' in window))) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom">
+    <div className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom">
       <div className="bg-[#1a1232] border border-[#e91e8c]/30 rounded-2xl p-4 shadow-lg shadow-[#e91e8c]/10">
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0">{phase === 'install' ? '\uD83D\uDCF2' : '\uD83D\uDD14'}</span>
