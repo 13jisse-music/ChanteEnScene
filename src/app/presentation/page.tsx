@@ -874,6 +874,7 @@ const PART_1_END = PUBLIC_SLIDES.length // index du séparateur
 export default function PresentationPage() {
   const [current, setCurrent] = useState(0)
   const touchStartX = useRef(0)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   // ── Sync temps réel ──────────────────────────────────
   const [isPresenter, setIsPresenter] = useState(false)
@@ -886,6 +887,29 @@ export default function PresentationPage() {
   const heartbeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { currentRef.current = current }, [current])
+
+  // Listen for lightbox events from Screenshot/ScreenshotCard components
+  useEffect(() => {
+    function handleLightboxOpen(e: Event) {
+      const src = (e as CustomEvent).detail.src
+      setLightboxSrc(src)
+      if (isPresenter && channelRef.current) {
+        channelRef.current.send({ type: 'broadcast', event: 'lightbox', payload: { src } })
+      }
+    }
+    function handleLightboxClose() {
+      setLightboxSrc(null)
+      if (isPresenter && channelRef.current) {
+        channelRef.current.send({ type: 'broadcast', event: 'lightbox', payload: { src: null } })
+      }
+    }
+    window.addEventListener('lightbox-open', handleLightboxOpen)
+    window.addEventListener('lightbox-close', handleLightboxClose)
+    return () => {
+      window.removeEventListener('lightbox-open', handleLightboxOpen)
+      window.removeEventListener('lightbox-close', handleLightboxClose)
+    }
+  }, [isPresenter])
   useEffect(() => { isFollowingRef.current = isFollowing }, [isFollowing])
 
   // Broadcast slide change (called by presenter)
@@ -982,6 +1006,11 @@ export default function PresentationPage() {
             setIsLive(false)
             setIsFollowing(false)
           }, 8000)
+        })
+        .on('broadcast', { event: 'lightbox' }, ({ payload }) => {
+          if (isFollowingRef.current) {
+            setLightboxSrc(payload.src)
+          }
         })
         .subscribe()
       return () => {
@@ -1171,6 +1200,27 @@ export default function PresentationPage() {
           </div>
         )}
       </div>
+
+      {/* Global lightbox overlay (synced via broadcast) */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => window.dispatchEvent(new Event('lightbox-close'))}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl font-light"
+            onClick={() => window.dispatchEvent(new Event('lightbox-close'))}
+          >
+            ✕
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxSrc}
+            alt="Zoom"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -1247,51 +1297,28 @@ function FeatureBox({ title, items }: { title: string; items: string[] }) {
 }
 
 function Screenshot({ src, alt }: { src: string; alt: string }) {
-  const [open, setOpen] = useState(false)
   return (
-    <>
-      <div
-        className="rounded-lg md:rounded-xl overflow-hidden border border-white/10 bg-white/5 shadow-lg shadow-black/20 cursor-pointer"
-        onClick={() => setOpen(true)}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-auto object-contain max-h-[30vh] md:max-h-[50vh]"
-          loading="lazy"
-        />
-      </div>
-      {open && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setOpen(false)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl font-light"
-            onClick={() => setOpen(false)}
-          >
-            ✕
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            className="max-w-full max-h-[90vh] object-contain rounded-lg"
-          />
-        </div>
-      )}
-    </>
+    <div
+      className="rounded-lg md:rounded-xl overflow-hidden border border-white/10 bg-white/5 shadow-lg shadow-black/20 cursor-pointer"
+      onClick={() => window.dispatchEvent(new CustomEvent('lightbox-open', { detail: { src } }))}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="w-full h-auto object-contain max-h-[30vh] md:max-h-[50vh]"
+        loading="lazy"
+      />
+    </div>
   )
 }
 
 function ScreenshotCard({ src, label }: { src: string; label: string }) {
-  const [open, setOpen] = useState(false)
   return (
     <div className="space-y-1.5">
       <div
         className="rounded-lg overflow-hidden border border-white/10 bg-white/5 shadow-md shadow-black/20 aspect-[16/10] cursor-pointer"
-        onClick={() => setOpen(true)}
+        onClick={() => window.dispatchEvent(new CustomEvent('lightbox-open', { detail: { src } }))}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -1302,25 +1329,6 @@ function ScreenshotCard({ src, label }: { src: string; label: string }) {
         />
       </div>
       <p className="text-white/50 text-[10px] text-center font-medium">{label}</p>
-      {open && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setOpen(false)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl font-light"
-            onClick={() => setOpen(false)}
-          >
-            ✕
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={label}
-            className="max-w-full max-h-[90vh] object-contain rounded-lg"
-          />
-        </div>
-      )}
     </div>
   )
 }
