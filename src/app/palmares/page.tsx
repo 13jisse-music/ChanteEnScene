@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const metadata = {
   title: 'Palmarès — ChanteEnScène',
@@ -23,7 +23,7 @@ interface Winner {
 }
 
 export default async function PalmaresPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: winners } = await supabase
     .from('candidates')
