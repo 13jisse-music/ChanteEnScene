@@ -59,38 +59,23 @@ export async function postPhotoToFacebook(
   return data
 }
 
-// ─── Instagram ──────────────────────────────────────────────
+// ─── Instagram (API Instagram directe) ──────────────────────
 
-/** Récupère l'ID du compte Instagram Business lié à la Page Facebook */
-export async function getInstagramAccountId(): Promise<string> {
-  const token = process.env.FACEBOOK_PAGE_TOKEN
-  if (!token) throw new Error('FACEBOOK_PAGE_TOKEN manquant')
+const INSTAGRAM_API = 'https://graph.instagram.com/v24.0'
 
-  const pageId = await getFacebookPageId()
-
-  const res = await fetch(
-    `${GRAPH_API}/${pageId}?fields=instagram_business_account&access_token=${token}`
-  )
-  const data = await res.json()
-  if (data.error) throw new Error(`IG Account: ${data.error.message}`)
-  if (!data.instagram_business_account?.id) {
-    throw new Error('Aucun compte Instagram Business lié à cette Page Facebook')
-  }
-  return data.instagram_business_account.id
-}
-
-/** Publie une image avec légende sur Instagram */
+/** Publie une image avec légende sur Instagram via l'API Instagram */
 export async function postToInstagram(
   imageUrl: string,
   caption: string
 ): Promise<{ id: string }> {
-  const token = process.env.FACEBOOK_PAGE_TOKEN
-  if (!token) throw new Error('FACEBOOK_PAGE_TOKEN manquant')
+  const token = process.env.INSTAGRAM_TOKEN
+  if (!token) throw new Error('INSTAGRAM_TOKEN manquant')
 
-  const igAccountId = await getInstagramAccountId()
+  const igAccountId = process.env.INSTAGRAM_ACCOUNT_ID
+  if (!igAccountId) throw new Error('INSTAGRAM_ACCOUNT_ID manquant')
 
   // Étape 1 : Créer le container media
-  const createRes = await fetch(`${GRAPH_API}/${igAccountId}/media`, {
+  const createRes = await fetch(`${INSTAGRAM_API}/${igAccountId}/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -104,7 +89,7 @@ export async function postToInstagram(
   if (createData.error) throw new Error(`IG Media: ${createData.error.message}`)
 
   // Étape 2 : Publier le container
-  const publishRes = await fetch(`${GRAPH_API}/${igAccountId}/media_publish`, {
+  const publishRes = await fetch(`${INSTAGRAM_API}/${igAccountId}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -149,6 +134,34 @@ export async function getLongLivedPageToken(longLivedUserToken: string): Promise
   return data.data[0].access_token
 }
 
+// ─── Validation ─────────────────────────────────────────────
+
+/** Vérifie que l'URL est un lien direct vers une image (pas une page album) */
+function validateImageUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    // Bloquer les pages album imgur (imgur.com/a/xxx)
+    if (parsed.hostname === 'imgur.com' || parsed.hostname === 'www.imgur.com') {
+      if (parsed.pathname.includes('/a/') || parsed.pathname.includes('/gallery/')) {
+        return 'URL imgur invalide : utilisez le lien direct de l\'image (clic droit → Copier l\'adresse de l\'image), pas le lien de l\'album. Le lien doit ressembler à https://i.imgur.com/xxxxxxx.png'
+      }
+    }
+    // Vérifier que c'est bien un lien image courant
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+    const hasImageExt = imageExtensions.some(ext => parsed.pathname.toLowerCase().endsWith(ext))
+    const isImgurDirect = parsed.hostname === 'i.imgur.com'
+    const isPostImg = parsed.hostname.includes('postimg')
+    const isKnownImageHost = isImgurDirect || isPostImg || parsed.hostname.includes('cloudinary') || parsed.hostname.includes('blob.vercel-storage')
+
+    if (!hasImageExt && !isKnownImageHost) {
+      return 'L\'URL ne semble pas pointer vers une image directe. Assurez-vous que le lien se termine par .jpg, .png, etc. ou utilisez un hébergeur d\'images (imgur, postimg.cc).'
+    }
+    return null
+  } catch {
+    return 'URL image invalide'
+  }
+}
+
 // ─── Publication combinée FB + IG ───────────────────────────
 
 export interface SocialPostResult {
@@ -163,6 +176,17 @@ export async function publishEverywhere(
   link?: string
 ): Promise<SocialPostResult> {
   const result: SocialPostResult = {}
+
+  // Valider l'URL image si fournie
+  if (imageUrl) {
+    const imageError = validateImageUrl(imageUrl)
+    if (imageError) {
+      return {
+        facebook: { error: imageError },
+        instagram: { error: imageError },
+      }
+    }
+  }
 
   // Facebook
   try {
