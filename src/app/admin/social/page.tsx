@@ -310,7 +310,19 @@ export default function SocialAdminPage() {
               )
             })}
           </div>
-          <p className="text-white/15 text-[10px] mt-3">
+          <div className="mt-4 pt-3 border-t border-white/5 space-y-1">
+            <p className="text-white/25 text-[10px] font-medium">Publications conditionnelles (non planifiables) :</p>
+            <p className="text-white/15 text-[10px]">
+              🎤 <span className="text-green-400/40">Bienvenue candidat</span> — publié automatiquement quand un candidat s&apos;inscrit (priorité max)
+            </p>
+            <p className="text-white/15 text-[10px]">
+              🗳️ <span className="text-purple-400/40">Rappel de vote</span> — chaque jeudi (quand les votes sont ouverts)
+            </p>
+            <p className="text-white/15 text-[10px]">
+              📢 <span className="text-blue-400/40">Promo hebdo</span> — chaque lundi (quand les inscriptions/compétition sont ouvertes)
+            </p>
+          </div>
+          <p className="text-white/15 text-[10px] mt-2">
             Le cron publie 1 post/jour max. Si plusieurs posts sont prévus le même jour, le plus prioritaire est publié.
           </p>
         </div>
