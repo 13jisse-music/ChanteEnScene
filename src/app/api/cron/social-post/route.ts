@@ -168,7 +168,9 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chanteenscene.fr'
+  // Toujours utiliser le domaine public pour les posts sociaux (jamais localhost)
+  const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chanteenscene.fr' : siteUrl
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const { data: sessions } = await supabase
@@ -204,7 +206,7 @@ export async function GET(request: Request) {
       { name: session.name, slug: session.slug, config, status: session.status },
       totalCandidates || 0,
       newCandidates || [],
-      siteUrl
+      socialSiteUrl
     )
 
     const sessionResults: { type: string; success: boolean; error?: string }[] = []
