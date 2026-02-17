@@ -709,44 +709,52 @@ const ADMIN_SLIDES: Slide[] = [
     accent: '#3b82f6',
     subtitle: 'Publication automatique sur Facebook et Instagram',
     content: (
-      <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <FeatureBox
-            title="🤖 Publications automatiques"
-            items={[
-              'Bienvenue aux nouveaux candidats dès leur inscription',
-              'Countdown demi-finale et finale (J-7 à J-1)',
-              'Rappels de vote chaque jeudi',
-              'Promo hebdo chaque lundi',
-            ]}
-          />
-          <FeatureBox
-            title="📱 Multi-plateforme"
-            items={[
-              'Publication simultanée Facebook + Instagram',
-              'Texte + image + lien vers le site',
-              'Hashtags et emojis automatiques',
-              'Calendrier des publications dans l\'admin',
-            ]}
-          />
-          <FeatureBox
-            title="🔔 Notifications push"
-            items={[
-              'Envoi ciblé : public, jury, ou tous',
-              '"Candidat sur scène", "Vote ouvert"...',
-              'Redirection vers la page concernée',
-              'Depuis l\'interface admin en 1 clic',
-            ]}
-          />
-          <FeatureBox
-            title="✍️ Publication manuelle"
-            items={[
-              'Personnaliser le message avant publication',
-              'Prévisualisation des prochains posts',
-              'Prompts image pour ChatGPT/DALL-E',
-              'Historique des publications (logs)',
-            ]}
-          />
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="space-y-4">
+            <FeatureBox
+              title="🤖 Publications automatiques"
+              items={[
+                'Bienvenue aux nouveaux candidats dès leur inscription',
+                'Countdown demi-finale et finale (J-7 à J-1)',
+                'Rappels de vote chaque jeudi',
+                'Promo hebdo chaque lundi',
+              ]}
+            />
+            <FeatureBox
+              title="📱 Multi-plateforme"
+              items={[
+                'Publication simultanée Facebook + Instagram',
+                'Texte + image + lien vers le site',
+                'Hashtags et emojis automatiques',
+                'Calendrier des publications dans l\'admin',
+              ]}
+            />
+          </div>
+          <Screenshot src="/images/presentation/admin-social1.png" alt="Calendrier des publications automatiques" />
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <Screenshot src="/images/presentation/admin-social2.png" alt="Publication Facebook / Instagram" />
+          <div className="space-y-4">
+            <FeatureBox
+              title="🔔 Notifications push"
+              items={[
+                'Envoi ciblé : public, jury, ou tous',
+                '"Candidat sur scène", "Vote ouvert"...',
+                'Redirection vers la page concernée',
+                'Depuis l\'interface admin en 1 clic',
+              ]}
+            />
+            <FeatureBox
+              title="✍️ Publication manuelle"
+              items={[
+                'Personnaliser le message avant publication',
+                'Prévisualisation des prochains posts',
+                'Prompts image pour ChatGPT/DALL-E',
+                'Historique des publications (logs)',
+              ]}
+            />
+          </div>
         </div>
       </div>
     ),
