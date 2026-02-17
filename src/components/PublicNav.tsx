@@ -19,7 +19,7 @@ const RIGHT_LINKS = [
   { href: `/${SESSION_SLUG}/galerie`, label: 'Galerie' },
   { href: `/${SESSION_SLUG}/partenaires`, label: 'Partenaires' },
   { href: `/${SESSION_SLUG}/live`, label: 'Live / Votes' },
-  ...(process.env.NODE_ENV === 'development' ? [{ href: '/palmares', label: 'Palmarès' }] : []),
+  { href: '/palmares', label: 'Palmarès' },
 ]
 
 const ALL_LINKS = [...LEFT_LINKS, ...RIGHT_LINKS]
