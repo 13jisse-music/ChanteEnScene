@@ -17,12 +17,20 @@ interface PreviewPost {
   suggested_image_prompt?: string
 }
 
+interface CalendarEntry {
+  date: string
+  type: string
+  label: string
+  daysUntil: number
+}
+
 export default function SocialAdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [sessionId, setSessionId] = useState('')
 
-  // Preview
+  // Preview + Calendrier
   const [previews, setPreviews] = useState<PreviewPost[]>([])
+  const [calendar, setCalendar] = useState<CalendarEntry[]>([])
   const [loadingPreviews, setLoadingPreviews] = useState(false)
   const [selectedPreview, setSelectedPreview] = useState<PreviewPost | null>(null)
 
@@ -70,8 +78,10 @@ export default function SocialAdminPage() {
       const res = await fetch('/api/admin/social-preview')
       const data = await res.json()
       setPreviews(data.posts || [])
+      setCalendar(data.calendar || [])
     } catch {
       setPreviews([])
+      setCalendar([])
     } finally {
       setLoadingPreviews(false)
     }
@@ -269,6 +279,42 @@ export default function SocialAdminPage() {
           </div>
         )}
       </div>
+
+      {/* ── Calendrier des prochaines publications ── */}
+      {calendar.length > 0 && (
+        <div className="bg-[#1a1232]/60 rounded-2xl p-5 mb-8 border border-[#2a2545]/60">
+          <h2 className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2">
+            <span>📅</span> Prochaines publications automatiques
+          </h2>
+          <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
+            {calendar.map((entry, i) => {
+              const d = new Date(entry.date + 'T00:00:00')
+              const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' })
+              const dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+              return (
+                <div key={`${entry.type}-${entry.date}-${i}`} className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-white/[0.02]">
+                  <span className="text-white/25 text-xs w-20 shrink-0">
+                    <span className="capitalize">{dayName}</span> {dateStr}
+                  </span>
+                  <span className="text-white/15 text-xs w-16 shrink-0 text-right">
+                    {entry.daysUntil === 1 ? 'demain' : `J-${entry.daysUntil}`}
+                  </span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${
+                      TYPE_COLORS[entry.type] || 'bg-white/10 text-white/50 border-white/20'
+                    }`}
+                  >
+                    {entry.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-white/15 text-[10px] mt-3">
+            Le cron publie 1 post/jour max. Si plusieurs posts sont prévus le même jour, le plus prioritaire est publié.
+          </p>
+        </div>
+      )}
 
       {/* ── Publication FB + IG ── */}
       <div id="publish-section" className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">

@@ -159,6 +159,112 @@ function generateAllPossiblePosts(
   return posts
 }
 
+// ── Calendrier des prochaines publications automatiques ──────
+
+interface CalendarEntry {
+  date: string      // ISO date (YYYY-MM-DD)
+  type: string
+  label: string
+  daysUntil: number
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function toISODate(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
+function generateCalendar(
+  session: { name: string; config: SessionConfig; status: string },
+  totalCandidates: number,
+): CalendarEntry[] {
+  const entries: CalendarEntry[] = []
+  const config = session.config || {}
+  const now = new Date()
+  const today = toISODate(now)
+
+  // ── Countdown fermeture inscriptions ──
+  if (config.registration_close_date && totalCandidates >= 5 && session.status === 'registration_open') {
+    const closeDate = new Date(config.registration_close_date)
+    for (const j of [30, 14, 7, 3, 1]) {
+      const postDate = addDays(closeDate, -j)
+      const iso = toISODate(postDate)
+      if (iso > today) {
+        entries.push({ date: iso, type: 'countdown_registration_close', label: `Inscriptions J-${j}`, daysUntil: daysUntil(iso) })
+      }
+    }
+  }
+
+  // ── Countdown demi-finale (J-7 à J-1) ──
+  if (config.semifinal_date) {
+    const semiDate = new Date(config.semifinal_date)
+    for (let j = 7; j >= 1; j--) {
+      const postDate = addDays(semiDate, -j)
+      const iso = toISODate(postDate)
+      if (iso > today) {
+        entries.push({ date: iso, type: 'countdown_semifinal', label: `Demi-finale J-${j}`, daysUntil: daysUntil(iso) })
+      }
+    }
+  }
+
+  // ── Countdown finale (J-7 à J-1) ──
+  if (config.final_date) {
+    const finalDate = new Date(config.final_date)
+    for (let j = 7; j >= 1; j--) {
+      const postDate = addDays(finalDate, -j)
+      const iso = toISODate(postDate)
+      if (iso > today) {
+        entries.push({ date: iso, type: 'countdown_final', label: `Finale J-${j}`, daysUntil: daysUntil(iso) })
+      }
+    }
+  }
+
+  // ── Countdown fermeture votes (J-7, J-3, J-1) ──
+  if (config.voting_close_date && ['registration_open', 'registration_closed'].includes(session.status)) {
+    const voteDate = new Date(config.voting_close_date)
+    for (const j of [7, 3, 1]) {
+      const postDate = addDays(voteDate, -j)
+      const iso = toISODate(postDate)
+      if (iso > today) {
+        entries.push({ date: iso, type: 'countdown_voting_close', label: `Votes J-${j}`, daysUntil: daysUntil(iso) })
+      }
+    }
+  }
+
+  // ── Rappel de vote (jeudis, max 8 semaines) ──
+  if (totalCandidates > 0 && ['registration_open', 'registration_closed'].includes(session.status)) {
+    const d = new Date(now)
+    const daysToThursday = (4 - d.getDay() + 7) % 7 || 7
+    d.setDate(d.getDate() + daysToThursday)
+    for (let i = 0; i < 8; i++) {
+      const iso = toISODate(d)
+      entries.push({ date: iso, type: 'voting_reminder', label: 'Rappel de vote', daysUntil: daysUntil(iso) })
+      d.setDate(d.getDate() + 7)
+    }
+  }
+
+  // ── Promo hebdo (lundis, max 8 semaines) ──
+  if (['registration_open', 'registration_closed', 'semifinal', 'final'].includes(session.status)) {
+    const promoLabel = session.status === 'registration_open' ? 'Promo inscriptions' : 'Promo compétition'
+    const d = new Date(now)
+    const daysToMonday = (1 - d.getDay() + 7) % 7 || 7
+    d.setDate(d.getDate() + daysToMonday)
+    for (let i = 0; i < 8; i++) {
+      const iso = toISODate(d)
+      entries.push({ date: iso, type: 'weekly_promo', label: promoLabel, daysUntil: daysUntil(iso) })
+      d.setDate(d.getDate() + 7)
+    }
+  }
+
+  // Trier par date chronologique
+  entries.sort((a, b) => a.date.localeCompare(b.date))
+  return entries
+}
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -177,10 +283,11 @@ export async function GET() {
     .eq('is_active', true)
 
   if (!sessions?.length) {
-    return NextResponse.json({ posts: [] })
+    return NextResponse.json({ posts: [], calendar: [] })
   }
 
   const allPosts: PreviewPost[] = []
+  const allCalendar: CalendarEntry[] = []
 
   for (const session of sessions) {
     const config = (session.config || {}) as SessionConfig
@@ -205,7 +312,15 @@ export async function GET() {
       siteUrl
     )
     allPosts.push(...posts)
+
+    const calendar = generateCalendar(
+      { name: session.name, config, status: session.status },
+      totalCandidates || 0,
+    )
+    allCalendar.push(...calendar)
   }
 
-  return NextResponse.json({ posts: allPosts })
+  allCalendar.sort((a, b) => a.date.localeCompare(b.date))
+
+  return NextResponse.json({ posts: allPosts, calendar: allCalendar })
 }
