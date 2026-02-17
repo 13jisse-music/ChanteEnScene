@@ -33,8 +33,9 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    // Hide on localhost (dev)
+    // Hide on localhost (dev) and desktop
     if (window.location.hostname === 'localhost') return
+    if (window.innerWidth >= 1024) return
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 

@@ -57,7 +57,7 @@ export default async function PalmaresPage() {
           className="font-[family-name:var(--font-montserrat)] font-black text-3xl md:text-4xl text-white mb-3"
           style={{ textShadow: '0 0 15px rgba(0,0,0,0.8)' }}
         >
-          Palmarès <span className="text-gradient-gold">ChanteEnScène</span>
+          Palmarès <span className="text-white">Chant</span><span className="text-[#7ec850]">En</span><span className="text-[#e91e8c]">Scène</span>
         </h1>
         <p className="text-white/50 text-sm">
           Retrouvez tous les gagnants des éditions précédentes
@@ -86,7 +86,9 @@ export default async function PalmaresPage() {
                 {/* Winners grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {yearWinners.map((w) => {
-                    const name = w.stage_name || `${w.first_name} ${w.last_name}`
+                    const name = w.stage_name || (w.last_name ? `${w.first_name} ${w.last_name}` : w.first_name)
+                    const placeholderIdx = w.category === 'Enfants' ? 1 : w.category === 'Adolescents' ? 2 : 4
+                    const placeholderImg = `/images/placeholder-singer-${placeholderIdx}.png`
                     return (
                       <div
                         key={w.id}
@@ -104,11 +106,7 @@ export default async function PalmaresPage() {
                             }}
                           />
                           <div className="absolute inset-[4px] rounded-full overflow-hidden bg-[#1a1232]">
-                            {w.photo_url ? (
-                              <img src={w.photo_url} alt={name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-2xl text-white/20">🎤</div>
-                            )}
+                            <img src={w.photo_url || placeholderImg} alt={name} className="w-full h-full object-cover" />
                           </div>
                           {/* Trophy badge */}
                           <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#f5a623] flex items-center justify-center text-sm shadow-lg">

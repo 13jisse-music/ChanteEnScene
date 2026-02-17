@@ -490,182 +490,174 @@ export async function resetAllSessionData() {
 }
 
 // ============================================================
-// Palmarès 2025 — Données réelles de l'édition précédente
+// Palmarès complet — Toutes les éditions
 // ============================================================
 
-const PALMARES_SESSION_ID = 'a0000000-0000-0000-0000-000000002025'
-
-const WINNERS_2025 = [
+const PALMARES_EDITIONS = [
   {
-    first_name: 'Eva',
-    last_name: 'Amselem',
-    date_of_birth: '2013-12-10',
-    email: 'palmares-eva@edition2025.local',
-    category: 'Enfants',
-    song_title: 'Une dernière danse',
-    song_artist: 'Indila',
-    slug: 'eva-amselem',
-    photoFile: 'eva-amselem.jpg',
+    sessionId: 'a0000000-0000-0000-0000-000000002023',
+    name: 'ChanteEnScène 2023',
+    slug: 'edition-2023',
+    year: 2023,
+    winners: [
+      { first_name: 'Giulia', category: 'Enfants', slug: 'giulia-2023' },
+      { first_name: 'Paloma', category: 'Adolescents', slug: 'paloma-2023' },
+      { first_name: 'Estelle', category: 'Adultes', slug: 'estelle-2023' },
+    ],
   },
   {
-    first_name: 'Giulia',
-    last_name: 'Kalimbadjian',
-    date_of_birth: '2012-04-08',
-    email: 'palmares-giulia@edition2025.local',
-    category: 'Adolescents',
-    song_title: 'Je reviens te chercher',
-    song_artist: 'Gilbert Bécaud (version Anne Sila)',
-    slug: 'giulia-kalimbadjian',
-    photoFile: 'giulia-kalimbadjian.jpg',
+    sessionId: 'a0000000-0000-0000-0000-000000002024',
+    name: 'ChanteEnScène 2024',
+    slug: 'edition-2024',
+    year: 2024,
+    winners: [
+      { first_name: 'Valentine', category: 'Enfants', slug: 'valentine-2024' },
+      { first_name: 'Paloma', category: 'Adolescents', slug: 'paloma-2024' },
+      { first_name: 'Yassine', category: 'Adultes', slug: 'yassine-2024' },
+    ],
   },
   {
-    first_name: 'Emma-Rose',
-    last_name: 'Barthélémy',
-    date_of_birth: '2008-11-22',
-    email: 'palmares-emmarose@edition2025.local',
-    category: 'Adolescents',
-    song_title: 'Toxic',
-    song_artist: 'Melanie Martinez',
-    slug: 'emma-rose-barthelemy',
-    photoFile: 'emma-rose-barthelemy.jpg',
-  },
-  {
-    first_name: 'Stéphanaïka',
-    last_name: 'Sinvil',
-    date_of_birth: '2002-12-15',
-    email: 'palmares-stephanaika@edition2025.local',
-    category: 'Adultes',
-    song_title: 'At Last',
-    song_artist: 'Etta James',
-    slug: 'stephanaika-sinvil',
-    photoFile: 'stephanaika-sinvil.jpg',
+    sessionId: 'a0000000-0000-0000-0000-000000002025',
+    name: 'ChanteEnScène 2025',
+    slug: 'edition-2025',
+    year: 2025,
+    winners: [
+      {
+        first_name: 'Eva', last_name: 'Amselem',
+        category: 'Enfants', slug: 'eva-amselem',
+        song_title: 'Une dernière danse', song_artist: 'Indila',
+        photoFile: 'eva-amselem.jpg',
+      },
+      {
+        first_name: 'Giulia', last_name: 'Kalimbadjian',
+        category: 'Adolescents', slug: 'giulia-kalimbadjian',
+        song_title: 'Je reviens te chercher', song_artist: 'Gilbert Bécaud',
+        photoFile: 'giulia-kalimbadjian.jpg',
+      },
+      {
+        first_name: 'Stéphanaïka', last_name: 'Sinvil',
+        category: 'Adultes', slug: 'stephanaika-sinvil',
+        song_title: 'At Last', song_artist: 'Etta James',
+        photoFile: 'stephanaika-sinvil.jpg',
+      },
+    ],
   },
 ]
 
 export async function seedPalmares2025() {
   const supabase = createAdminClient()
 
-  // Check if palmares session already exists
+  // Check if any palmares session already exists
   const { data: existing } = await supabase
     .from('sessions')
     .select('id')
-    .eq('id', PALMARES_SESSION_ID)
-    .limit(1)
+    .in('id', PALMARES_EDITIONS.map((e) => e.sessionId))
 
   if (existing && existing.length > 0) {
-    return { error: 'Le palmarès 2025 existe déjà. Supprimez-le d\'abord.' }
+    return { error: 'Le palmarès existe déjà. Supprimez-le d\'abord.' }
   }
 
-  // 1. Create the archived 2025 session
-  const { error: sessionError } = await supabase
-    .from('sessions')
-    .insert({
-      id: PALMARES_SESSION_ID,
-      name: 'ChanteEnScène 2025',
-      slug: 'edition-2025',
-      city: 'Aubagne',
-      year: 2025,
-      status: 'archived',
-      is_active: false,
-    })
-
-  if (sessionError) {
-    return { error: `Erreur création session: ${sessionError.message}` }
-  }
-
-  // 2. Ensure 'candidates' storage bucket exists
+  // Ensure 'candidates' storage bucket exists
   const { data: buckets } = await supabase.storage.listBuckets()
   if (!buckets?.find((b) => b.name === 'candidates')) {
     await supabase.storage.createBucket('candidates', { public: true })
   }
 
-  // 3. Upload photos & insert winners
-  const photosDir = path.join(process.cwd(), 'palmares-photos')
-  const inserted: string[] = []
+  const allInserted: string[] = []
 
-  for (const winner of WINNERS_2025) {
-    let photoUrl: string | null = null
-
-    // Upload photo to Supabase Storage
-    const photoPath = path.join(photosDir, winner.photoFile)
-    if (fs.existsSync(photoPath)) {
-      const fileBuffer = fs.readFileSync(photoPath)
-      const storagePath = `${PALMARES_SESSION_ID}/${winner.slug}/photo`
-
-      const { error: uploadError } = await supabase.storage
-        .from('candidates')
-        .upload(storagePath, fileBuffer, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        })
-
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from('candidates')
-          .getPublicUrl(storagePath)
-        photoUrl = urlData.publicUrl
-      }
-    }
-
-    // Insert candidate as winner
-    const { error: candidateError } = await supabase
-      .from('candidates')
+  for (const edition of PALMARES_EDITIONS) {
+    // Create archived session
+    const { error: sessionError } = await supabase
+      .from('sessions')
       .insert({
-        session_id: PALMARES_SESSION_ID,
-        first_name: winner.first_name,
-        last_name: winner.last_name,
-        date_of_birth: winner.date_of_birth,
-        email: winner.email,
-        category: winner.category,
-        song_title: winner.song_title,
-        song_artist: winner.song_artist,
-        slug: winner.slug,
-        status: 'winner',
-        photo_url: photoUrl,
+        id: edition.sessionId,
+        name: edition.name,
+        slug: edition.slug,
+        city: 'Aubagne',
+        year: edition.year,
+        status: 'archived',
+        is_active: false,
       })
 
-    if (candidateError) {
-      return { error: `Erreur insertion ${winner.first_name}: ${candidateError.message}` }
+    if (sessionError) {
+      return { error: `Erreur session ${edition.year}: ${sessionError.message}` }
     }
 
-    inserted.push(`${winner.first_name} ${winner.last_name} (${winner.category})`)
+    // Insert winners
+    const photosDir = path.join(process.cwd(), 'palmares-photos')
+
+    for (const w of edition.winners) {
+      const winner = w as typeof w & { last_name?: string; song_title?: string; song_artist?: string; photoFile?: string }
+      let photoUrl: string | null = null
+
+      // Upload photo if available (2025 winners have photos from SQL dump)
+      if (winner.photoFile) {
+        const photoPath = path.join(photosDir, winner.photoFile)
+        if (fs.existsSync(photoPath)) {
+          const fileBuffer = fs.readFileSync(photoPath)
+          const storagePath = `${edition.sessionId}/${winner.slug}/photo`
+          const { error: uploadError } = await supabase.storage
+            .from('candidates')
+            .upload(storagePath, fileBuffer, { contentType: 'image/jpeg', upsert: true })
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('candidates').getPublicUrl(storagePath)
+            photoUrl = urlData.publicUrl
+          }
+        }
+      }
+
+      const { error: candidateError } = await supabase
+        .from('candidates')
+        .insert({
+          session_id: edition.sessionId,
+          first_name: winner.first_name,
+          last_name: winner.last_name || '',
+          email: `palmares-${winner.slug}@edition${edition.year}.local`,
+          date_of_birth: `${edition.year - 20}-01-01`,
+          category: winner.category,
+          song_title: winner.song_title || null,
+          song_artist: winner.song_artist || null,
+          slug: winner.slug,
+          status: 'winner',
+          photo_url: photoUrl,
+        })
+
+      if (candidateError) {
+        return { error: `Erreur ${winner.first_name} (${edition.year}): ${candidateError.message}` }
+      }
+
+      allInserted.push(`${edition.year}: ${winner.first_name} (${winner.category})`)
+    }
   }
 
   revalidatePath('/palmares')
   revalidatePath('/admin', 'layout')
 
-  return {
-    success: true,
-    winners: inserted,
-  }
+  return { success: true, winners: allInserted }
 }
 
 export async function clearPalmares2025() {
   const supabase = createAdminClient()
 
-  // Get candidates for the 2025 session
-  const { data: candidates } = await supabase
-    .from('candidates')
-    .select('id, slug')
-    .eq('session_id', PALMARES_SESSION_ID)
+  for (const edition of PALMARES_EDITIONS) {
+    const { data: candidates } = await supabase
+      .from('candidates')
+      .select('id, slug')
+      .eq('session_id', edition.sessionId)
 
-  // Clean up storage files
-  if (candidates && candidates.length > 0) {
-    for (const c of candidates) {
-      const folder = `${PALMARES_SESSION_ID}/${c.slug}`
-      const { data: files } = await supabase.storage.from('candidates').list(folder)
-      if (files && files.length > 0) {
-        const filePaths = files.map((f) => `${folder}/${f.name}`)
-        await supabase.storage.from('candidates').remove(filePaths)
+    if (candidates && candidates.length > 0) {
+      for (const c of candidates) {
+        const folder = `${edition.sessionId}/${c.slug}`
+        const { data: files } = await supabase.storage.from('candidates').list(folder)
+        if (files && files.length > 0) {
+          await supabase.storage.from('candidates').remove(files.map((f) => `${folder}/${f.name}`))
+        }
       }
+      await supabase.from('candidates').delete().eq('session_id', edition.sessionId)
     }
 
-    // Delete candidates
-    await supabase.from('candidates').delete().eq('session_id', PALMARES_SESSION_ID)
+    await supabase.from('sessions').delete().eq('id', edition.sessionId)
   }
-
-  // Delete the session
-  await supabase.from('sessions').delete().eq('id', PALMARES_SESSION_ID)
 
   revalidatePath('/palmares')
   revalidatePath('/admin', 'layout')

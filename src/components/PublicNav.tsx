@@ -61,9 +61,9 @@ export default function PublicNav() {
 
   return (
     <>
-      {/* ━━━ DESKTOP NAV (hidden below lg) ━━━ */}
+      {/* ━━━ DESKTOP NAV (hidden below xl) ━━━ */}
       <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-50 items-center justify-between px-10 py-4 bg-[#110d1f]/60 backdrop-blur-xl" suppressHydrationWarning>
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-8">
           {LEFT_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -79,11 +79,14 @@ export default function PublicNav() {
           ))}
         </div>
 
-        <Link href="/" className="absolute left-1/2 -translate-x-1/2 -top-1">
+        {/* Réserve l'espace central pour le logo */}
+        <div className="min-w-[140px] shrink-0" />
+
+        <Link href="/" className="absolute left-[42%] -translate-x-1/2 -top-1">
           <LogoRing size={130} />
         </Link>
 
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-8">
           {RIGHT_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -112,7 +115,7 @@ export default function PublicNav() {
         </div>
       </nav>
 
-      {/* ━━━ MOBILE NAV (visible below lg) ━━━ */}
+      {/* ━━━ MOBILE NAV (visible below xl) ━━━ */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50" suppressHydrationWarning>
         <div className="flex items-center justify-between px-4 py-2 bg-[#110d1f] backdrop-blur-xl">
           <button

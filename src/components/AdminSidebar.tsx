@@ -27,6 +27,7 @@ const NAV_ITEMS: { href: string; label: string; icon: string; section?: string }
   { href: '/admin/finale/stats', label: 'Stats Finale', icon: '🏅' },
   // Post-compétition
   { href: '/admin/resultats', label: 'Résultats', icon: '🏆', section: 'Post-compétition' },
+  { href: '/admin/palmares', label: 'Palmarès', icon: '🥇' },
   { href: '/admin/export-mp3', label: 'Export MP3', icon: '💾' },
   { href: '/admin/photos', label: 'Photos', icon: '📸' },
   { href: '/admin/sponsors', label: 'Sponsors', icon: '🤝' },
