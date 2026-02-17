@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Palmarès — ChanteEnScène',
   description: 'Retrouvez tous les gagnants des éditions précédentes de ChanteEnScène.',
