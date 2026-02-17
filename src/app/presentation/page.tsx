@@ -27,7 +27,7 @@ const PUBLIC_SLIDES: Slide[] = [
           <Stat value="Mobile" label="App PWA" />
         </div>
         <div className="mt-3 md:mt-6">
-          <DynamicQR url="https://chante-en-scene.vercel.app/presentation" />
+          <DynamicQR url="https://www.chantenscene.fr/presentation" />
           <p className="text-white/30 text-xs mt-2">Scannez pour suivre la présentation sur votre téléphone</p>
         </div>
         <p className="text-white/30 text-xs md:text-sm mt-2 md:mt-4">
@@ -849,10 +849,10 @@ const ADMIN_SLIDES: Slide[] = [
         <p className="text-white/50 text-sm md:text-lg">
           Le concours de chant d&apos;Aubagne — Édition 2026
         </p>
-        <DynamicQR url="https://chante-en-scene.vercel.app" />
+        <DynamicQR url="https://www.chantenscene.fr" />
         <div className="space-y-2">
           <p className="text-white/40 text-sm">contact@chantenscene.fr</p>
-          <p className="text-white/40 text-sm">chante-en-scene.vercel.app</p>
+          <p className="text-white/40 text-sm">www.chantenscene.fr</p>
         </div>
       </div>
     ),
