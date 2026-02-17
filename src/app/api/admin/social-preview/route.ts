@@ -62,10 +62,10 @@ function generateAllPossiblePosts(
     }
   }
 
-  // ── 2. Countdown fermeture inscriptions ─────────────────────
+  // ── 2. Countdown fermeture inscriptions (J-30, J-14, J-7, J-3, J-1) ─
   if (config.registration_close_date && totalCandidates >= 5 && session.status === 'registration_open') {
     const days = daysUntil(config.registration_close_date)
-    if (days > 0) {
+    if ([30, 14, 7, 3, 1].includes(days)) {
       posts.push({
         type: 'countdown_registration_close',
         label: `Fermeture inscriptions J-${days}`,
@@ -77,10 +77,10 @@ function generateAllPossiblePosts(
     }
   }
 
-  // ── 3. Countdown demi-finale ────────────────────────────────
+  // ── 3. Countdown demi-finale (J-7 à J-1) ───────────────────
   if (config.semifinal_date) {
     const days = daysUntil(config.semifinal_date)
-    if (days > 0) {
+    if (days > 0 && days <= 7) {
       posts.push({
         type: 'countdown_semifinal',
         label: `Demi-finale J-${days}`,
@@ -92,10 +92,10 @@ function generateAllPossiblePosts(
     }
   }
 
-  // ── 4. Countdown finale ─────────────────────────────────────
+  // ── 4. Countdown finale (J-7 à J-1) ──────────────────────
   if (config.final_date) {
     const days = daysUntil(config.final_date)
-    if (days > 0) {
+    if (days > 0 && days <= 7) {
       posts.push({
         type: 'countdown_final',
         label: `Finale J-${days}`,
@@ -119,10 +119,10 @@ function generateAllPossiblePosts(
     })
   }
 
-  // ── 6. Countdown fermeture votes ────────────────────────────
+  // ── 6. Countdown fermeture votes (J-7, J-3, J-1) ───────────
   if (config.voting_close_date && ['registration_open', 'registration_closed'].includes(session.status)) {
     const days = daysUntil(config.voting_close_date)
-    if (days > 0) {
+    if ([7, 3, 1].includes(days)) {
       posts.push({
         type: 'countdown_voting_close',
         label: `Fermeture votes J-${days}`,
