@@ -882,6 +882,7 @@ export default function PresentationPage() {
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
   const currentRef = useRef(current)
   const isFollowingRef = useRef(isFollowing)
+  const hasManualControlRef = useRef(false) // true = user clicked "Reprendre le contrôle"
   const heartbeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { currentRef.current = current }, [current])
@@ -896,12 +897,11 @@ export default function PresentationPage() {
 
   // Navigation helpers
   const goToSlide = useCallback((i: number) => {
-    if (isFollowingRef.current) setIsFollowing(false)
     setCurrent(i)
   }, [])
 
   const next = useCallback(() => {
-    if (isFollowingRef.current) setIsFollowing(false)
+    if (isFollowingRef.current) return // locked in follow mode
     setCurrent((c) => {
       const n = Math.min(c + 1, SLIDES.length - 1)
       if (isPresenter) broadcastSlide(n)
@@ -910,7 +910,7 @@ export default function PresentationPage() {
   }, [isPresenter, broadcastSlide])
 
   const prev = useCallback(() => {
-    if (isFollowingRef.current) setIsFollowing(false)
+    if (isFollowingRef.current) return // locked in follow mode
     setCurrent((c) => {
       const n = Math.max(c - 1, 0)
       if (isPresenter) broadcastSlide(n)
@@ -955,6 +955,7 @@ export default function PresentationPage() {
         .on('broadcast', { event: 'presenter-start' }, ({ payload }) => {
           setIsLive(true)
           setIsFollowing(true)
+          hasManualControlRef.current = false
           setCurrent(payload.index)
         })
         .on('broadcast', { event: 'presenter-stop' }, () => {
@@ -963,7 +964,13 @@ export default function PresentationPage() {
         })
         .on('broadcast', { event: 'heartbeat' }, ({ payload }) => {
           setIsLive(true)
-          if (isFollowingRef.current) setCurrent(payload.index)
+          // Auto-follow for late joiners (unless user took manual control)
+          if (!hasManualControlRef.current) {
+            setIsFollowing(true)
+            setCurrent(payload.index)
+          } else if (isFollowingRef.current) {
+            setCurrent(payload.index)
+          }
           if (heartbeatTimeoutRef.current) clearTimeout(heartbeatTimeoutRef.current)
           heartbeatTimeoutRef.current = setTimeout(() => {
             setIsLive(false)
@@ -990,11 +997,13 @@ export default function PresentationPage() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [next, prev])
 
-  // Swipe tactile
+  // Swipe tactile (disabled when following)
   function handleTouchStart(e: React.TouchEvent) {
+    if (isFollowing) return
     touchStartX.current = e.touches[0].clientX
   }
   function handleTouchEnd(e: React.TouchEvent) {
+    if (isFollowing) return
     const diff = touchStartX.current - e.changedTouches[0].clientX
     if (Math.abs(diff) > 60) {
       if (diff > 0) next()
@@ -1032,14 +1041,14 @@ export default function PresentationPage() {
           </span>
           {isFollowing ? (
             <button
-              onClick={() => setIsFollowing(false)}
+              onClick={() => { setIsFollowing(false); hasManualControlRef.current = true }}
               className="text-white/40 text-[10px] md:text-xs underline hover:text-white/60 ml-1"
             >
               Reprendre le contrôle
             </button>
           ) : (
             <button
-              onClick={() => setIsFollowing(true)}
+              onClick={() => { setIsFollowing(true); hasManualControlRef.current = false }}
               className="text-[#e91e8c] text-[10px] md:text-xs underline hover:text-[#e91e8c]/80 ml-1"
             >
               Suivre
@@ -1087,59 +1096,65 @@ export default function PresentationPage() {
       <div className="shrink-0 px-3 md:px-8 py-2 md:py-3 flex items-center justify-between border-t border-white/5">
         {/* Left: presenter toggle + slide number */}
         <div className="flex items-center gap-1.5 md:gap-2">
-          <button
-            onClick={() => setIsPresenter((p) => !p)}
-            className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] transition-all ${
-              isPresenter
-                ? 'bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/40'
-                : 'bg-white/5 text-white/15 border border-white/5 hover:text-white/30'
-            }`}
-            title={isPresenter ? 'Mode présentateur actif' : 'Activer le mode présentateur'}
-          >
-            📡
-          </button>
+          {!isFollowing && (
+            <button
+              onClick={() => setIsPresenter((p) => !p)}
+              className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] transition-all ${
+                isPresenter
+                  ? 'bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/40'
+                  : 'bg-white/5 text-white/15 border border-white/5 hover:text-white/30'
+              }`}
+              title={isPresenter ? 'Mode présentateur actif' : 'Activer le mode présentateur'}
+            >
+              📡
+            </button>
+          )}
           <p className="text-white/20 text-xs md:text-sm font-mono">
             {current + 1}/{SLIDES.length}
           </p>
         </div>
 
-        {/* Center: dots */}
-        <div className="hidden md:flex items-center gap-1">
-          {SLIDES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goToSlidePresenter(i)}
-              className="w-2 h-2 rounded-full transition-all"
-              style={{
-                background: i === current
-                  ? slide.accent
-                  : i === PART_1_END
-                    ? 'rgba(245,166,35,0.3)'
-                    : 'rgba(255,255,255,0.1)',
-                transform: i === current ? 'scale(1.4)' : 'scale(1)',
-              }}
-            />
-          ))}
-        </div>
+        {/* Center: dots (hidden when following) */}
+        {!isFollowing && (
+          <div className="hidden md:flex items-center gap-1">
+            {SLIDES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goToSlidePresenter(i)}
+                className="w-2 h-2 rounded-full transition-all"
+                style={{
+                  background: i === current
+                    ? slide.accent
+                    : i === PART_1_END
+                      ? 'rgba(245,166,35,0.3)'
+                      : 'rgba(255,255,255,0.1)',
+                  transform: i === current ? 'scale(1.4)' : 'scale(1)',
+                }}
+              />
+            ))}
+          </div>
+        )}
 
-        {/* Right: navigation */}
-        <div className="flex items-center gap-2 md:gap-3">
-          <button
-            onClick={prev}
-            disabled={current === 0}
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed text-sm md:text-base"
-          >
-            ←
-          </button>
-          <button
-            onClick={next}
-            disabled={current === SLIDES.length - 1}
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold transition-all disabled:opacity-20 disabled:cursor-not-allowed text-sm md:text-base"
-            style={{ background: `linear-gradient(135deg, ${slide.accent}, ${slide.accent}99)` }}
-          >
-            →
-          </button>
-        </div>
+        {/* Right: navigation (hidden when following) */}
+        {!isFollowing && (
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={prev}
+              disabled={current === 0}
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed text-sm md:text-base"
+            >
+              ←
+            </button>
+            <button
+              onClick={next}
+              disabled={current === SLIDES.length - 1}
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold transition-all disabled:opacity-20 disabled:cursor-not-allowed text-sm md:text-base"
+              style={{ background: `linear-gradient(135deg, ${slide.accent}, ${slide.accent}99)` }}
+            >
+              →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
