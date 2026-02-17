@@ -88,12 +88,29 @@ export async function postToInstagram(
   const createData = await createRes.json()
   if (createData.error) throw new Error(`IG Media: ${createData.error.message}`)
 
-  // Étape 2 : Publier le container
+  // Étape 2 : Attendre que le container soit prêt (Instagram traite l'image)
+  const containerId = createData.id
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000)) // 3s entre chaque vérification
+
+    const statusRes = await fetch(
+      `${INSTAGRAM_API}/${containerId}?fields=status_code&access_token=${token}`
+    )
+    const statusData = await statusRes.json()
+
+    if (statusData.status_code === 'FINISHED') break
+    if (statusData.status_code === 'ERROR') {
+      throw new Error('IG Media: Erreur lors du traitement de l\'image par Instagram')
+    }
+    // IN_PROGRESS → on continue d'attendre
+  }
+
+  // Étape 3 : Publier le container
   const publishRes = await fetch(`${INSTAGRAM_API}/${igAccountId}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      creation_id: createData.id,
+      creation_id: containerId,
       access_token: token,
     }),
   })
