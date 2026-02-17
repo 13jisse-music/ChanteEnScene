@@ -37,7 +37,41 @@ const PUBLIC_SLIDES: Slide[] = [
     ),
   },
 
-  /* 2. PARCOURS DU CONCOURS */
+  /* 2. INSTALLATION & NOTIFICATIONS */
+  {
+    title: 'Installez l\'application',
+    icon: '📲',
+    accent: '#7ec850',
+    subtitle: 'Accédez au concours comme une vraie app mobile',
+    content: (
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 gap-2 md:gap-8 items-start">
+          <div className="space-y-2 md:space-y-3">
+            <Screenshot src="/images/presentation/install1.png" alt="Installation de l'application" />
+            <div className="bg-[#7ec850]/10 border border-[#7ec850]/20 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+              <p className="text-[#7ec850] font-bold text-xs md:text-sm">Installer l&apos;app</p>
+              <p className="text-white/40 text-[10px] md:text-xs mt-0.5">Sur l&apos;écran d&apos;accueil, sans store</p>
+            </div>
+          </div>
+          <div className="space-y-2 md:space-y-3">
+            <Screenshot src="/images/presentation/install2.png" alt="Activer les notifications" />
+            <div className="bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
+              <p className="text-[#f5a623] font-bold text-xs md:text-sm">Notifications</p>
+              <p className="text-white/40 text-[10px] md:text-xs mt-0.5">Votes, résultats, événements en direct</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 md:mt-4 bg-white/5 rounded-lg md:rounded-xl p-2 md:p-3 border border-white/10">
+          <p className="text-white/50 text-[10px] md:text-xs text-center">
+            Aucun téléchargement depuis un store — tout fonctionne depuis le navigateur.
+            L&apos;app se lance en plein écran avec son icône et son splash screen.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+
+  /* 3. PARCOURS DU CONCOURS */
   {
     title: 'Le parcours du concours',
     icon: '🗺️',
