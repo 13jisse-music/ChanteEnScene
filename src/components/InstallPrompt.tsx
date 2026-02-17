@@ -11,6 +11,27 @@ interface BeforeInstallPromptEvent extends Event {
 
 type Phase = 'install' | 'notify'
 
+function detectPlatform(): string {
+  const ua = navigator.userAgent
+  if (/Android/i.test(ua)) return 'android'
+  if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios'
+  return 'desktop'
+}
+
+async function trackInstall(sessionId: string | null, platform: string, installSource: string) {
+  if (!sessionId) return
+  try {
+    const fingerprint = await getFingerprint()
+    await fetch('/api/pwa/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, fingerprint, platform, installSource }),
+    })
+  } catch {
+    // Silent fail - tracking should not block UX
+  }
+}
+
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
@@ -39,8 +60,12 @@ export default function InstallPrompt() {
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 
-    // If already installed as PWA, skip to notification phase
+    // If already installed as PWA, track and skip to notification phase
     if (isStandalone) {
+      if (!localStorage.getItem('pwa-install-tracked')) {
+        trackInstall(sessionId, detectPlatform(), 'standalone_detected')
+        localStorage.setItem('pwa-install-tracked', '1')
+      }
       if ('Notification' in window && Notification.permission === 'granted') return
       if ('Notification' in window && Notification.permission === 'denied') return
 
@@ -63,14 +88,31 @@ export default function InstallPrompt() {
     const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     setIsIOS(isiOS)
 
+    // Track iOS install prompt display (they see instructions to add to home screen)
+    if (isiOS && !localStorage.getItem('pwa-install-tracked')) {
+      trackInstall(sessionId, 'ios', 'ios_instructions')
+      localStorage.setItem('pwa-install-tracked', '1')
+    }
+
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
 
+    const appInstalledHandler = () => {
+      if (!localStorage.getItem('pwa-install-tracked')) {
+        trackInstall(sessionId, detectPlatform(), 'prompt')
+        localStorage.setItem('pwa-install-tracked', '1')
+      }
+    }
+
     window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
+    window.addEventListener('appinstalled', appInstalledHandler)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('appinstalled', appInstalledHandler)
+    }
+  }, [sessionId])
 
   const handleInstall = async () => {
     if (deferredPrompt) {
@@ -78,6 +120,8 @@ export default function InstallPrompt() {
       const { outcome } = await deferredPrompt.userChoice
       if (outcome === 'accepted') {
         setDeferredPrompt(null)
+        trackInstall(sessionId, detectPlatform(), 'prompt')
+        localStorage.setItem('pwa-install-tracked', '1')
         // After install, propose notifications
         if ('Notification' in window && Notification.permission === 'default') {
           setPhase('notify')

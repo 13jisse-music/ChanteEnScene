@@ -67,6 +67,29 @@ async function getStats() {
 
   const config = (activeSession.config || {}) as Record<string, unknown>
 
+  // PWA installs for active session
+  const { count: pwaInstalls } = await supabase
+    .from('pwa_installs')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', activeSession.id)
+
+  // Push notification subscriptions (public only) for active session
+  const { count: pushSubscriptions } = await supabase
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', activeSession.id)
+    .eq('role', 'public')
+
+  // All-time totals
+  const { count: totalPwaInstalls } = await supabase
+    .from('pwa_installs')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: totalPushSubscriptions } = await supabase
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'public')
+
   return {
     sessions,
     activeSession,
@@ -75,6 +98,10 @@ async function getStats() {
       pending: pending || 0,
       approved: approved || 0,
       totalVotes: totalVotes || 0,
+      pwaInstalls: pwaInstalls || 0,
+      pushSubscriptions: pushSubscriptions || 0,
+      totalPwaInstalls: totalPwaInstalls || 0,
+      totalPushSubscriptions: totalPushSubscriptions || 0,
     },
     recentCandidates: recentCandidates || [],
     semifinalists: semifinalists || [],
@@ -93,11 +120,13 @@ function StatCard({
   value,
   color,
   icon,
+  subtitle,
 }: {
   label: string
   value: number
   color: string
   icon: string
+  subtitle?: string
 }) {
   return (
     <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5">
@@ -113,6 +142,9 @@ function StatCard({
       <p className="font-[family-name:var(--font-montserrat)] font-black text-3xl" style={{ color }}>
         {value}
       </p>
+      {subtitle && (
+        <p className="text-white/30 text-xs mt-1">{subtitle}</p>
+      )}
     </div>
   )
 }
@@ -189,7 +221,7 @@ export default async function AdminDashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${semifinalistCount > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4 mb-10`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10`}>
         <StatCard icon="🎤" label="Candidats" value={stats.totalCandidates ?? 0} color="#e91e8c" />
         <StatCard icon="⏳" label="En attente" value={stats.pending ?? 0} color="#f59e0b" />
         <StatCard icon="✅" label="Approuvés" value={stats.approved ?? 0} color="#7ec850" />
@@ -197,6 +229,20 @@ export default async function AdminDashboard() {
         {semifinalistCount > 0 && (
           <StatCard icon="🌟" label="Demi-finalistes" value={semifinalistCount} color="#8b5cf6" />
         )}
+        <StatCard
+          icon="📲"
+          label="Installations PWA"
+          value={stats.pwaInstalls ?? 0}
+          color="#10b981"
+          subtitle={(stats.totalPwaInstalls ?? 0) > 0 ? `${stats.totalPwaInstalls} au total` : undefined}
+        />
+        <StatCard
+          icon="🔔"
+          label="Notifications"
+          value={stats.pushSubscriptions ?? 0}
+          color="#f97316"
+          subtitle={(stats.totalPushSubscriptions ?? 0) > 0 ? `${stats.totalPushSubscriptions} au total` : undefined}
+        />
       </div>
 
       {/* Semifinal Preparation */}
