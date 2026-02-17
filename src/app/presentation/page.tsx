@@ -934,13 +934,19 @@ export default function PresentationPage() {
       // Presenter: subscribe, then broadcast start + heartbeat
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          // Send presenter-start then immediate first heartbeat
           channel.send({ type: 'broadcast', event: 'presenter-start', payload: { index: currentRef.current } })
         }
       })
+      // First heartbeat after 1s (fast sync for late joiners), then every 3s
+      const firstHeartbeat = setTimeout(() => {
+        channel.send({ type: 'broadcast', event: 'heartbeat', payload: { index: currentRef.current } })
+      }, 1000)
       const heartbeat = setInterval(() => {
         channel.send({ type: 'broadcast', event: 'heartbeat', payload: { index: currentRef.current } })
-      }, 5000)
+      }, 3000)
       return () => {
+        clearTimeout(firstHeartbeat)
         clearInterval(heartbeat)
         channel.send({ type: 'broadcast', event: 'presenter-stop', payload: {} })
         supabase.removeChannel(channel)
@@ -975,7 +981,7 @@ export default function PresentationPage() {
           heartbeatTimeoutRef.current = setTimeout(() => {
             setIsLive(false)
             setIsFollowing(false)
-          }, 12000)
+          }, 8000)
         })
         .subscribe()
       return () => {
@@ -1096,7 +1102,7 @@ export default function PresentationPage() {
       <div className="shrink-0 px-3 md:px-8 py-2 md:py-3 flex items-center justify-between border-t border-white/5">
         {/* Left: presenter toggle + slide number */}
         <div className="flex items-center gap-1.5 md:gap-2">
-          {!isFollowing && (
+          {!isFollowing && !isLive && (
             <button
               onClick={() => setIsPresenter((p) => !p)}
               className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] transition-all ${
@@ -1105,6 +1111,15 @@ export default function PresentationPage() {
                   : 'bg-white/5 text-white/15 border border-white/5 hover:text-white/30'
               }`}
               title={isPresenter ? 'Mode présentateur actif' : 'Activer le mode présentateur'}
+            >
+              📡
+            </button>
+          )}
+          {isPresenter && (
+            <button
+              onClick={() => setIsPresenter(false)}
+              className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] transition-all bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/40"
+              title="Arrêter la diffusion"
             >
               📡
             </button>
