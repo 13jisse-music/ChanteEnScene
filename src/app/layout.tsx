@@ -20,11 +20,30 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "ChanteEnScène — Concours de chant",
+  metadataBase: new URL("https://www.chantenscene.fr"),
+  title: {
+    default: "ChanteEnScène — Concours de chant",
+    template: "%s | ChanteEnScène",
+  },
   description:
     "Libérez votre voix, faites vibrer le public sur scène. Concours de chant live avec musiciens, votes du public et jury professionnel.",
   keywords: ["concours", "chant", "musique", "live", "Aubagne", "ChanteEnScène"],
   authors: [{ name: "Jean-Christophe Martinez" }],
+  creator: "Jean-Christophe Martinez",
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "ChanteEnScène",
+    title: "ChanteEnScène — Concours de chant",
+    description: "Concours de chant live avec musiciens, votes du public et jury professionnel. Aubagne.",
+    images: [{ url: "/images/affiche.png", width: 1200, height: 630, alt: "ChanteEnScène" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ChanteEnScène — Concours de chant",
+    description: "Concours de chant live avec musiciens, votes du public et jury professionnel.",
+    images: ["/images/affiche.png"],
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
