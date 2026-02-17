@@ -778,6 +778,7 @@ export default async function HomePage() {
               Confidentialit&eacute;
             </Link>
           </div>
+          <p className="text-white/15 text-[10px] mt-6">&copy; {new Date().getFullYear()} Jean-Christophe Martinez. Tous droits r&eacute;serv&eacute;s.</p>
         </div>
       </footer>
     </>

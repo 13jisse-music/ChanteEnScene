@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   description:
     "Libérez votre voix, faites vibrer le public sur scène. Concours de chant live avec musiciens, votes du public et jury professionnel.",
   keywords: ["concours", "chant", "musique", "live", "Aubagne", "ChanteEnScène"],
+  authors: [{ name: "Jean-Christophe Martinez" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
