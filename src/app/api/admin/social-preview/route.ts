@@ -167,8 +167,8 @@ export async function GET() {
   }
 
   const admin = createAdminClient()
-  const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chanteenscene.fr'
-  const siteUrl = rawSiteUrl.includes('localhost') ? 'https://chanteenscene.fr' : rawSiteUrl
+  const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chantenscene.fr'
+  const siteUrl = rawSiteUrl.includes('localhost') ? 'https://chantenscene.fr' : rawSiteUrl
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const { data: sessions } = await admin

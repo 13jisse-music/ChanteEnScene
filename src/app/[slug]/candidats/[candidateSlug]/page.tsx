@@ -66,7 +66,7 @@ export default async function CandidateProfilePage({ params }: { params: Params 
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
   const accent = candidate.accent_color || '#e91e8c'
   const hasVideo = candidate.video_public && candidate.video_url
-  const shareUrl = `https://chanteenscene.fr/${slug}/candidats/${candidateSlug}`
+  const shareUrl = `https://chantenscene.fr/${slug}/candidats/${candidateSlug}`
   const hasSocials = candidate.youtube_url || candidate.instagram_url || candidate.tiktok_url || candidate.website_url
   const shares = candidate.shares_count ?? 0
 

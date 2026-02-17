@@ -324,7 +324,7 @@ export default function SocialAdminPage() {
               value={link}
               onChange={(e) => setLink(e.target.value)}
               className={inputClass}
-              placeholder="https://chanteenscene.fr/..."
+              placeholder="https://chantenscene.fr/..."
             />
           </div>
 
@@ -423,7 +423,7 @@ export default function SocialAdminPage() {
               value={pushUrl}
               onChange={(e) => setPushUrl(e.target.value)}
               className={inputClass}
-              placeholder="https://chanteenscene.fr/saison-2025/candidats"
+              placeholder="https://chantenscene.fr/saison-2025/candidats"
             />
           </div>
 

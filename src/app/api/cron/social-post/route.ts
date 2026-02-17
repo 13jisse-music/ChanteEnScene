@@ -168,9 +168,9 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chantenscene.fr'
   // Toujours utiliser le domaine public pour les posts sociaux (jamais localhost)
-  const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chanteenscene.fr' : siteUrl
+  const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chantenscene.fr' : siteUrl
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const { data: sessions } = await supabase

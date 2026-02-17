@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Find active sessions where jury voting is not closed

@@ -29,7 +29,7 @@ export default async function PalmaresPage() {
     .from('candidates')
     .select(`
       id, first_name, last_name, stage_name, category, photo_url, song_title, song_artist,
-      sessions:session_id (name, city, year, slug)
+      session:session_id (name, city, year, slug)
     `)
     .eq('status', 'winner')
     .order('created_at', { ascending: false })

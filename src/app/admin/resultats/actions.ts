@@ -27,7 +27,7 @@ function formatDateFr(dateStr: string): string {
 
 function buildSelectionEmailHtml(candidate: EmailCandidate & { id?: string }, config: SessionConfig): string {
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
   const uploadLink = candidate.id ? `${siteUrl}/upload-mp3/${candidate.id}` : ''
   const date = config.semifinal_date ? formatDateFr(config.semifinal_date) : 'Date à confirmer'
   const time = config.semifinal_time || 'Horaire à confirmer'

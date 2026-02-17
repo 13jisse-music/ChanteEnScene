@@ -35,7 +35,7 @@ export async function updateCandidateStatus(candidateId: string, status: string)
           .single()
 
         const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
         const profileUrl = `${siteUrl}/${session?.slug || ''}/candidats/${candidate.slug}`
 
         const { subject, html } = candidateApprovedEmail({

@@ -112,7 +112,7 @@ export async function bulkPromoteCategory(sessionId: string, category: string) {
 
 function buildMp3ReminderEmailHtml(candidate: { id: string; first_name: string; last_name: string; stage_name: string | null }, config: { semifinal_date?: string; semifinal_time?: string }): string {
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
   const uploadLink = `${siteUrl}/upload-mp3/${candidate.id}`
   const date = config.semifinal_date
     ? new Date(config.semifinal_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })

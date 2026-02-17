@@ -329,7 +329,7 @@ interface EmailCandidate {
 
 function buildFinaleEmailHtml(candidate: EmailCandidate, config: SessionConfig, sessionSlug: string): string {
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chanteenscene.fr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
   const profileLink = `${siteUrl}/${sessionSlug}/mon-profil?token=${candidate.slug}`
   const date = config.final_date ? formatDateFr(config.final_date) : 'Date a confirmer'
   const location = config.final_location || 'Lieu a confirmer'
