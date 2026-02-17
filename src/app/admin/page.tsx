@@ -14,7 +14,7 @@ async function getStats() {
     .select('id, name, slug, status, city, year, config')
     .order('year', { ascending: false })
 
-  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null } }
+  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null } }
 
   const activeSession = sessions[0]
 
@@ -80,6 +80,14 @@ async function getStats() {
     .eq('session_id', activeSession.id)
     .eq('role', 'public')
 
+  // Recent PWA installs
+  const { data: recentInstalls } = await supabase
+    .from('pwa_installs')
+    .select('id, platform, install_source, city, region, created_at')
+    .eq('session_id', activeSession.id)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
   // All-time totals
   const { count: totalPwaInstalls } = await supabase
     .from('pwa_installs')
@@ -104,6 +112,7 @@ async function getStats() {
       totalPushSubscriptions: Math.max((totalPushSubscriptions || 0) - 7, 0),
     },
     recentCandidates: recentCandidates || [],
+    recentInstalls: recentInstalls || [],
     semifinalists: semifinalists || [],
     semifinalEvent: semifinalEvent || null,
     config: {
@@ -159,7 +168,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default async function AdminDashboard() {
-  const { activeSession, stats, recentCandidates = [], semifinalists = [], semifinalEvent, config } = await getStats()
+  const { activeSession, stats, recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config } = await getStats()
 
   const semifinalistCount = semifinalists.length
   const mp3Count = semifinalists.filter((c) => c.mp3_url).length
@@ -244,6 +253,44 @@ export default async function AdminDashboard() {
           subtitle={(stats.totalPushSubscriptions ?? 0) > 0 ? `${stats.totalPushSubscriptions} au total` : undefined}
         />
       </div>
+
+      {/* Recent PWA Installs & Notifications */}
+      {recentInstalls.length > 0 && (
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-10">
+          <div className="p-5 border-b border-[#2a2545]">
+            <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-base">
+              Installations récentes
+            </h2>
+          </div>
+          <div className="divide-y divide-[#2a2545]">
+            {recentInstalls.map((i) => {
+              const platformIcon = i.platform === 'android' ? '🤖' : i.platform === 'ios' ? '🍎' : '💻'
+              const sourceLabel = i.install_source === 'prompt' ? 'Install' : i.install_source === 'ios_instructions' ? 'iOS' : 'Standalone'
+              const location = [i.city, i.region].filter(Boolean).join(', ')
+              return (
+                <div key={i.id} className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
+                  <span className="text-xl shrink-0">{platformIcon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white">
+                      {i.platform === 'android' ? 'Android' : i.platform === 'ios' ? 'iOS' : 'Desktop'}
+                      {location && <span className="text-white/40 font-normal"> — {location}</span>}
+                    </p>
+                    <p className="text-xs text-white/30">
+                      {new Date(i.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <span
+                    className="text-xs font-medium px-2.5 py-1 rounded-full shrink-0"
+                    style={{ background: '#10b98115', color: '#10b981' }}
+                  >
+                    {sourceLabel}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Semifinal Preparation */}
       {semifinalistCount > 0 && (

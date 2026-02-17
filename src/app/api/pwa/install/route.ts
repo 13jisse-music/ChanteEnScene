@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
     const userAgent = request.headers.get('user-agent') || null
+    const city = request.headers.get('x-vercel-ip-city') || null
+    const region = request.headers.get('x-vercel-ip-country-region') || null
 
     const { error } = await supabase
       .from('pwa_installs')
@@ -22,6 +24,8 @@ export async function POST(request: NextRequest) {
           platform: platform || 'unknown',
           install_source: installSource || 'prompt',
           user_agent: userAgent,
+          city,
+          region,
         },
         { onConflict: 'session_id,fingerprint' }
       )
