@@ -104,7 +104,7 @@ export async function seedDefaultFaqs(sessionId: string) {
     },
     {
       question: 'Ma vidéo ne s\'envoie pas ou le transfert échoue',
-      answer: 'Pas de panique ! Vérifiez ces points :\n- Votre connexion internet est-elle stable ? Le Wi-Fi est préférable à la 4G pour les gros fichiers\n- La vidéo fait-elle moins de 100 Mo ? (vérifiez dans les propriétés du fichier)\n- Le format est-il bien MP4, MOV ou WebM ?\n- Essayez de fermer les autres applications et de relancer l\'envoi\nSi le problème persiste, n\'hésitez pas à nous écrire à contact@chantenscene.fr, on vous aidera !',
+      answer: 'Pas de panique ! Vérifiez ces points :\n- Votre connexion internet est-elle stable ? Le Wi-Fi est préférable à la 4G pour les gros fichiers\n- La vidéo fait-elle moins de 100 Mo ? (vérifiez dans les propriétés du fichier)\n- Le format est-il bien MP4, MOV ou WebM ?\n- Essayez de fermer les autres applications et de relancer l\'envoi\nSi le problème persiste, n\'hésitez pas à nous écrire à inscriptions@chantenscene.fr, on vous aidera !',
     },
     {
       question: 'Peut-on envoyer un lien YouTube ou une ancienne vidéo ?',
@@ -160,7 +160,7 @@ export async function seedDefaultFaqs(sessionId: string) {
     },
     {
       question: 'Comment contacter l\'organisation ?',
-      answer: 'Vous pouvez nous contacter par email à contact@chantenscene.fr ou via nos réseaux sociaux. Nous répondons généralement sous 48h.',
+      answer: 'Vous pouvez nous contacter par email à inscriptions@chantenscene.fr ou via nos réseaux sociaux. Nous répondons généralement sous 48h.',
     },
   ]
 

@@ -107,7 +107,7 @@ export default function DossierClient({ session, stats }: Props) {
         </div>
 
         <p className="text-white/30 text-xs print:text-gray-400">
-          contact@chantenscene.fr
+          inscriptions@chantenscene.fr
         </p>
       </div>
 
@@ -314,7 +314,7 @@ function PartnerForm() {
       if (!res.ok) throw new Error()
       setSent(true)
     } catch {
-      setError('Une erreur est survenue. Réessayez ou contactez-nous à contact@chantenscene.fr')
+      setError('Une erreur est survenue. Réessayez ou contactez-nous à inscriptions@chantenscene.fr')
     } finally {
       setLoading(false)
     }

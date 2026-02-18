@@ -140,7 +140,7 @@ export default function ChatbotWidget() {
 
   function findAnswer(query: string): string {
     if (faqs.length === 0) {
-      return 'Le service de FAQ n\'est pas encore configuré. Contactez-nous à contact@chantenscene.fr pour toute question.'
+      return 'Le service de FAQ n\'est pas encore configuré. Contactez-nous à inscriptions@chantenscene.fr pour toute question.'
     }
 
     const q = normalize(query)
@@ -196,7 +196,7 @@ export default function ChatbotWidget() {
       return bestMatch.answer
     }
 
-    return 'Désolé, je n\'ai pas trouvé de réponse précise. Essayez avec d\'autres mots-clés, ou contactez-nous à contact@chantenscene.fr.'
+    return 'Désolé, je n\'ai pas trouvé de réponse précise. Essayez avec d\'autres mots-clés, ou contactez-nous à inscriptions@chantenscene.fr.'
   }
 
   function handleSend() {

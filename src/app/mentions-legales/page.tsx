@@ -19,7 +19,7 @@ export default function MentionsLegalesPage() {
             ChanteEnScène<br />
             Association loi 1901<br />
             Siège social : Aubagne, France<br />
-            Email : contact@chantenscene.fr
+            Email : inscriptions@chantenscene.fr
           </p>
         </div>
 

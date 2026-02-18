@@ -79,7 +79,7 @@ export default function ConfidentialitePage() {
             <li>Droit d&apos;opposition</li>
           </ul>
           <p className="mt-2">
-            Pour exercer ces droits, contactez-nous à : <strong>contact@chantenscene.fr</strong>
+            Pour exercer ces droits, contactez-nous à : <strong>inscriptions@chantenscene.fr</strong>
           </p>
         </div>
 

@@ -851,7 +851,7 @@ const ADMIN_SLIDES: Slide[] = [
         </p>
         <DynamicQR url="https://www.chantenscene.fr" />
         <div className="space-y-2">
-          <p className="text-white/40 text-sm">contact@chantenscene.fr</p>
+          <p className="text-white/40 text-sm">inscriptions@chantenscene.fr</p>
           <p className="text-white/40 text-sm">www.chantenscene.fr</p>
         </div>
       </div>

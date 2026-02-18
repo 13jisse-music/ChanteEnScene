@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await getResend().emails.send({
       from: FROM_EMAIL,
-      to: 'contact@chantenscene.fr',
+      to: 'inscriptions@chantenscene.fr',
       replyTo: email,
       subject: `[Partenariat] Demande de ${company}`,
       html: `
