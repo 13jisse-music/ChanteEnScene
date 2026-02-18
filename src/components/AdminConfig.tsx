@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { updateSessionConfig, updateSessionStatus, advanceSessionPhase } from '@/app/admin/config/actions'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, getNextStatus, type SessionStatus } from '@/lib/phases'
+import { getFingerprint } from '@/lib/fingerprint'
 
 interface SessionConfig {
   age_categories?: { name: string; min_age: number; max_age: number }[]
@@ -63,6 +64,63 @@ export default function AdminConfig({ session }: Props) {
   const [status, setStatus] = useState(session.status)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [pushStatus, setPushStatus] = useState<'unknown' | 'subscribed' | 'not_subscribed' | 'unsupported'>('unknown')
+  const [pushLoading, setPushLoading] = useState(false)
+
+  // Check admin push subscription status
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      setPushStatus('unsupported')
+      return
+    }
+    if (Notification.permission === 'granted') {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          setPushStatus(sub ? 'subscribed' : 'not_subscribed')
+        })
+      })
+    } else {
+      setPushStatus('not_subscribed')
+    }
+  }, [])
+
+  const handleAdminPushSubscribe = useCallback(async () => {
+    setPushLoading(true)
+    try {
+      const perm = await Notification.requestPermission()
+      if (perm !== 'granted') {
+        setMessage({ type: 'error', text: 'Permission notifications refusée.' })
+        setPushLoading(false)
+        return
+      }
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      const rawKeys = subscription.toJSON()
+      const fingerprint = await getFingerprint()
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: session.id,
+          endpoint: rawKeys.endpoint,
+          p256dh: rawKeys.keys!.p256dh,
+          auth: rawKeys.keys!.auth,
+          role: 'admin',
+          fingerprint,
+        }),
+      })
+      setPushStatus('subscribed')
+      setMessage({ type: 'success', text: 'Notifications admin activées !' })
+      setTimeout(() => setMessage(null), 3000)
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur lors de l\'activation des notifications.' })
+    }
+    setPushLoading(false)
+  }, [session.id])
 
   function updateField(key: keyof SessionConfig, value: unknown) {
     setConfig((prev) => ({ ...prev, [key]: value }))
@@ -579,6 +637,33 @@ export default function AdminConfig({ session }: Props) {
               <option value="monthly">Mensuel</option>
             </select>
           </Field>
+        </div>
+
+        {/* Admin push subscription */}
+        <div className="mt-4 flex items-center justify-between bg-white/5 rounded-xl p-4">
+          <div>
+            <p className="text-sm text-white">Notifications push admin</p>
+            <p className="text-white/40 text-xs mt-0.5">
+              {pushStatus === 'subscribed'
+                ? 'Activées sur cet appareil.'
+                : pushStatus === 'unsupported'
+                  ? 'Non supportées par ce navigateur.'
+                  : 'Recevez les rapports en notification sur cet appareil.'}
+            </p>
+          </div>
+          {pushStatus !== 'unsupported' && (
+            <button
+              onClick={handleAdminPushSubscribe}
+              disabled={pushLoading || pushStatus === 'subscribed'}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                pushStatus === 'subscribed'
+                  ? 'bg-[#7ec850]/15 border border-[#7ec850]/30 text-[#7ec850]'
+                  : 'bg-[#f97316]/15 border border-[#f97316]/30 text-[#f97316] hover:bg-[#f97316]/25'
+              }`}
+            >
+              {pushLoading ? 'Activation...' : pushStatus === 'subscribed' ? 'Activées' : 'Activer'}
+            </button>
+          )}
         </div>
       </Section>
 
