@@ -404,6 +404,82 @@ export function adminReportEmail({
   return { subject, html }
 }
 
+// ─── Newsletter email ───
+
+export function newsletterEmail({
+  subject,
+  body,
+  imageUrl,
+  unsubscribeUrl,
+}: {
+  subject: string
+  body: string
+  imageUrl?: string
+  unsubscribeUrl: string
+}) {
+  const safeSubject = escapeHtml(subject)
+  // Convert line breaks to paragraphs
+  const bodyParagraphs = body
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+    .join('')
+
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:22px;font-weight:bold;">
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
+      </span>
+    </div>
+
+    ${imageUrl ? `
+    <!-- Image -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="https://chantenscene.fr">
+        <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" style="max-width:100%;border-radius:16px;" />
+      </a>
+    </div>
+    ` : ''}
+
+    <!-- Card -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
+      <h1 style="color:#e91e8c;font-size:20px;margin:0 0 20px 0;text-align:center;">
+        ${safeSubject}
+      </h1>
+
+      ${bodyParagraphs}
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:24px 0 0 0;">
+        <a href="https://chantenscene.fr" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+          Visiter le site
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:32px;">
+      <p style="color:#ffffff33;font-size:11px;line-height:1.6;">
+        Vous recevez cet email car vous \u00eates abonn\u00e9 aux actualit\u00e9s ChanteEnSc\u00e8ne.<br/>
+        <a href="${escapeHtml(unsubscribeUrl)}" style="color:#e91e8c;">Se d\u00e9sinscrire</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`
+
+  return { subject, html }
+}
+
 export function juryInvitationEmail({
   jurorName,
   role,
