@@ -222,7 +222,7 @@ export default function InstallPrompt() {
   return (
     <div className={`fixed z-50 animate-in slide-in-from-bottom ${
       isDesktop
-        ? 'bottom-6 right-6 w-96'
+        ? 'bottom-24 right-6 w-96'
         : 'bottom-24 left-4 right-4 mx-auto max-w-md'
     }`}>
       <div className="bg-[#1a1232] border border-[#e91e8c]/30 rounded-2xl p-4 shadow-lg shadow-[#e91e8c]/10">
