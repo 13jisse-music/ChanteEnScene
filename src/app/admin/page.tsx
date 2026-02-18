@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import SemifinalPrep from '@/components/SemifinalPrep'
+import PwaFunnel from '@/components/PwaFunnel'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -98,6 +99,80 @@ async function getStats() {
     .select('*', { count: 'exact', head: true })
     .eq('role', 'public')
 
+  // Unique visitors with device classification
+  const { data: visitorsData } = await supabase
+    .from('page_views')
+    .select('fingerprint, user_agent')
+    .eq('session_id', activeSession.id)
+    .not('fingerprint', 'is', null)
+
+  const visitorsByDevice = { mobile: 0, desktop: 0 }
+  if (visitorsData) {
+    const seen = new Map<string, string | null>()
+    for (const row of visitorsData) {
+      if (!seen.has(row.fingerprint)) seen.set(row.fingerprint, row.user_agent)
+    }
+    for (const ua of seen.values()) {
+      const lower = (ua || '').toLowerCase()
+      if (/mobile|android|iphone|ipod|opera mini|iemobile|blackberry/.test(lower)) {
+        visitorsByDevice.mobile++
+      } else {
+        visitorsByDevice.desktop++
+      }
+    }
+  }
+  const uniqueVisitors = visitorsByDevice.mobile + visitorsByDevice.desktop
+
+  // PWA installs by device
+  const { data: installsData } = await supabase
+    .from('pwa_installs')
+    .select('platform')
+    .eq('session_id', activeSession.id)
+
+  const installsByDevice = { mobile: 0, desktop: 0 }
+  if (installsData) {
+    for (const row of installsData) {
+      if (row.platform === 'android' || row.platform === 'ios') {
+        installsByDevice.mobile++
+      } else {
+        installsByDevice.desktop++
+      }
+    }
+  }
+
+  // Push subscriptions by device (match fingerprint to page_views user_agent)
+  const { data: pushData } = await supabase
+    .from('push_subscriptions')
+    .select('fingerprint')
+    .eq('session_id', activeSession.id)
+    .eq('role', 'public')
+
+  const pushByDevice = { mobile: 0, desktop: 0 }
+  if (pushData && visitorsData) {
+    const fpToUa = new Map<string, string | null>()
+    for (const row of visitorsData) {
+      if (row.fingerprint && !fpToUa.has(row.fingerprint)) fpToUa.set(row.fingerprint, row.user_agent)
+    }
+    const counted = new Set<string>()
+    for (const row of pushData) {
+      if (!row.fingerprint || counted.has(row.fingerprint)) continue
+      counted.add(row.fingerprint)
+      const ua = fpToUa.get(row.fingerprint)
+      const lower = (ua || '').toLowerCase()
+      if (/mobile|android|iphone|ipod|opera mini|iemobile|blackberry/.test(lower)) {
+        pushByDevice.mobile++
+      } else {
+        pushByDevice.desktop++
+      }
+    }
+  }
+
+  // Total page views for this session
+  const { count: totalPageViews } = await supabase
+    .from('page_views')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', activeSession.id)
+
   return {
     sessions,
     activeSession,
@@ -110,6 +185,11 @@ async function getStats() {
       pushSubscriptions: Math.max((pushSubscriptions || 0) - 7, 0),
       totalPwaInstalls: totalPwaInstalls || 0,
       totalPushSubscriptions: Math.max((totalPushSubscriptions || 0) - 7, 0),
+      uniqueVisitors,
+      totalPageViews: totalPageViews || 0,
+      visitorsByDevice,
+      installsByDevice,
+      pushByDevice,
     },
     recentCandidates: recentCandidates || [],
     recentInstalls: recentInstalls || [],
@@ -251,6 +331,18 @@ export default async function AdminDashboard() {
           value={stats.pushSubscriptions ?? 0}
           color="#f97316"
           subtitle={(stats.totalPushSubscriptions ?? 0) > 0 ? `${stats.totalPushSubscriptions} au total` : undefined}
+        />
+      </div>
+
+      {/* PWA Adoption Funnel */}
+      <div className="mb-10">
+        <PwaFunnel
+          uniqueVisitors={stats.uniqueVisitors ?? 0}
+          pwaInstalls={stats.pwaInstalls ?? 0}
+          pushSubscriptions={stats.pushSubscriptions ?? 0}
+          visitorsByDevice={stats.visitorsByDevice ?? { mobile: 0, desktop: 0 }}
+          installsByDevice={stats.installsByDevice ?? { mobile: 0, desktop: 0 }}
+          pushByDevice={stats.pushByDevice ?? { mobile: 0, desktop: 0 }}
         />
       </div>
 
