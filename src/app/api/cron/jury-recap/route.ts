@@ -7,7 +7,7 @@ import { juryWeeklyRecapEmail } from '@/lib/emails'
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret) return true // Dev mode: allow without secret
+  if (!cronSecret) return false
   return authHeader === `Bearer ${cronSecret}`
 }
 

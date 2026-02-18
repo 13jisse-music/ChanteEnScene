@@ -7,7 +7,7 @@ import { sendPushNotifications } from '@/lib/push'
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret) return true
+  if (!cronSecret) return false
   return authHeader === `Bearer ${cronSecret}`
 }
 

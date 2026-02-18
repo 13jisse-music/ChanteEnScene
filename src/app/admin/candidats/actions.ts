@@ -5,8 +5,10 @@ import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { candidateApprovedEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
+import { requireAdmin, escapeHtml } from '@/lib/security'
 
 export async function updateCandidateStatus(candidateId: string, status: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -39,8 +41,8 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         const profileUrl = `${siteUrl}/${session?.slug || ''}/candidats/${candidate.slug}`
 
         const { subject, html } = candidateApprovedEmail({
-          candidateName: displayName,
-          sessionName: session?.name || 'ChanteEnScène',
+          candidateName: escapeHtml(displayName),
+          sessionName: escapeHtml(session?.name || 'ChanteEnScène'),
           profileUrl,
         })
 
@@ -74,6 +76,7 @@ export async function updateCandidateStatus(candidateId: string, status: string)
 }
 
 export async function toggleVideoPublic(candidateId: string, videoPublic: boolean) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -90,6 +93,7 @@ export async function toggleVideoPublic(candidateId: string, videoPublic: boolea
 }
 
 export async function deleteCandidate(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Clean up all FK references before deleting

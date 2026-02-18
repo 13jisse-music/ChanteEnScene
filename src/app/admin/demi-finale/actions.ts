@@ -4,10 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { sendPushNotifications } from '@/lib/push'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { requireAdmin, escapeHtml } from '@/lib/security'
 
 // ─── Huis-clos semifinal actions ───
 
 export async function checkinCandidate(eventId: string, candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Check if already checked in
@@ -34,6 +36,7 @@ export async function checkinCandidate(eventId: string, candidateId: string) {
 }
 
 export async function callToStage(eventId: string, candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Update lineup status + set start time, reset timing fields
@@ -89,6 +92,7 @@ export async function callToStage(eventId: string, candidateId: string) {
 }
 
 export async function openVoting(eventId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
   const now = new Date().toISOString()
 
@@ -145,6 +149,7 @@ export async function openVoting(eventId: string) {
 }
 
 export async function finishPerformance(eventId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
   const now = new Date().toISOString()
 
@@ -179,6 +184,7 @@ export async function finishPerformance(eventId: string) {
 }
 
 export async function replayCandidate(eventId: string, candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Set status back to performing with fresh start time
@@ -205,6 +211,7 @@ export async function replayCandidate(eventId: string, candidateId: string) {
 }
 
 export async function markAbsent(eventId: string, candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Mark as absent
@@ -233,6 +240,7 @@ export async function markAbsent(eventId: string, candidateId: string) {
 }
 
 export async function updateSemifinaleStatus(eventId: string, status: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -247,6 +255,7 @@ export async function updateSemifinaleStatus(eventId: string, status: string) {
 }
 
 export async function getJuryScoreCount(sessionId: string, candidateId: string, eventType: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
   const { count } = await supabase
     .from('jury_scores')
@@ -258,6 +267,7 @@ export async function getJuryScoreCount(sessionId: string, candidateId: string, 
 }
 
 export async function resetJuryScores(sessionId: string, candidateId: string, eventType: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -276,6 +286,7 @@ export async function resetJuryScores(sessionId: string, candidateId: string, ev
 // ─── Post-semifinal: Finalist selection ───
 
 export async function promoteToFinalist(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -291,6 +302,7 @@ export async function promoteToFinalist(candidateId: string) {
 }
 
 export async function removeFromFinalist(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -341,7 +353,7 @@ function buildFinaleEmailHtml(candidate: EmailCandidate, config: SessionConfig, 
       </h1>
       <p style="text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 30px;">Concours de chant</p>
 
-      <h2 style="color: #f5a623; text-align: center;">Felicitations ${displayName} !</h2>
+      <h2 style="color: #f5a623; text-align: center;">Felicitations ${escapeHtml(displayName)} !</h2>
 
       <p style="color: rgba(255,255,255,0.7); line-height: 1.6;">
         Nous avons le plaisir de vous annoncer que vous avez ete <strong style="color: #f5a623;">selectionne(e) pour la grande FINALE</strong> de ChanteEnScene !
@@ -397,7 +409,7 @@ function buildFinaleRejectionEmailHtml(candidate: EmailCandidate): string {
       </h1>
       <p style="text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 30px;">Concours de chant</p>
 
-      <h2 style="color: #7ec850; text-align: center;">Bravo ${displayName} !</h2>
+      <h2 style="color: #7ec850; text-align: center;">Bravo ${escapeHtml(displayName)} !</h2>
 
       <p style="color: rgba(255,255,255,0.7); line-height: 1.6;">
         Nous tenons a vous feliciter chaleureusement pour votre <strong style="color: #7ec850;">superbe parcours en demi-finale</strong> de ChanteEnScene ! Monter sur scene et chanter devant un jury demande du courage et du talent, et vous l'avez fait avec brio.
@@ -434,6 +446,7 @@ function buildFinaleRejectionEmailHtml(candidate: EmailCandidate): string {
 }
 
 export async function getFinaleEmailPreviews(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session } = await supabase
@@ -483,6 +496,7 @@ export async function getFinaleEmailPreviews(sessionId: string) {
 }
 
 export async function resetFinaleNotifications(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session } = await supabase
@@ -506,6 +520,7 @@ export async function resetFinaleNotifications(sessionId: string) {
 }
 
 export async function reopenSemifinal(eventId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -520,6 +535,7 @@ export async function reopenSemifinal(eventId: string) {
 }
 
 export async function sendFinaleNotifications(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session } = await supabase

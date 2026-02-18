@@ -107,7 +107,7 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
     }
     setSavingSongs(true)
     setMessage(null)
-    const result = await updateFinaleSongs(candidate.id, filledSongs, phone)
+    const result = await updateFinaleSongs(candidate.id, candidate.slug, filledSongs, phone)
     if (result.error) {
       setMessage({ type: 'error', text: result.error })
     } else {
@@ -121,7 +121,7 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
     setSaving(true)
     setMessage(null)
 
-    const result = await updateCandidateProfile(candidate.id, {
+    const result = await updateCandidateProfile(candidate.id, candidate.slug, {
       stage_name: stageName,
       bio,
       accent_color: accentColor,
@@ -165,7 +165,7 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
 
     const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
 
-    const result = await updateCandidatePhoto(candidate.id, publicUrl)
+    const result = await updateCandidatePhoto(candidate.id, candidate.slug, publicUrl)
     if (result.error) {
       setMessage({ type: 'error', text: result.error })
     } else {

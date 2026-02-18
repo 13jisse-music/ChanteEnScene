@@ -30,19 +30,41 @@ export async function middleware(request: NextRequest) {
   // Protect admin routes (except login)
   if (
     request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login') &&
-    !user
+    !request.nextUrl.pathname.startsWith('/admin/login')
   ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin/login'
-    return NextResponse.redirect(url)
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Verify user is actually an admin
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('role')
+      .eq('email', user.email!)
+      .maybeSingle()
+
+    if (!adminUser) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Redirect logged-in users away from login page
+  // Redirect logged-in admin users away from login page
   if (request.nextUrl.pathname === '/admin/login' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin'
-    return NextResponse.redirect(url)
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('role')
+      .eq('email', user.email!)
+      .maybeSingle()
+
+    if (adminUser) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

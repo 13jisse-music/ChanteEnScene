@@ -219,20 +219,25 @@ export default async function HomePage() {
       {/* ━━━ HERO ━━━ */}
       <section
         className="relative z-10 min-h-[92vh] flex items-end lg:items-center overflow-hidden lg:-mt-20"
-        style={{
-          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, black 60%, transparent 100%)",
-        }}
       >
-        <Image
-          src="/images/hero.png"
-          alt="Chanteuse sur scène"
-          fill
-          className="object-cover object-top"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0618]/90 via-[#0a0618]/60 to-transparent" />
+        {/* Hero image with fade-out mask (applied only to the image, not the CTA buttons) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 60%, transparent 100%)",
+          }}
+        >
+          <Image
+            src="/images/hero.png"
+            alt="Chanteuse sur scène"
+            fill
+            className="object-cover object-top"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0618]/90 via-[#0a0618]/60 to-transparent" />
+        </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full pb-20 lg:pb-0">
           <div className="max-w-2xl animate-fade-up">
@@ -751,42 +756,6 @@ export default async function HomePage() {
       {/* ━━━ EMAIL SUBSCRIBE ━━━ */}
       {session && <FooterEmailSubscribe sessionId={session.id} />}
 
-      {/* ━━━ FOOTER ━━━ */}
-      <footer
-        className="relative z-10 py-12 px-4 border-t border-white/10"
-        id="infos"
-      >
-        <div className="max-w-5xl mx-auto text-center">
-          <p
-            className="font-[family-name:var(--font-montserrat)] font-bold text-sm mb-2"
-            style={{ textShadow: "0 0 10px rgba(0,0,0,0.7)" }}
-          >
-            <span className="text-white">Chant</span>
-            <span className="text-[#7ec850]">En</span>
-            <span className="text-[#e91e8c]">Sc&egrave;ne</span>
-          </p>
-          <p
-            className="text-white/50 text-xs mb-4"
-            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
-          >
-            Concours de chant — Aubagne 2026
-          </p>
-          <div className="flex items-center justify-center gap-4 text-white/30 text-xs">
-            <Link href="/mentions-legales" className="hover:text-white/60 transition-colors">
-              Mentions l&eacute;gales
-            </Link>
-            <span>|</span>
-            <Link href="/reglement" className="hover:text-white/60 transition-colors">
-              R&egrave;glement
-            </Link>
-            <span>|</span>
-            <Link href="/confidentialite" className="hover:text-white/60 transition-colors">
-              Confidentialit&eacute;
-            </Link>
-          </div>
-          <p className="text-white/15 text-[10px] mt-6">&copy; {new Date().getFullYear()} Jean-Christophe Martinez. Tous droits r&eacute;serv&eacute;s.</p>
-        </div>
-      </footer>
     </>
   );
 }

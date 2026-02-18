@@ -1,3 +1,5 @@
+import { escapeHtml } from '@/lib/security'
+
 // ─── Registration confirmation email ───
 
 export function registrationConfirmationEmail({
@@ -13,6 +15,11 @@ export function registrationConfirmationEmail({
   songTitle: string
   songArtist: string
 }) {
+  const safeName = escapeHtml(candidateName)
+  const safeSession = escapeHtml(sessionName)
+  const safeCategory = escapeHtml(category)
+  const safeSongTitle = escapeHtml(songTitle)
+  const safeSongArtist = escapeHtml(songArtist)
   const subject = `Inscription confirmée — ${sessionName}`
 
   const html = `
@@ -32,10 +39,10 @@ export function registrationConfirmationEmail({
     <!-- Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
       <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
-        Bienvenue ${candidateName} !
+        Bienvenue ${safeName} !
       </h1>
       <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
-        Votre inscription au concours <strong style="color:#ffffff;">${sessionName}</strong> a bien été enregistrée.
+        Votre inscription au concours <strong style="color:#ffffff;">${safeSession}</strong> a bien été enregistrée.
       </p>
 
       <!-- Recap -->
@@ -43,15 +50,15 @@ export function registrationConfirmationEmail({
         <table style="width:100%;font-size:13px;">
           <tr>
             <td style="padding:6px 0;color:#ffffff50;">Catégorie</td>
-            <td style="padding:6px 0;color:#e91e8c;font-weight:bold;text-align:right;">${category}</td>
+            <td style="padding:6px 0;color:#e91e8c;font-weight:bold;text-align:right;">${safeCategory}</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#ffffff50;">Chanson</td>
-            <td style="padding:6px 0;color:#ffffff;text-align:right;">${songTitle}</td>
+            <td style="padding:6px 0;color:#ffffff;text-align:right;">${safeSongTitle}</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#ffffff50;">Artiste</td>
-            <td style="padding:6px 0;color:#ffffff;text-align:right;">${songArtist}</td>
+            <td style="padding:6px 0;color:#ffffff;text-align:right;">${safeSongArtist}</td>
           </tr>
         </table>
       </div>
@@ -90,6 +97,8 @@ export function candidateApprovedEmail({
   sessionName: string
   profileUrl: string
 }) {
+  const safeName = escapeHtml(candidateName)
+  const safeSession = escapeHtml(sessionName)
   const subject = `Candidature validée — ${sessionName}`
 
   const html = `
@@ -113,8 +122,8 @@ export function candidateApprovedEmail({
         Candidature validée !
       </h1>
       <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;text-align:center;">
-        Félicitations <strong style="color:#ffffff;">${candidateName}</strong> !<br/>
-        Votre candidature pour <strong style="color:#ffffff;">${sessionName}</strong> a été approuvée.
+        Félicitations <strong style="color:#ffffff;">${safeName}</strong> !<br/>
+        Votre candidature pour <strong style="color:#ffffff;">${safeSession}</strong> a été approuvée.
       </p>
 
       <div style="background:rgba(126,200,80,0.1);border:1px solid rgba(126,200,80,0.25);border-radius:12px;padding:16px;margin:0 0 24px 0;">
@@ -181,11 +190,14 @@ export function juryWeeklyRecapEmail({
     ? `${remainingCount} candidat${remainingCount > 1 ? 's' : ''} en attente de votre vote — ${sessionName}`
     : `Recap hebdo — ${sessionName}`
 
+  const safeJurorName = escapeHtml(jurorName)
+  const safeSessionName = escapeHtml(sessionName)
+
   const candidateRows = newCandidates.slice(0, 5).map((c) => `
     <tr>
-      <td style="padding:8px 0;color:#ffffff;font-size:13px;">${c.name}</td>
-      <td style="padding:8px 0;color:#e91e8c;font-size:12px;text-align:center;">${c.category}</td>
-      <td style="padding:8px 0;color:#ffffff70;font-size:12px;text-align:right;">${c.songTitle}</td>
+      <td style="padding:8px 0;color:#ffffff;font-size:13px;">${escapeHtml(c.name)}</td>
+      <td style="padding:8px 0;color:#e91e8c;font-size:12px;text-align:center;">${escapeHtml(c.category)}</td>
+      <td style="padding:8px 0;color:#ffffff70;font-size:12px;text-align:right;">${escapeHtml(c.songTitle)}</td>
     </tr>`).join('')
 
   const html = `
@@ -205,10 +217,10 @@ export function juryWeeklyRecapEmail({
     <!-- Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
       <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
-        Bonjour ${jurorName} !
+        Bonjour ${safeJurorName} !
       </h1>
       <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
-        Voici votre recap hebdomadaire pour <strong style="color:#ffffff;">${sessionName}</strong>.
+        Voici votre recap hebdomadaire pour <strong style="color:#ffffff;">${safeSessionName}</strong>.
       </p>
 
       <!-- Stats -->
@@ -292,10 +304,13 @@ export function adminReportEmail({
 }) {
   const subject = `Rapport ${period} — ${sessionName}`
 
+  const safeSessionName = escapeHtml(sessionName)
+  const safePeriod = escapeHtml(period)
+
   const candidateRows = recentCandidateNames.slice(0, 5).map((c) => `
     <tr>
-      <td style="padding:6px 0;color:#ffffff;font-size:13px;">${c.name}</td>
-      <td style="padding:6px 0;color:#e91e8c;font-size:12px;text-align:right;">${c.category}</td>
+      <td style="padding:6px 0;color:#ffffff;font-size:13px;">${escapeHtml(c.name)}</td>
+      <td style="padding:6px 0;color:#e91e8c;font-size:12px;text-align:right;">${escapeHtml(c.category)}</td>
     </tr>`).join('')
 
   const html = `
@@ -315,10 +330,10 @@ export function adminReportEmail({
     <!-- Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
       <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
-        Rapport ${period}
+        Rapport ${safePeriod}
       </h1>
       <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
-        Voici les chiffres pour <strong style="color:#ffffff;">${sessionName}</strong>.
+        Voici les chiffres pour <strong style="color:#ffffff;">${safeSessionName}</strong>.
       </p>
 
       <!-- Stats Grid -->
@@ -380,7 +395,7 @@ export function adminReportEmail({
 
     <!-- Footer -->
     <p style="color:#ffffff30;font-size:11px;text-align:center;margin-top:24px;line-height:1.5;">
-      ChanteEnScène — Rapport automatique ${period}
+      ChanteEnScène — Rapport automatique ${safePeriod}
     </p>
   </div>
 </body>
@@ -402,7 +417,10 @@ export function juryInvitationEmail({
   juryUrl: string
   loginUrl: string
 }) {
+  const safeJurorName = escapeHtml(jurorName)
+  const safeSessionName = escapeHtml(sessionName)
   const roleLabel = ROLE_LABELS[role] || role
+  const safeRoleLabel = escapeHtml(roleLabel)
 
   const subject = `Vous êtes juré pour ${sessionName} — ChanteEnScène`
 
@@ -423,10 +441,10 @@ export function juryInvitationEmail({
     <!-- Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
       <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
-        Bonjour ${jurorName} !
+        Bonjour ${safeJurorName} !
       </h1>
       <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
-        Vous avez été sélectionné(e) comme <strong style="color:#e91e8c;">${roleLabel}</strong> pour le concours <strong style="color:#ffffff;">${sessionName}</strong>.
+        Vous avez été sélectionné(e) comme <strong style="color:#e91e8c;">${safeRoleLabel}</strong> pour le concours <strong style="color:#ffffff;">${safeSessionName}</strong>.
       </p>
 
       <!-- CTA Button -->

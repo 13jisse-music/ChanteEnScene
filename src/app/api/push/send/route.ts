@@ -10,6 +10,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    // Verify admin role
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('role')
+      .eq('email', user.email!)
+      .maybeSingle()
+
+    if (!adminUser) {
+      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { sessionId, role, jurorId, payload } = body as {
       sessionId: string

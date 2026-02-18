@@ -79,7 +79,7 @@ export default function InstallPrompt() {
 
     // If already installed as PWA, track and skip to notification phase
     if (isStandalone) {
-      if (!localStorage.getItem('pwa-install-tracked')) {
+      if (sessionId && !localStorage.getItem('pwa-install-tracked')) {
         trackInstall(sessionId, detectPlatform(), 'standalone_detected')
         localStorage.setItem('pwa-install-tracked', '1')
       }
@@ -112,7 +112,7 @@ export default function InstallPrompt() {
     setIsIOS(isiOS)
 
     // Track iOS install prompt display (they see instructions to add to home screen)
-    if (isiOS && !localStorage.getItem('pwa-install-tracked')) {
+    if (isiOS && sessionId && !localStorage.getItem('pwa-install-tracked')) {
       trackInstall(sessionId, 'ios', 'ios_instructions')
       localStorage.setItem('pwa-install-tracked', '1')
     }
@@ -220,10 +220,10 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className={`fixed z-50 animate-in slide-in-from-bottom ${
+    <div className={`fixed z-[60] animate-in slide-in-from-bottom ${
       isDesktop
         ? 'bottom-24 right-6 w-96'
-        : 'bottom-24 left-4 right-4 mx-auto max-w-md'
+        : 'bottom-6 left-4 right-4 mx-auto max-w-md'
     }`}>
       <div className="bg-[#1a1232] border border-[#e91e8c]/30 rounded-2xl p-4 shadow-lg shadow-[#e91e8c]/10">
         <div className="flex items-start gap-3">
@@ -268,6 +268,16 @@ export default function InstallPrompt() {
               className="px-4 py-2 rounded-xl bg-white/5 text-white/40 text-sm"
             >
               Plus tard
+            </button>
+          </div>
+        )}
+        {phase === 'install' && isIOS && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleDismiss}
+              className="flex-1 py-2 rounded-xl bg-gradient-to-r from-[#e91e8c] to-[#c4157a] text-white text-sm font-bold"
+            >
+              J&apos;ai compris
             </button>
           </div>
         )}

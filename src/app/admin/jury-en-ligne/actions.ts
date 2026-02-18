@@ -3,8 +3,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { requireAdmin } from '@/lib/security'
 
 export async function promoteToSemifinalist(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: candidate } = await supabase
@@ -31,6 +33,7 @@ export async function promoteToSemifinalist(candidateId: string) {
 }
 
 export async function demoteFromSemifinalist(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: candidate } = await supabase
@@ -57,6 +60,7 @@ export async function demoteFromSemifinalist(candidateId: string) {
 }
 
 export async function bulkPromoteCategory(sessionId: string, category: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: candidates } = await supabase
@@ -155,6 +159,7 @@ function buildMp3ReminderEmailHtml(candidate: { id: string; first_name: string; 
 }
 
 export async function sendMp3Reminder(candidateId: string, sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: candidate } = await supabase
@@ -199,6 +204,7 @@ export async function sendMp3Reminder(candidateId: string, sessionId: string) {
 // ─── Admin MP3 Upload ───
 
 export async function adminUploadMp3(candidateId: string, formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const file = formData.get('file') as File | null

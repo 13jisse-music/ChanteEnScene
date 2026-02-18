@@ -3,8 +3,26 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
+/**
+ * Verify that the candidateId matches the provided token (candidate slug).
+ * This prevents users from modifying other candidates' profiles.
+ */
+async function verifyOwnership(candidateId: string, token: string) {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('candidates')
+    .select('slug')
+    .eq('id', candidateId)
+    .single()
+
+  if (!data || data.slug !== token) {
+    throw new Error('Accès non autorisé')
+  }
+}
+
 export async function updateCandidateProfile(
   candidateId: string,
+  token: string,
   data: {
     stage_name?: string
     bio?: string
@@ -19,6 +37,7 @@ export async function updateCandidateProfile(
     website_url?: string
   }
 ) {
+  await verifyOwnership(candidateId, token)
   const supabase = createAdminClient()
 
   const updateData: Record<string, unknown> = {}
@@ -53,9 +72,11 @@ export interface FinaleSong {
 
 export async function updateFinaleSongs(
   candidateId: string,
+  token: string,
   songs: FinaleSong[],
   phone: string
 ) {
+  await verifyOwnership(candidateId, token)
   const supabase = createAdminClient()
 
   if (!phone.trim()) return { error: 'Le numéro de téléphone est obligatoire.' }
@@ -71,7 +92,8 @@ export async function updateFinaleSongs(
   return { success: true }
 }
 
-export async function updateCandidatePhoto(candidateId: string, photoUrl: string) {
+export async function updateCandidatePhoto(candidateId: string, token: string, photoUrl: string) {
+  await verifyOwnership(candidateId, token)
   const supabase = createAdminClient()
 
   const { error } = await supabase

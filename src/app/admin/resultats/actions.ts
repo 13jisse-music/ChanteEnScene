@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { requireAdmin, escapeHtml } from '@/lib/security'
 
 // ─── Email HTML builders ───
 
@@ -40,7 +41,7 @@ function buildSelectionEmailHtml(candidate: EmailCandidate & { id?: string }, co
       </h1>
       <p style="text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 30px;">Concours de chant à Aubagne</p>
 
-      <h2 style="color: #7ec850; text-align: center;">Félicitations ${displayName} !</h2>
+      <h2 style="color: #7ec850; text-align: center;">Félicitations ${escapeHtml(displayName)} !</h2>
 
       <p style="color: rgba(255,255,255,0.7); line-height: 1.6;">
         Nous avons le plaisir de vous annoncer que vous avez été <strong style="color: #7ec850;">sélectionné(e) pour la demi-finale</strong> de ChanteEnScène !
@@ -98,7 +99,7 @@ function buildRejectionEmailHtml(candidate: EmailCandidate): string {
       </h1>
       <p style="text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 30px;">Concours de chant à Aubagne</p>
 
-      <h2 style="color: #e91e8c; text-align: center;">Merci ${displayName} !</h2>
+      <h2 style="color: #e91e8c; text-align: center;">Merci ${escapeHtml(displayName)} !</h2>
 
       <p style="color: rgba(255,255,255,0.7); line-height: 1.6;">
         Nous tenons à vous remercier sincèrement pour votre participation à ChanteEnScène. Votre talent et votre courage de monter sur scène sont admirables.
@@ -130,6 +131,7 @@ function buildRejectionEmailHtml(candidate: EmailCandidate): string {
 // ─── Server actions ───
 
 export async function promoteToSemifinalist(candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -145,6 +147,7 @@ export async function promoteToSemifinalist(candidateId: string) {
 }
 
 export async function removeFromSemifinalist(candidateId: string, sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Vérifier si les notifications ont déjà été envoyées
@@ -172,6 +175,7 @@ export async function removeFromSemifinalist(candidateId: string, sessionId: str
 }
 
 export async function getEmailPreviews(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session } = await supabase
@@ -221,6 +225,7 @@ interface EmailReport {
 }
 
 export async function sendSelectionNotifications(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // 1. Charger la session et vérifier l'état
@@ -335,6 +340,7 @@ export async function sendSelectionNotifications(sessionId: string) {
 }
 
 export async function autoSelectSemifinalists(sessionId: string, overrideJuryWeight?: number) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // 1. Load session config
@@ -477,6 +483,7 @@ export async function autoSelectSemifinalists(sessionId: string, overrideJuryWei
 }
 
 export async function saveMp3Url(candidateId: string, mp3Url: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase

@@ -6,6 +6,7 @@ import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallPrompt from "@/components/InstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import PublicFooter from "@/components/PublicFooter";
 import "./globals.css";
 
 const inter = Inter({
@@ -73,6 +74,7 @@ export default function RootLayout({
         <BokehBackground />
         <PublicNav />
         {children}
+        <PublicFooter />
         <ChatbotWidget />
       </body>
     </html>

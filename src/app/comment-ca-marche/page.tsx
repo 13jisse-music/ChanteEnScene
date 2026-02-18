@@ -21,7 +21,7 @@ export default function CommentCaMarchePage() {
           <h1 className="font-[family-name:var(--font-montserrat)] font-black text-3xl md:text-5xl text-white leading-tight">
             Comment ça marche ?
           </h1>
-          <p className="text-white/50 text-lg mt-4 max-w-xl mx-auto">
+          <p className="text-white/70 text-lg mt-4 max-w-xl mx-auto">
             Tout ce que vous pouvez faire sur la plateforme — voter, suivre le live, prendre des photos et plus.
           </p>
         </div>
@@ -48,7 +48,7 @@ export default function CommentCaMarchePage() {
               <StepBox n="3" title="Vidéo" desc="Envoyez une vidéo de votre candidature et une photo de profil." />
               <StepBox n="4" title="Validation" desc="Consentement et confirmation. Vous recevez un email de confirmation." />
             </div>
-            <p className="text-white/40 text-xs">
+            <p className="text-white/60 text-xs">
               Après validation par l&apos;équipe, votre profil apparaît dans la galerie des candidats.
             </p>
             <CTA href={`/${SESSION_SLUG}/inscription`} label="Je m'inscris" />
@@ -120,7 +120,7 @@ export default function CommentCaMarchePage() {
               <p className="text-[#8b5cf6] text-sm font-semibold">
                 Disponible sur mobile pendant le live
               </p>
-              <p className="text-white/40 text-xs mt-1">
+              <p className="text-white/60 text-xs mt-1">
                 Renseignez votre email et c&apos;est parti !
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function CommentCaMarchePage() {
               <InfoCard icon="🏆" title="Annonce" desc="Le nom et la photo du vainqueur apparaissent en plein écran" />
               <InfoCard icon="🎊" title="Confettis" desc="Explosion de confettis synchronisée sur tous les appareils" />
             </div>
-            <p className="text-white/40 text-xs text-center">
+            <p className="text-white/60 text-xs text-center">
               Un vainqueur est désigné par catégorie : Enfant, Ado, Adulte.
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function CommentCaMarchePage() {
               <InfoCard icon="📢" title="Annonces" desc="Infos importantes de l'organisation" />
             </div>
             <div className="bg-[#3b82f6]/10 border border-[#3b82f6]/20 rounded-xl p-4 text-center">
-              <p className="text-white/50 text-xs">
+              <p className="text-white/70 text-xs">
                 Les notifications fonctionnent dans le navigateur. Pas besoin d&apos;installer d&apos;application.
               </p>
             </div>
@@ -217,7 +217,7 @@ export default function CommentCaMarchePage() {
               <InfoCard icon="🤖" title="Réponse instantanée" desc="Tapez votre question et obtenez une réponse immédiate" />
               <InfoCard icon="💡" title="20+ sujets" desc="Inscription, dates, catégories, jury, règlement..." />
             </div>
-            <p className="text-white/40 text-xs text-center">
+            <p className="text-white/60 text-xs text-center">
               Le widget 💬 est visible en bas à droite sur toutes les pages.
             </p>
           </div>
@@ -230,7 +230,7 @@ export default function CommentCaMarchePage() {
             <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-2xl text-white mb-2">
               Prêt à participer ?
             </h2>
-            <p className="text-white/50 text-sm mb-6 max-w-md mx-auto">
+            <p className="text-white/70 text-sm mb-6 max-w-md mx-auto">
               Inscrivez-vous au concours ou découvrez les candidats déjà en lice.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
@@ -318,7 +318,7 @@ function StepBox({ n, title, desc }: { n: string; title: string; desc: string })
         </span>
         <span className="text-white text-sm font-semibold">{title}</span>
       </div>
-      <p className="text-white/40 text-xs leading-relaxed">{desc}</p>
+      <p className="text-white/60 text-xs leading-relaxed">{desc}</p>
     </div>
   )
 }
@@ -329,7 +329,7 @@ function InfoCard({ icon, title, desc }: { icon: string; title: string; desc: st
       <span className="text-xl shrink-0 mt-0.5">{icon}</span>
       <div>
         <p className="text-white/80 text-sm font-semibold">{title}</p>
-        <p className="text-white/40 text-xs leading-relaxed">{desc}</p>
+        <p className="text-white/60 text-xs leading-relaxed">{desc}</p>
       </div>
     </div>
   )

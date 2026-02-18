@@ -3,8 +3,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { SESSION_STATUSES, getStatusIndex, type SessionStatus } from '@/lib/phases'
+import { requireAdmin } from '@/lib/security'
 
 export async function updateSessionConfig(sessionId: string, config: Record<string, unknown>) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -21,6 +23,7 @@ export async function updateSessionConfig(sessionId: string, config: Record<stri
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
+  await requireAdmin()
   if (!SESSION_STATUSES.includes(status as SessionStatus)) {
     return { error: `Statut invalide : ${status}` }
   }
@@ -66,6 +69,7 @@ const PHASE_DATE_MAP: Record<string, string> = {
 }
 
 export async function advanceSessionPhase(sessionId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session, error: fetchError } = await supabase

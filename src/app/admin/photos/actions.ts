@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/security'
 
 export async function uploadPhoto(
   sessionId: string,
@@ -11,6 +12,7 @@ export async function uploadPhoto(
   tagCandidateId: string | null,
   tagEvent: string | null
 ) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase.from('photos').insert({
@@ -35,6 +37,7 @@ export async function updatePhoto(
   tagCandidateId: string | null,
   tagEvent: string | null
 ) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -55,6 +58,7 @@ export async function updatePhoto(
 
 export async function togglePhotoPublished(id: string, published: boolean) {
   try {
+    await requireAdmin()
     const supabase = createAdminClient()
 
     const { error } = await supabase
@@ -73,6 +77,7 @@ export async function togglePhotoPublished(id: string, published: boolean) {
 
 export async function bulkTogglePublished(ids: string[], published: boolean) {
   try {
+    await requireAdmin()
     const supabase = createAdminClient()
 
     const { error } = await supabase
@@ -90,6 +95,7 @@ export async function bulkTogglePublished(ids: string[], published: boolean) {
 }
 
 export async function deletePhoto(id: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase.from('photos').delete().eq('id', id)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { escapeHtml } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,18 +10,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Champs manquants' }, { status: 400 })
     }
 
+    const safeCompany = escapeHtml(String(company))
+    const safeEmail = escapeHtml(String(email))
+    const safePhone = phone ? escapeHtml(String(phone)) : ''
+    const safeMessage = message ? escapeHtml(String(message)).replace(/\n/g, '<br>') : ''
+
     const { error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: 'inscriptions@chantenscene.fr',
       replyTo: email,
-      subject: `[Partenariat] Demande de ${company}`,
+      subject: `[Partenariat] Demande de ${safeCompany}`,
       html: `
         <h2>Nouvelle demande de partenariat</h2>
         <table style="border-collapse:collapse;width:100%;max-width:500px">
-          <tr><td style="padding:8px;color:#666">Entreprise</td><td style="padding:8px;font-weight:bold">${company}</td></tr>
-          <tr><td style="padding:8px;color:#666">Email</td><td style="padding:8px"><a href="mailto:${email}">${email}</a></td></tr>
-          ${phone ? `<tr><td style="padding:8px;color:#666">Téléphone</td><td style="padding:8px">${phone}</td></tr>` : ''}
-          ${message ? `<tr><td style="padding:8px;color:#666;vertical-align:top">Message</td><td style="padding:8px">${message.replace(/\n/g, '<br>')}</td></tr>` : ''}
+          <tr><td style="padding:8px;color:#666">Entreprise</td><td style="padding:8px;font-weight:bold">${safeCompany}</td></tr>
+          <tr><td style="padding:8px;color:#666">Email</td><td style="padding:8px"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+          ${safePhone ? `<tr><td style="padding:8px;color:#666">Téléphone</td><td style="padding:8px">${safePhone}</td></tr>` : ''}
+          ${safeMessage ? `<tr><td style="padding:8px;color:#666;vertical-align:top">Message</td><td style="padding:8px">${safeMessage}</td></tr>` : ''}
         </table>
       `,
     })

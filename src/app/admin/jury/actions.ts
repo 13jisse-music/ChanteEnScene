@@ -4,8 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { juryInvitationEmail } from '@/lib/emails'
+import { requireAdmin } from '@/lib/security'
 
 export async function addJuror(sessionId: string, firstName: string, lastName: string, role: string, email: string, appUrl: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const cleanEmail = email.trim().toLowerCase() || null
@@ -40,6 +42,7 @@ export async function addJuror(sessionId: string, firstName: string, lastName: s
 }
 
 export async function toggleJuror(jurorId: string, isActive: boolean) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -54,6 +57,10 @@ export async function toggleJuror(jurorId: string, isActive: boolean) {
 }
 
 export async function sendJuryInvitation(jurorId: string, appUrl: string) {
+  await requireAdmin()
+  // Validate appUrl to prevent URL injection
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
+  const safeAppUrl = appUrl.startsWith('http://localhost') || appUrl.startsWith('https://') ? appUrl : siteUrl
   const supabase = createAdminClient()
 
   const { data: juror } = await supabase
@@ -67,8 +74,8 @@ export async function sendJuryInvitation(jurorId: string, appUrl: string) {
 
   const session = (juror as Record<string, unknown>).sessions as { name: string }
   const jurorName = `${juror.first_name || ''} ${juror.last_name || ''}`.trim() || 'Juré'
-  const juryUrl = `${appUrl}/jury/${juror.qr_token}`
-  const loginUrl = `${appUrl}/jury`
+  const juryUrl = `${safeAppUrl}/jury/${juror.qr_token}`
+  const loginUrl = `${safeAppUrl}/jury`
 
   const { subject, html } = juryInvitationEmail({
     jurorName,
@@ -91,6 +98,7 @@ export async function sendJuryInvitation(jurorId: string, appUrl: string) {
 }
 
 export async function deleteJuror(jurorId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase

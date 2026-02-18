@@ -30,13 +30,13 @@ interface Props {
 export default function CandidateGallery({ candidates, sessionId, categories }: Props) {
   return (
     <>
-    {/* Mobile: Swipe Feed (TikTok) */}
-    <div className="md:hidden">
+    {/* Mobile + Tablet: Swipe Feed (TikTok) */}
+    <div className="lg:hidden">
       <CandidateSwipeFeed candidates={candidates} sessionId={sessionId} categories={categories} />
     </div>
 
     {/* Desktop: Social Feed */}
-    <div className="hidden md:block animate-fade-up">
+    <div className="hidden lg:block animate-fade-up">
       <CandidateDesktopFeed candidates={candidates} sessionId={sessionId} categories={categories} />
     </div>
     </>

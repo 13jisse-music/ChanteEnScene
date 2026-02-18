@@ -3,8 +3,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { sendPushNotifications } from '@/lib/push'
+import { requireAdmin } from '@/lib/security'
 
 export async function revealWinner(eventId: string, candidateId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Set winner on live_events (triggers Realtime → confetti on /live)
@@ -56,6 +58,7 @@ export async function revealWinner(eventId: string, candidateId: string) {
 }
 
 export async function validateCategoryResults(eventId: string, category: string, rankings: { candidateId: string; rank: number }[]) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   // Promote top candidate to finalist/winner status based on rank
@@ -74,6 +77,7 @@ export async function validateCategoryResults(eventId: string, category: string,
 // ─── Sequential lineup actions for finale format ───
 
 export async function advanceToNext(eventId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
   const now = new Date().toISOString()
 
@@ -126,6 +130,7 @@ export async function advanceToNext(eventId: string) {
 }
 
 export async function markAbsent(eventId: string, lineupId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: item } = await supabase
@@ -151,6 +156,7 @@ export async function markAbsent(eventId: string, lineupId: string) {
 }
 
 export async function resetJuryScores(sessionId: string, candidateId: string, eventType: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase
@@ -167,6 +173,7 @@ export async function resetJuryScores(sessionId: string, candidateId: string, ev
 }
 
 export async function reorderLineupLive(eventId: string, candidateIds: string[]) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   for (let i = 0; i < candidateIds.length; i++) {
@@ -182,6 +189,7 @@ export async function reorderLineupLive(eventId: string, candidateIds: string[])
 }
 
 export async function addReplacementCandidate(eventId: string, candidateId: string, position: number) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: existing } = await supabase
@@ -207,6 +215,7 @@ export async function addReplacementCandidate(eventId: string, candidateId: stri
 }
 
 export async function setReplay(eventId: string, lineupId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: item } = await supabase
@@ -238,6 +247,7 @@ export async function setReplay(eventId: string, lineupId: string) {
 }
 
 export async function updateScoringWeights(sessionId: string, jury: number, publicW: number, social: number) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { data: session } = await supabase
@@ -269,6 +279,7 @@ export async function updateScoringWeights(sessionId: string, jury: number, publ
 }
 
 export async function resetWinnerReveal(eventId: string) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const { error } = await supabase

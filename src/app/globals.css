@@ -181,6 +181,26 @@ body {
   animation: swipe-hint 1.8s ease-in-out both;
 }
 
+/* Force portrait on mobile: overlay message in landscape */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 500px) {
+  body::after {
+    content: "Veuillez tourner votre appareil en mode portrait";
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0b1a;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 2rem;
+    font-family: var(--font-inter), sans-serif;
+  }
+}
+
 /* Print styles */
 @media print {
   body {
