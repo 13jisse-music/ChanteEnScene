@@ -26,7 +26,7 @@ export default async function ChatbotPage() {
     .order('sort_order')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ChatbotAdmin sessionId={session.id} faqs={faqs || []} />
     </div>
   )

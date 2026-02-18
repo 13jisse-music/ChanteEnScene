@@ -26,7 +26,7 @@ export default async function SponsorsPage() {
     .order('position')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <SponsorAdmin sessionId={session.id} sponsors={sponsors || []} />
     </div>
   )

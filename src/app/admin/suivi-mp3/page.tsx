@@ -31,7 +31,7 @@ export default async function SuiviMp3Page() {
     .order('last_name')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <SuiviMp3
         session={{ id: session.id, name: session.name, slug: session.slug, config: session.config as Record<string, unknown> }}
         candidates={candidates || []}

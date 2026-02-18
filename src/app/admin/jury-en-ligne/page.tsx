@@ -55,7 +55,7 @@ export default async function JuryEnLignePage() {
   const notificationsSentAt = (config.selection_notifications_sent_at as string) || null
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <RegieEnLigne
         session={session}
         candidates={candidates || []}

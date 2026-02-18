@@ -103,11 +103,11 @@ export default function PwaFunnel({
   const max = Math.max(uniqueVisitors, 1)
 
   return (
-    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5">
-      <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-base mb-1">
+    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 sm:p-5">
+      <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base mb-1">
         Adoption PWA
       </h2>
-      <p className="text-white/30 text-xs mb-5">
+      <p className="text-white/30 text-xs mb-4 sm:mb-5">
         Funnel visiteurs &rarr; installation &rarr; notifications
       </p>
 
@@ -142,10 +142,10 @@ export default function PwaFunnel({
                 </div>
               </div>
 
-              {/* Bar + Pie side by side */}
-              <div className="flex items-center gap-4">
+              {/* Bar + Pie */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 {/* Funnel bar */}
-                <div className="flex-1 h-6 rounded-lg bg-white/5 overflow-hidden relative">
+                <div className="flex-1 h-5 sm:h-6 rounded-lg bg-white/5 overflow-hidden relative">
                   <div
                     className="h-full rounded-lg transition-all duration-700 ease-out"
                     style={{
@@ -164,7 +164,7 @@ export default function PwaFunnel({
                 </div>
 
                 {/* Pie chart */}
-                {step.value > 0 && <DevicePie devices={step.devices} size={70} />}
+                {step.value > 0 && <DevicePie devices={step.devices} size={60} />}
               </div>
 
               {/* Arrow between steps */}

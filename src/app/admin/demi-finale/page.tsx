@@ -32,11 +32,11 @@ export default async function RegieSemifinalePage() {
 
   if (!event) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-xl mb-4">
           Régie Demi-finale
         </h1>
-        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-8 text-center">
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-6 sm:p-8 text-center">
           <p className="text-white/40 mb-4">Aucun événement de demi-finale créé.</p>
           <CreateEventButton sessionId={session.id} eventType="semifinal" label="Créer la demi-finale" />
         </div>
@@ -87,7 +87,7 @@ export default async function RegieSemifinalePage() {
   const config = (session.config || {}) as Record<string, unknown>
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       <RegieSemifinale
         session={session}
         event={event}

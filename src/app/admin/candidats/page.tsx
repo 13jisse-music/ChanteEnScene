@@ -35,17 +35,17 @@ export default async function AdminCandidatsPage() {
   const { session, candidates, scores } = await getCandidates()
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
         <div>
-          <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-2xl text-white">
+          <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-xl sm:text-2xl text-white">
             Candidats
           </h1>
           {session && (
             <p className="text-white/40 text-sm mt-1">{session.name}</p>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           {['Enfant', 'Ado', 'Adulte'].map((cat) => {
             const count = candidates.filter((c) => c.category === cat).length
             if (count === 0) return null
@@ -55,8 +55,8 @@ export default async function AdminCandidatsPage() {
               </span>
             )
           })}
-          <span className="text-white font-bold text-lg bg-[#e91e8c]/10 border border-[#e91e8c]/25 px-4 py-1.5 rounded-xl">
-            {candidates.length} <span className="text-white/50 text-sm font-normal">inscrit(s)</span>
+          <span className="text-white font-bold text-base sm:text-lg bg-[#e91e8c]/10 border border-[#e91e8c]/25 px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl">
+            {candidates.length} <span className="text-white/50 text-xs sm:text-sm font-normal">inscrit(s)</span>
           </span>
         </div>
       </div>

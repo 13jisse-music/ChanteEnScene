@@ -20,7 +20,7 @@ export default async function ConfigPage() {
   if (!session) redirect('/admin/sessions')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <AdminConfig session={session} />
     </div>
   )

@@ -14,7 +14,7 @@ export default async function SessionsPage() {
     .order('year', { ascending: false })
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <SessionManager sessions={sessions || []} />
     </div>
   )

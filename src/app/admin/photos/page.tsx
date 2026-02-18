@@ -33,7 +33,7 @@ export default async function PhotosPage() {
     .order('last_name')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <PhotoAdmin
         sessionId={session.id}
         photos={photos || []}

@@ -68,7 +68,7 @@ export default async function ExportMp3Page() {
   const config = session.config as { semifinal_date?: string; final_date?: string; semifinal_location?: string; final_location?: string }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ExportMp3Manager
         session={{ id: session.id, name: session.name, config }}
         candidates={candidates || []}

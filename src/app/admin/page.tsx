@@ -226,17 +226,17 @@ function StatCard({
   subtitle?: string
 }) {
   return (
-    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-2xl">{icon}</span>
+    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <span className="text-lg sm:text-2xl">{icon}</span>
         <span
-          className="text-xs font-semibold px-2.5 py-1 rounded-full"
+          className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full truncate max-w-[100px] sm:max-w-none"
           style={{ background: `${color}15`, color }}
         >
           {label}
         </span>
       </div>
-      <p className="font-[family-name:var(--font-montserrat)] font-black text-3xl" style={{ color }}>
+      <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl" style={{ color }}>
         {value}
       </p>
       {subtitle && (
@@ -262,10 +262,10 @@ export default async function AdminDashboard() {
   const mp3Count = semifinalists.filter((c) => c.mp3_url).length
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-2xl text-white">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-xl sm:text-2xl text-white">
           Dashboard
         </h1>
         {activeSession && (
@@ -280,7 +280,7 @@ export default async function AdminDashboard() {
 
       {/* Phase stepper */}
       {activeSession && (
-        <div className="flex items-center gap-0 mb-8 px-4 py-3 bg-[#161228] border border-[#2a2545] rounded-2xl overflow-x-auto">
+        <div className="flex items-center gap-0 mb-6 sm:mb-8 px-2 sm:px-4 py-3 bg-[#161228] border border-[#2a2545] rounded-2xl overflow-x-auto">
           {SESSION_STATUSES.map((s, idx) => {
             const cfg = STATUS_CONFIG[s]
             const currentIdx = getStatusIndex(activeSession.status)
@@ -317,8 +317,8 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10`}>
+      {/* Stats Grid — Concours */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
         <StatCard icon="🎤" label="Candidats" value={stats.totalCandidates ?? 0} color="#e91e8c" />
         <StatCard icon="⏳" label="En attente" value={stats.pending ?? 0} color="#f59e0b" />
         <StatCard icon="✅" label="Approuvés" value={stats.approved ?? 0} color="#7ec850" />
@@ -326,30 +326,13 @@ export default async function AdminDashboard() {
         {semifinalistCount > 0 && (
           <StatCard icon="🌟" label="Demi-finalistes" value={semifinalistCount} color="#8b5cf6" />
         )}
-        <StatCard
-          icon="📲"
-          label="Installations PWA"
-          value={stats.pwaInstalls ?? 0}
-          color="#10b981"
-          subtitle={(stats.totalPwaInstalls ?? 0) > 0 ? `${stats.totalPwaInstalls} au total` : undefined}
-        />
-        <StatCard
-          icon="🔔"
-          label="Notifications"
-          value={stats.pushSubscriptions ?? 0}
-          color="#f97316"
-          subtitle={(stats.totalPushSubscriptions ?? 0) > 0 ? `${stats.totalPushSubscriptions} au total` : undefined}
-        />
-        <StatCard
-          icon="📧"
-          label="Abonnés email"
-          value={stats.emailSubscribers ?? 0}
-          color="#8b5cf6"
-        />
+        <StatCard icon="👀" label="Visiteurs" value={stats.uniqueVisitors ?? 0} color="#8b5cf6" />
+        <StatCard icon="📄" label="Pages vues" value={stats.totalPageViews ?? 0} color="#6366f1" />
+        <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" />
       </div>
 
       {/* PWA Adoption Funnel */}
-      <div className="mb-10">
+      <div className="mb-6 sm:mb-10">
         <PwaFunnel
           uniqueVisitors={stats.uniqueVisitors ?? 0}
           pwaInstalls={stats.pwaInstalls ?? 0}
@@ -362,9 +345,9 @@ export default async function AdminDashboard() {
 
       {/* Recent PWA Installs & Notifications */}
       {recentInstalls.length > 0 && (
-        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-10">
-          <div className="p-5 border-b border-[#2a2545]">
-            <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-base">
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-6 sm:mb-10">
+          <div className="p-4 sm:p-5 border-b border-[#2a2545]">
+            <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base">
               Installations récentes
             </h2>
           </div>
@@ -374,8 +357,8 @@ export default async function AdminDashboard() {
               const sourceLabel = i.install_source === 'prompt' ? 'Install' : i.install_source === 'ios_instructions' ? 'iOS' : 'Standalone'
               const location = [i.city, i.region].filter(Boolean).join(', ')
               return (
-                <div key={i.id} className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
-                  <span className="text-xl shrink-0">{platformIcon}</span>
+                <div key={i.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-white/[0.02] transition-colors">
+                  <span className="text-lg sm:text-xl shrink-0">{platformIcon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">
                       {i.platform === 'android' ? 'Android' : i.platform === 'ios' ? 'iOS' : 'Desktop'}
@@ -400,7 +383,7 @@ export default async function AdminDashboard() {
 
       {/* Semifinal Preparation */}
       {semifinalistCount > 0 && (
-        <div className="mb-10">
+        <div className="mb-6 sm:mb-10">
           <SemifinalPrep
             semifinalists={semifinalists}
             mp3Count={mp3Count}
@@ -412,8 +395,8 @@ export default async function AdminDashboard() {
 
       {/* Recent Candidates */}
       <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-[#2a2545]">
-          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-base">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#2a2545]">
+          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base">
             Dernières inscriptions
           </h2>
           <Link
@@ -429,7 +412,7 @@ export default async function AdminDashboard() {
             {recentCandidates.map((c) => {
               const st = STATUS_LABELS[c.status] || { label: c.status, color: '#666' }
               return (
-                <div key={c.id} className="flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
+                <div key={c.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-white/[0.02] transition-colors">
                   {/* Avatar */}
                   <div className="w-10 h-10 rounded-full bg-[#1a1533] overflow-hidden shrink-0">
                     {c.photo_url ? (

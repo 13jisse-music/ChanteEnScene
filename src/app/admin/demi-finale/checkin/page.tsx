@@ -48,7 +48,7 @@ export default async function AdminCheckinPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <CheckinManager
         session={session}
         eventId={event?.id || null}

@@ -42,7 +42,7 @@ export default async function StatsJuryPage() {
     .order('last_name')
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <JuryEngagementStats
         session={{ id: session.id, name: session.name }}
         jurors={jurors || []}

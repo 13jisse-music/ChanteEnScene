@@ -30,11 +30,11 @@ export default async function FinaleStatsPage() {
 
   if (!event) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <h1 className="font-[family-name:var(--font-montserrat)] font-bold text-xl mb-4">
           Statistiques Finale
         </h1>
-        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-8 text-center">
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-6 sm:p-8 text-center">
           <p className="text-white/40">Aucun événement de finale créé.</p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default async function FinaleStatsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <FinaleStats
         session={{ id: session.id, name: session.name, slug: session.slug }}
         event={event}

@@ -47,7 +47,7 @@ export default async function RegieAnalePage() {
     }
 
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <FinaleRundown
           sessionId={session.id}
           sessionName={session.name}
@@ -104,7 +104,7 @@ export default async function RegieAnalePage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <RegieFinale
         session={session}
         event={event}

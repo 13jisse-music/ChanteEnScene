@@ -67,7 +67,7 @@ export default async function StatsEnLignePage() {
   const publicWeightPercent = (config.public_weight_percent as number) || 40
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <StatsEnLigne
         session={{ id: session.id, name: session.name }}
         candidates={candidates || []}

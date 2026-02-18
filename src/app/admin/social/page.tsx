@@ -195,9 +195,9 @@ export default function SocialAdminPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2">Communication</h1>
-      <p className="text-white/50 mb-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+      <h1 className="text-xl sm:text-2xl font-bold mb-2">Communication</h1>
+      <p className="text-white/50 mb-6 sm:mb-8">
         Prévisualisez, personnalisez et publiez sur Facebook, Instagram et en push.
       </p>
 
