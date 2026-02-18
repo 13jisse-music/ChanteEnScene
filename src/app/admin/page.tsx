@@ -99,6 +99,13 @@ async function getStats() {
     .select('*', { count: 'exact', head: true })
     .eq('role', 'public')
 
+  // Email subscribers for active session
+  const { count: emailSubscribers } = await supabase
+    .from('email_subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', activeSession.id)
+    .eq('is_active', true)
+
   // Unique visitors with device classification
   const { data: visitorsData } = await supabase
     .from('page_views')
@@ -185,6 +192,7 @@ async function getStats() {
       pushSubscriptions: Math.max((pushSubscriptions || 0) - 7, 0),
       totalPwaInstalls: totalPwaInstalls || 0,
       totalPushSubscriptions: Math.max((totalPushSubscriptions || 0) - 7, 0),
+      emailSubscribers: emailSubscribers || 0,
       uniqueVisitors,
       totalPageViews: totalPageViews || 0,
       visitorsByDevice,
@@ -331,6 +339,12 @@ export default async function AdminDashboard() {
           value={stats.pushSubscriptions ?? 0}
           color="#f97316"
           subtitle={(stats.totalPushSubscriptions ?? 0) > 0 ? `${stats.totalPushSubscriptions} au total` : undefined}
+        />
+        <StatCard
+          icon="📧"
+          label="Abonnés email"
+          value={stats.emailSubscribers ?? 0}
+          color="#8b5cf6"
         />
       </div>
 

@@ -3,6 +3,7 @@ import Image from "next/image";
 import FloatingNotes from "@/components/FloatingNotes";
 import MiniCountdown from "@/components/MiniCountdown";
 import PageTracker from "@/components/PageTracker";
+import FooterEmailSubscribe from "@/components/FooterEmailSubscribe";
 import { createClient } from "@/lib/supabase/server";
 import { statusToTimelineStep } from "@/lib/phases";
 
@@ -746,6 +747,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ━━━ EMAIL SUBSCRIBE ━━━ */}
+      {session && <FooterEmailSubscribe sessionId={session.id} />}
 
       {/* ━━━ FOOTER ━━━ */}
       <footer

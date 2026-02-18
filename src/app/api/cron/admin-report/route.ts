@@ -98,6 +98,13 @@ export async function GET(request: Request) {
     .eq('session_id', session.id)
     .eq('role', 'public')
 
+  // Email subscribers
+  const { count: emailSubscribers } = await supabase
+    .from('email_subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .eq('is_active', true)
+
   // Unique visitors (distinct fingerprints)
   const { data: visitorsData } = await supabase
     .from('page_views')
@@ -144,7 +151,7 @@ export async function GET(request: Request) {
     role: 'admin',
     payload: {
       title: `Rapport ${period}`,
-      body: `👀 ${uniqueVisitors} visiteurs, 📲 ${pwaInstalls || 0} installs, 🔔 ${Math.max((pushSubscriptions || 0) - 7, 0)} notifs | 🎤 ${totalCandidates || 0} candidats, ❤️ ${totalVotes || 0} votes`,
+      body: `👀 ${uniqueVisitors} visiteurs, 📲 ${pwaInstalls || 0} installs, 🔔 ${Math.max((pushSubscriptions || 0) - 7, 0)} notifs, 📧 ${emailSubscribers || 0} emails | 🎤 ${totalCandidates || 0} candidats, ❤️ ${totalVotes || 0} votes`,
       url: adminUrl,
     },
   })

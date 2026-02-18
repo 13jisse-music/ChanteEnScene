@@ -1,13 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { subscribeEmail } from '@/app/[slug]/live/actions'
+import { subscribeEmail } from '@/app/actions/subscribe-email'
+import { getFingerprint } from '@/lib/fingerprint'
 
 interface Props {
   sessionId: string
+  source?: 'footer' | 'live' | 'install_prompt' | 'mobile_fallback'
+  compact?: boolean
+  subtitle?: string
+  onSuccess?: () => void
 }
 
-export default function EmailSubscribeForm({ sessionId }: Props) {
+export default function EmailSubscribeForm({ sessionId, source = 'footer', compact, subtitle, onSuccess }: Props) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -19,7 +24,8 @@ export default function EmailSubscribeForm({ sessionId }: Props) {
     setStatus('loading')
     setErrorMsg('')
 
-    const result = await subscribeEmail(sessionId, email.trim())
+    const fingerprint = await getFingerprint()
+    const result = await subscribeEmail(sessionId, email.trim(), source, fingerprint)
 
     if (result.error) {
       setStatus('error')
@@ -27,21 +33,23 @@ export default function EmailSubscribeForm({ sessionId }: Props) {
     } else {
       setStatus('success')
       setEmail('')
+      localStorage.setItem('email-subscribed', '1')
+      onSuccess?.()
     }
   }
 
   if (status === 'success') {
     return (
-      <div className="bg-[#7ec850]/10 border border-[#7ec850]/30 rounded-xl px-4 py-3 text-center">
-        <p className="text-[#7ec850] text-sm font-medium">Inscription confirmée !</p>
-        <p className="text-white/40 text-xs mt-1">Vous recevrez les résultats par email.</p>
+      <div className={`bg-[#7ec850]/10 border border-[#7ec850]/30 rounded-xl text-center ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}>
+        <p className="text-[#7ec850] text-sm font-medium">Inscription confirmee !</p>
+        <p className="text-white/40 text-xs mt-1">Vous recevrez les actualites par email.</p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[#1a1232] border border-[#2e2555] rounded-xl p-4 space-y-3">
-      <p className="text-white/50 text-xs text-center">Recevez les résultats par email</p>
+    <form onSubmit={handleSubmit} className={compact ? 'space-y-2' : 'bg-[#1a1232] border border-[#2e2555] rounded-xl p-4 space-y-3'}>
+      {subtitle && <p className="text-white/50 text-xs text-center">{subtitle}</p>}
       <div className="flex gap-2">
         <input
           type="email"

@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
+import EmailSubscribeForm from './EmailSubscribeForm'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-type Phase = 'install' | 'notify'
+type Phase = 'install' | 'notify' | 'email'
 
 function detectPlatform(): string {
   const ua = navigator.userAgent
@@ -39,6 +40,7 @@ export default function InstallPrompt() {
   const [phase, setPhase] = useState<Phase>('install')
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   // Fetch the active session for push subscription
   useEffect(() => {
@@ -54,10 +56,25 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    // Hide on localhost (dev) and desktop
+    // Hide on localhost (dev)
     if (window.location.hostname === 'localhost') return
-    if (window.innerWidth >= 1024) return
 
+    const desktop = window.innerWidth >= 1024
+
+    // Already subscribed via email
+    if (localStorage.getItem('email-subscribed')) return
+
+    if (desktop) {
+      // Desktop: show email subscription prompt after delay
+      const emailDismissed = localStorage.getItem('email-subscribe-dismissed')
+      if (emailDismissed && Date.now() - parseInt(emailDismissed) < 7 * 24 * 60 * 60 * 1000) return
+
+      setIsDesktop(true)
+      setPhase('email')
+      return
+    }
+
+    // Mobile flow below
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 
     // If already installed as PWA, track and skip to notification phase
@@ -67,7 +84,13 @@ export default function InstallPrompt() {
         localStorage.setItem('pwa-install-tracked', '1')
       }
       if ('Notification' in window && Notification.permission === 'granted') return
-      if ('Notification' in window && Notification.permission === 'denied') return
+      if ('Notification' in window && Notification.permission === 'denied') {
+        // Push denied → try email
+        const emailDismissed = localStorage.getItem('email-subscribe-dismissed')
+        if (emailDismissed && Date.now() - parseInt(emailDismissed) < 7 * 24 * 60 * 60 * 1000) return
+        setPhase('email')
+        return
+      }
 
       const notifyDismissed = localStorage.getItem('pwa-notify-dismissed')
       if (notifyDismissed && Date.now() - parseInt(notifyDismissed) < 7 * 24 * 60 * 60 * 1000) return
@@ -139,7 +162,8 @@ export default function InstallPrompt() {
     try {
       const perm = await Notification.requestPermission()
       if (perm !== 'granted') {
-        setDismissed(true)
+        // Push denied → offer email as fallback
+        setPhase('email')
         setNotifyLoading(false)
         return
       }
@@ -167,6 +191,10 @@ export default function InstallPrompt() {
       })
     } catch (err) {
       console.error('Push subscription failed:', err)
+      // Push failed → offer email
+      setPhase('email')
+      setNotifyLoading(false)
+      return
     }
 
     setDismissed(true)
@@ -177,37 +205,54 @@ export default function InstallPrompt() {
     setDismissed(true)
     if (phase === 'install') {
       localStorage.setItem('pwa-install-dismissed', Date.now().toString())
-    } else {
+    } else if (phase === 'notify') {
       localStorage.setItem('pwa-notify-dismissed', Date.now().toString())
+    } else {
+      localStorage.setItem('email-subscribe-dismissed', Date.now().toString())
     }
   }
 
   if (dismissed) return null
   if (phase === 'install' && !deferredPrompt && !isIOS) return null
-  if (phase === 'notify' && (!('Notification' in window) || !('PushManager' in window))) return null
+  if (phase === 'notify' && (!('Notification' in window) || !('PushManager' in window))) {
+    // Push not supported → will switch to email on next render
+    return null
+  }
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom">
+    <div className={`fixed z-50 animate-in slide-in-from-bottom ${
+      isDesktop
+        ? 'bottom-6 right-6 w-96'
+        : 'bottom-24 left-4 right-4 mx-auto max-w-md'
+    }`}>
       <div className="bg-[#1a1232] border border-[#e91e8c]/30 rounded-2xl p-4 shadow-lg shadow-[#e91e8c]/10">
         <div className="flex items-start gap-3">
-          <span className="text-2xl shrink-0">{phase === 'install' ? '\uD83D\uDCF2' : '\uD83D\uDD14'}</span>
+          <span className="text-2xl shrink-0">
+            {phase === 'install' ? '\uD83D\uDCF2' : phase === 'notify' ? '\uD83D\uDD14' : '\uD83D\uDCE7'}
+          </span>
           <div className="flex-1">
             <p className="text-sm font-bold text-white">
-              {phase === 'install' ? 'Installer ChanteEnScene' : 'Activer les notifications'}
+              {phase === 'install'
+                ? 'Installer ChanteEnScene'
+                : phase === 'notify'
+                  ? 'Activer les notifications'
+                  : 'Restez inform\u00e9'}
             </p>
             <p className="text-xs text-white/50 mt-1">
               {phase === 'install'
                 ? isIOS
-                  ? <>Appuyez sur <svg className="inline w-4 h-4 -mt-0.5 text-[#007AFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> puis <strong className="text-white/70">&quot;Sur l&apos;écran d&apos;accueil&quot;</strong></>
-                  : 'Accédez au concours comme une vraie appli, même hors ligne !'
-                : 'Soyez prévenu des votes, résultats et événements en direct !'}
+                  ? <>Appuyez sur <svg className="inline w-4 h-4 -mt-0.5 text-[#007AFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> puis <strong className="text-white/70">&quot;Sur l&apos;&eacute;cran d&apos;accueil&quot;</strong></>
+                  : 'Acc\u00e9dez au concours comme une vraie appli, m\u00eame hors ligne !'
+                : phase === 'notify'
+                  ? 'Soyez pr\u00e9venu des votes, r\u00e9sultats et \u00e9v\u00e9nements en direct !'
+                  : 'Recevez les dates et r\u00e9sultats du concours par email.'}
             </p>
           </div>
           <button
             onClick={handleDismiss}
             className="text-white/20 hover:text-white/50 text-lg shrink-0"
           >
-            ×
+            &times;
           </button>
         </div>
         {phase === 'install' && !isIOS && (
@@ -241,6 +286,16 @@ export default function InstallPrompt() {
             >
               Plus tard
             </button>
+          </div>
+        )}
+        {phase === 'email' && sessionId && (
+          <div className="mt-3">
+            <EmailSubscribeForm
+              sessionId={sessionId}
+              source={isDesktop ? 'install_prompt' : 'mobile_fallback'}
+              compact
+              onSuccess={() => setDismissed(true)}
+            />
           </div>
         )}
       </div>
