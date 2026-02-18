@@ -27,6 +27,8 @@ interface SessionConfig {
   performance_recommended_sec?: number
   vote_duration_sec?: number
   jury_online_voting_closed?: boolean
+  report_email?: string
+  report_frequency?: string
 }
 
 interface Props {
@@ -548,6 +550,36 @@ export default function AdminConfig({ session }: Props) {
         <p className="text-white/30 text-xs mt-2">
           Cette video sera affichee sur la page Live quand aucun evenement n&apos;est en cours.
         </p>
+      </Section>
+
+      {/* Rapports admin */}
+      <Section title="Rapports automatiques">
+        <p className="text-white/40 text-xs mb-4">
+          Recevez un rapport avec les stats du site par email et notification push.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Email du rapport">
+            <input
+              type="email"
+              value={config.report_email || ''}
+              onChange={(e) => updateField('report_email', e.target.value)}
+              placeholder="inscriptions@chantenscene.fr"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Fréquence">
+            <select
+              value={config.report_frequency || 'disabled'}
+              onChange={(e) => updateField('report_frequency', e.target.value)}
+              className={inputClass}
+            >
+              <option value="disabled">Désactivé</option>
+              <option value="daily">Quotidien</option>
+              <option value="weekly">Hebdomadaire</option>
+              <option value="monthly">Mensuel</option>
+            </select>
+          </Field>
+        </div>
       </Section>
 
       {/* Save button bottom */}

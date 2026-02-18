@@ -265,6 +265,130 @@ export function juryWeeklyRecapEmail({
   return { subject, html }
 }
 
+// ─── Admin report email ───
+
+export function adminReportEmail({
+  sessionName,
+  period,
+  totalCandidates,
+  newCandidates,
+  totalVotes,
+  newVotes,
+  pwaInstalls,
+  pushSubscriptions,
+  recentCandidateNames,
+  adminUrl,
+}: {
+  sessionName: string
+  period: string
+  totalCandidates: number
+  newCandidates: number
+  totalVotes: number
+  newVotes: number
+  pwaInstalls: number
+  pushSubscriptions: number
+  recentCandidateNames: { name: string; category: string }[]
+  adminUrl: string
+}) {
+  const subject = `Rapport ${period} — ${sessionName}`
+
+  const candidateRows = recentCandidateNames.slice(0, 5).map((c) => `
+    <tr>
+      <td style="padding:6px 0;color:#ffffff;font-size:13px;">${c.name}</td>
+      <td style="padding:6px 0;color:#e91e8c;font-size:12px;text-align:right;">${c.category}</td>
+    </tr>`).join('')
+
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:22px;font-weight:bold;">
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Scène</span>
+      </span>
+    </div>
+
+    <!-- Card -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
+      <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
+        Rapport ${period}
+      </h1>
+      <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
+        Voici les chiffres pour <strong style="color:#ffffff;">${sessionName}</strong>.
+      </p>
+
+      <!-- Stats Grid -->
+      <div style="margin:0 0 24px 0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="width:50%;padding:8px;">
+              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
+                <div style="color:#e91e8c;font-size:28px;font-weight:bold;">${totalCandidates}</div>
+                <div style="color:#ffffff50;font-size:11px;">Candidats</div>
+                ${newCandidates > 0 ? `<div style="color:#7ec850;font-size:11px;">+${newCandidates} nouveau${newCandidates > 1 ? 'x' : ''}</div>` : ''}
+              </div>
+            </td>
+            <td style="width:50%;padding:8px;">
+              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
+                <div style="color:#3b82f6;font-size:28px;font-weight:bold;">${totalVotes}</div>
+                <div style="color:#ffffff50;font-size:11px;">Votes</div>
+                ${newVotes > 0 ? `<div style="color:#7ec850;font-size:11px;">+${newVotes} nouveau${newVotes > 1 ? 'x' : ''}</div>` : ''}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width:50%;padding:8px;">
+              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
+                <div style="color:#10b981;font-size:28px;font-weight:bold;">${pwaInstalls}</div>
+                <div style="color:#ffffff50;font-size:11px;">Installations PWA</div>
+              </div>
+            </td>
+            <td style="width:50%;padding:8px;">
+              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
+                <div style="color:#f97316;font-size:28px;font-weight:bold;">${pushSubscriptions}</div>
+                <div style="color:#ffffff50;font-size:11px;">Notifications</div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      ${recentCandidateNames.length > 0 ? `
+      <!-- Recent candidates -->
+      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 24px 0;">
+        <p style="color:#f5a623;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px 0;">
+          Dernières inscriptions
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${candidateRows}
+        </table>
+        ${recentCandidateNames.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:8px 0 0 0;">...et ${recentCandidateNames.length - 5} de plus</p>` : ''}
+      </div>
+      ` : ''}
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:24px 0 0 0;">
+        <a href="${adminUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+          Voir le dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p style="color:#ffffff30;font-size:11px;text-align:center;margin-top:24px;line-height:1.5;">
+      ChanteEnScène — Rapport automatique ${period}
+    </p>
+  </div>
+</body>
+</html>`
+
+  return { subject, html }
+}
+
 export function juryInvitationEmail({
   jurorName,
   role,
