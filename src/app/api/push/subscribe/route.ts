@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
           city,
           region,
         },
-        { onConflict: 'endpoint,session_id' }
+        { onConflict: 'endpoint,session_id,role' }
       )
 
     if (error) {
