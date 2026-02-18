@@ -3,7 +3,8 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 
 interface DeviceBreakdown {
-  mobile: number
+  android: number
+  ios: number
   desktop: number
 }
 
@@ -16,17 +17,19 @@ interface PwaFunnelProps {
   pushByDevice: DeviceBreakdown
 }
 
-const MOBILE_COLOR = '#e91e8c'
+const ANDROID_COLOR = '#3ddc84'
+const IOS_COLOR = '#e91e8c'
 const DESKTOP_COLOR = '#3b82f6'
 
 function DevicePie({ devices, size = 80 }: { devices: DeviceBreakdown; size?: number }) {
-  const total = devices.mobile + devices.desktop
+  const total = devices.android + devices.ios + devices.desktop
   if (total === 0) return null
 
-  const data = [
-    { name: 'Mobile', value: devices.mobile },
-    { name: 'Desktop', value: devices.desktop },
-  ]
+  const segments = [
+    { name: 'Android', value: devices.android, color: ANDROID_COLOR },
+    { name: 'iOS', value: devices.ios, color: IOS_COLOR },
+    { name: 'Desktop', value: devices.desktop, color: DESKTOP_COLOR },
+  ].filter(s => s.value > 0)
 
   return (
     <div className="flex items-center gap-3">
@@ -34,7 +37,7 @@ function DevicePie({ devices, size = 80 }: { devices: DeviceBreakdown; size?: nu
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={segments}
               cx="50%"
               cy="50%"
               innerRadius={size * 0.3}
@@ -42,27 +45,41 @@ function DevicePie({ devices, size = 80 }: { devices: DeviceBreakdown; size?: nu
               dataKey="value"
               stroke="none"
             >
-              <Cell fill={MOBILE_COLOR} />
-              <Cell fill={DESKTOP_COLOR} />
+              {segments.map((s) => (
+                <Cell key={s.name} fill={s.color} />
+              ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
       </div>
       <div className="space-y-1 text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: MOBILE_COLOR }} />
-          <span className="text-white/60">
-            Mobile <span className="font-semibold text-white/80">{devices.mobile}</span>
-            <span className="text-white/30 ml-1">({total > 0 ? ((devices.mobile / total) * 100).toFixed(0) : 0}%)</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: DESKTOP_COLOR }} />
-          <span className="text-white/60">
-            Desktop <span className="font-semibold text-white/80">{devices.desktop}</span>
-            <span className="text-white/30 ml-1">({total > 0 ? ((devices.desktop / total) * 100).toFixed(0) : 0}%)</span>
-          </span>
-        </div>
+        {devices.android > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: ANDROID_COLOR }} />
+            <span className="text-white/60">
+              Android <span className="font-semibold text-white/80">{devices.android}</span>
+              <span className="text-white/30 ml-1">({((devices.android / total) * 100).toFixed(0)}%)</span>
+            </span>
+          </div>
+        )}
+        {devices.ios > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: IOS_COLOR }} />
+            <span className="text-white/60">
+              iOS <span className="font-semibold text-white/80">{devices.ios}</span>
+              <span className="text-white/30 ml-1">({((devices.ios / total) * 100).toFixed(0)}%)</span>
+            </span>
+          </div>
+        )}
+        {devices.desktop > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: DESKTOP_COLOR }} />
+            <span className="text-white/60">
+              Desktop <span className="font-semibold text-white/80">{devices.desktop}</span>
+              <span className="text-white/30 ml-1">({((devices.desktop / total) * 100).toFixed(0)}%)</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

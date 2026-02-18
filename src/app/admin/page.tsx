@@ -113,7 +113,7 @@ async function getStats() {
     .eq('session_id', activeSession.id)
     .not('fingerprint', 'is', null)
 
-  const visitorsByDevice = { mobile: 0, desktop: 0 }
+  const visitorsByDevice = { android: 0, ios: 0, desktop: 0 }
   if (visitorsData) {
     const seen = new Map<string, string | null>()
     for (const row of visitorsData) {
@@ -121,14 +121,16 @@ async function getStats() {
     }
     for (const ua of seen.values()) {
       const lower = (ua || '').toLowerCase()
-      if (/mobile|android|iphone|ipod|opera mini|iemobile|blackberry/.test(lower)) {
-        visitorsByDevice.mobile++
+      if (/iphone|ipad|ipod/.test(lower)) {
+        visitorsByDevice.ios++
+      } else if (/android/.test(lower)) {
+        visitorsByDevice.android++
       } else {
         visitorsByDevice.desktop++
       }
     }
   }
-  const uniqueVisitors = visitorsByDevice.mobile + visitorsByDevice.desktop
+  const uniqueVisitors = visitorsByDevice.android + visitorsByDevice.ios + visitorsByDevice.desktop
 
   // PWA installs by device
   const { data: installsData } = await supabase
@@ -136,11 +138,13 @@ async function getStats() {
     .select('platform')
     .eq('session_id', activeSession.id)
 
-  const installsByDevice = { mobile: 0, desktop: 0 }
+  const installsByDevice = { android: 0, ios: 0, desktop: 0 }
   if (installsData) {
     for (const row of installsData) {
-      if (row.platform === 'android' || row.platform === 'ios') {
-        installsByDevice.mobile++
+      if (row.platform === 'android') {
+        installsByDevice.android++
+      } else if (row.platform === 'ios') {
+        installsByDevice.ios++
       } else {
         installsByDevice.desktop++
       }
@@ -154,7 +158,7 @@ async function getStats() {
     .eq('session_id', activeSession.id)
     .eq('role', 'public')
 
-  const pushByDevice = { mobile: 0, desktop: 0 }
+  const pushByDevice = { android: 0, ios: 0, desktop: 0 }
   if (pushData && visitorsData) {
     const fpToUa = new Map<string, string | null>()
     for (const row of visitorsData) {
@@ -166,8 +170,10 @@ async function getStats() {
       counted.add(row.fingerprint)
       const ua = fpToUa.get(row.fingerprint)
       const lower = (ua || '').toLowerCase()
-      if (/mobile|android|iphone|ipod|opera mini|iemobile|blackberry/.test(lower)) {
-        pushByDevice.mobile++
+      if (/iphone|ipad|ipod/.test(lower)) {
+        pushByDevice.ios++
+      } else if (/android/.test(lower)) {
+        pushByDevice.android++
       } else {
         pushByDevice.desktop++
       }
@@ -337,9 +343,9 @@ export default async function AdminDashboard() {
           uniqueVisitors={stats.uniqueVisitors ?? 0}
           pwaInstalls={stats.pwaInstalls ?? 0}
           pushSubscriptions={stats.pushSubscriptions ?? 0}
-          visitorsByDevice={stats.visitorsByDevice ?? { mobile: 0, desktop: 0 }}
-          installsByDevice={stats.installsByDevice ?? { mobile: 0, desktop: 0 }}
-          pushByDevice={stats.pushByDevice ?? { mobile: 0, desktop: 0 }}
+          visitorsByDevice={stats.visitorsByDevice ?? { android: 0, ios: 0, desktop: 0 }}
+          installsByDevice={stats.installsByDevice ?? { android: 0, ios: 0, desktop: 0 }}
+          pushByDevice={stats.pushByDevice ?? { android: 0, ios: 0, desktop: 0 }}
         />
       </div>
 
