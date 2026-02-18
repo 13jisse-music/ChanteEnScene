@@ -67,23 +67,16 @@ export default function AdminConfig({ session }: Props) {
   const [pushStatus, setPushStatus] = useState<'unknown' | 'subscribed' | 'not_subscribed' | 'unsupported'>('unknown')
   const [pushLoading, setPushLoading] = useState(false)
 
-  // Check admin push subscription status
+  // Check admin push subscription status (localStorage flag per session)
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       setPushStatus('unsupported')
       return
     }
-    if (Notification.permission === 'granted') {
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.pushManager.getSubscription().then((sub) => {
-          setPushStatus(sub ? 'subscribed' : 'not_subscribed')
-        })
-      })
-    } else {
-      setPushStatus('not_subscribed')
-    }
-  }, [])
+    const adminPushDone = localStorage.getItem(`admin-push-${session.id}`)
+    setPushStatus(adminPushDone ? 'subscribed' : 'not_subscribed')
+  }, [session.id])
 
   const handleAdminPushSubscribe = useCallback(async () => {
     setPushLoading(true)
@@ -113,6 +106,7 @@ export default function AdminConfig({ session }: Props) {
           fingerprint,
         }),
       })
+      localStorage.setItem(`admin-push-${session.id}`, '1')
       setPushStatus('subscribed')
       setMessage({ type: 'success', text: 'Notifications admin activées !' })
       setTimeout(() => setMessage(null), 3000)
