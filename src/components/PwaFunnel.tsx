@@ -1,5 +1,7 @@
 'use client'
 
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+
 interface DeviceBreakdown {
   mobile: number
   desktop: number
@@ -12,6 +14,58 @@ interface PwaFunnelProps {
   visitorsByDevice: DeviceBreakdown
   installsByDevice: DeviceBreakdown
   pushByDevice: DeviceBreakdown
+}
+
+const MOBILE_COLOR = '#e91e8c'
+const DESKTOP_COLOR = '#3b82f6'
+
+function DevicePie({ devices, size = 80 }: { devices: DeviceBreakdown; size?: number }) {
+  const total = devices.mobile + devices.desktop
+  if (total === 0) return null
+
+  const data = [
+    { name: 'Mobile', value: devices.mobile },
+    { name: 'Desktop', value: devices.desktop },
+  ]
+
+  return (
+    <div className="flex items-center gap-3">
+      <div style={{ width: size, height: size }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={size * 0.3}
+              outerRadius={size * 0.45}
+              dataKey="value"
+              stroke="none"
+            >
+              <Cell fill={MOBILE_COLOR} />
+              <Cell fill={DESKTOP_COLOR} />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ background: MOBILE_COLOR }} />
+          <span className="text-white/60">
+            Mobile <span className="font-semibold text-white/80">{devices.mobile}</span>
+            <span className="text-white/30 ml-1">({total > 0 ? ((devices.mobile / total) * 100).toFixed(0) : 0}%)</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full" style={{ background: DESKTOP_COLOR }} />
+          <span className="text-white/60">
+            Desktop <span className="font-semibold text-white/80">{devices.desktop}</span>
+            <span className="text-white/30 ml-1">({total > 0 ? ((devices.desktop / total) * 100).toFixed(0) : 0}%)</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function PwaFunnel({
@@ -57,7 +111,7 @@ export default function PwaFunnel({
         Funnel visiteurs &rarr; installation &rarr; notifications
       </p>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {steps.map((step, idx) => {
           const pct = max > 0 ? (step.value / max) * 100 : 0
           const conversionRate =
@@ -65,20 +119,17 @@ export default function PwaFunnel({
               ? ((step.value / steps[idx - 1].value) * 100).toFixed(1)
               : null
 
-          const mobilePct = step.value > 0 ? (step.devices.mobile / step.value) * 100 : 0
-          const desktopPct = step.value > 0 ? (step.devices.desktop / step.value) * 100 : 0
-
           return (
             <div key={step.label}>
               {/* Label row */}
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-base">{step.icon}</span>
                   <span className="text-sm text-white/70">{step.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
-                    className="font-[family-name:var(--font-montserrat)] font-black text-lg"
+                    className="font-[family-name:var(--font-montserrat)] font-black text-xl"
                     style={{ color: step.color }}
                   >
                     {step.value}
@@ -91,65 +142,30 @@ export default function PwaFunnel({
                 </div>
               </div>
 
-              {/* Bar */}
-              <div className="h-8 rounded-lg bg-white/5 overflow-hidden relative">
-                <div
-                  className="h-full rounded-lg transition-all duration-700 ease-out"
-                  style={{
-                    width: `${Math.max(pct, step.value > 0 ? 3 : 0)}%`,
-                    background: `linear-gradient(90deg, ${step.color}, ${step.color}99)`,
-                  }}
-                />
-                {pct > 0 && (
-                  <span
-                    className="absolute inset-y-0 flex items-center text-xs font-semibold text-white/80"
-                    style={{ left: Math.max(pct, 3) > 15 ? '12px' : `${Math.max(pct, 3) + 2}%` }}
-                  >
-                    {pct.toFixed(1)}%
-                  </span>
-                )}
-              </div>
-
-              {/* Device breakdown */}
-              {step.value > 0 && (
-                <div className="flex items-center gap-4 mt-1.5 ml-7">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs">📱</span>
-                    <span className="text-xs text-white/50">
-                      {step.devices.mobile}
+              {/* Bar + Pie side by side */}
+              <div className="flex items-center gap-4">
+                {/* Funnel bar */}
+                <div className="flex-1 h-6 rounded-lg bg-white/5 overflow-hidden relative">
+                  <div
+                    className="h-full rounded-lg transition-all duration-700 ease-out"
+                    style={{
+                      width: `${Math.max(pct, step.value > 0 ? 3 : 0)}%`,
+                      background: `linear-gradient(90deg, ${step.color}, ${step.color}99)`,
+                    }}
+                  />
+                  {pct > 0 && (
+                    <span
+                      className="absolute inset-y-0 flex items-center text-[10px] font-semibold text-white/80"
+                      style={{ left: Math.max(pct, 3) > 15 ? '8px' : `${Math.max(pct, 3) + 2}%` }}
+                    >
+                      {pct.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-white/25">
-                      ({mobilePct.toFixed(0)}%)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs">💻</span>
-                    <span className="text-xs text-white/50">
-                      {step.devices.desktop}
-                    </span>
-                    <span className="text-[10px] text-white/25">
-                      ({desktopPct.toFixed(0)}%)
-                    </span>
-                  </div>
-                  {/* Mini proportional bar */}
-                  <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden flex">
-                    <div
-                      className="h-full rounded-l-full transition-all duration-500"
-                      style={{
-                        width: `${mobilePct}%`,
-                        background: '#e91e8c',
-                      }}
-                    />
-                    <div
-                      className="h-full rounded-r-full transition-all duration-500"
-                      style={{
-                        width: `${desktopPct}%`,
-                        background: '#3b82f6',
-                      }}
-                    />
-                  </div>
+                  )}
                 </div>
-              )}
+
+                {/* Pie chart */}
+                {step.value > 0 && <DevicePie devices={step.devices} size={70} />}
+              </div>
 
               {/* Arrow between steps */}
               {idx < steps.length - 1 && (
@@ -166,23 +182,12 @@ export default function PwaFunnel({
 
       {/* Summary */}
       {uniqueVisitors > 0 && (
-        <div className="mt-5 pt-4 border-t border-[#2a2545] space-y-2">
+        <div className="mt-5 pt-4 border-t border-[#2a2545]">
           <div className="flex justify-between text-xs">
             <span className="text-white/30">Taux global visiteur &rarr; notif</span>
             <span className="font-semibold" style={{ color: '#f97316' }}>
               {((pushSubscriptions / uniqueVisitors) * 100).toFixed(1)}%
             </span>
-          </div>
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-[10px] text-white/25">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full" style={{ background: '#e91e8c' }} />
-              Mobile
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full" style={{ background: '#3b82f6' }} />
-              Desktop
-            </div>
           </div>
         </div>
       )}

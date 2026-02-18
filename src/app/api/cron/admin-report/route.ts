@@ -98,6 +98,17 @@ export async function GET(request: Request) {
     .eq('session_id', session.id)
     .eq('role', 'public')
 
+  // Unique visitors (distinct fingerprints)
+  const { data: visitorsData } = await supabase
+    .from('page_views')
+    .select('fingerprint')
+    .eq('session_id', session.id)
+    .not('fingerprint', 'is', null)
+
+  const uniqueVisitors = visitorsData
+    ? new Set(visitorsData.map((r) => r.fingerprint)).size
+    : 0
+
   // Recent candidates for the list
   const { data: recentCandidates } = await supabase
     .from('candidates')
@@ -133,7 +144,7 @@ export async function GET(request: Request) {
     role: 'admin',
     payload: {
       title: `Rapport ${period}`,
-      body: `${totalCandidates || 0} candidats, ${totalVotes || 0} votes, ${pwaInstalls || 0} installs`,
+      body: `👀 ${uniqueVisitors} visiteurs, 📲 ${pwaInstalls || 0} installs, 🔔 ${Math.max((pushSubscriptions || 0) - 7, 0)} notifs | 🎤 ${totalCandidates || 0} candidats, ❤️ ${totalVotes || 0} votes`,
       url: adminUrl,
     },
   })

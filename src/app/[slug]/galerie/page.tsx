@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import PhotoGallery from '@/components/PhotoGallery'
+import PageTracker from '@/components/PageTracker'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -48,6 +49,7 @@ export default async function GaleriePage({ params }: { params: Promise<{ slug: 
 
   return (
     <section className="relative z-10 py-8 px-4 max-w-7xl mx-auto">
+      <PageTracker sessionId={session.id} pagePath={`/${slug}/galerie`} />
       <PhotoGallery photos={formattedPhotos} sessionName={session.name} />
     </section>
   )

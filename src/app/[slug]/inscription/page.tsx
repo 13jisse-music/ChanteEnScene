@@ -4,6 +4,7 @@ import InscriptionForm from '@/components/InscriptionForm'
 import RegistrationCountdown from '@/components/RegistrationCountdown'
 import Link from 'next/link'
 import Image from 'next/image'
+import PageTracker from '@/components/PageTracker'
 
 type Params = Promise<{ slug: string }>
 
@@ -53,6 +54,7 @@ export default async function InscriptionPage({ params }: { params: Params }) {
 
   return (
     <main className="relative min-h-screen py-8 px-4">
+      <PageTracker sessionId={session.id} pagePath={`/${slug}/inscription`} />
       {/* Hero background — z-1 to sit above BokehBackground (z-0) */}
       <div className="fixed inset-0 z-[1] pointer-events-none">
         <Image

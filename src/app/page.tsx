@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FloatingNotes from "@/components/FloatingNotes";
 import MiniCountdown from "@/components/MiniCountdown";
+import PageTracker from "@/components/PageTracker";
 import { createClient } from "@/lib/supabase/server";
 import { statusToTimelineStep } from "@/lib/phases";
 
@@ -189,6 +190,7 @@ export default async function HomePage() {
 
   return (
     <>
+      {session && <PageTracker sessionId={session.id} pagePath="/" />}
       <FloatingNotes />
 
       {/* ━━━ LIVE BANNER ━━━ */}

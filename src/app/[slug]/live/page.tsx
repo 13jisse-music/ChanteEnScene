@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import LiveView from '@/components/LiveView'
 import LiveEventWatcher from '@/components/LiveEventWatcher'
+import PageTracker from '@/components/PageTracker'
 
 type Params = Promise<{ slug: string }>
 
@@ -162,6 +163,7 @@ export default async function LivePage({ params }: { params: Params }) {
 
   return (
     <main className="min-h-screen py-8 px-4">
+      <PageTracker sessionId={session.id} pagePath={`/${slug}/live`} />
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8 animate-fade-up">
           <h1

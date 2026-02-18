@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import CandidateGallery from '@/components/CandidateGallery'
+import PageTracker from '@/components/PageTracker'
 
 type Params = Promise<{ slug: string }>
 
@@ -43,6 +44,7 @@ export default async function CandidatsPage({ params }: { params: Params }) {
 
   return (
     <main className="min-h-screen md:py-8 md:px-4">
+      <PageTracker sessionId={session.id} pagePath={`/${slug}/candidats`} />
       <div className="md:max-w-6xl md:mx-auto">
         {/* Header (hidden on mobile, swipe feed has its own) */}
         <div className="text-center mb-10 animate-fade-up hidden md:block">
