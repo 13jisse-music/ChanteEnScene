@@ -58,7 +58,7 @@ export async function sendPushNotifications(options: SendPushOptions) {
 
   const fullPayload: PushPayload = {
     icon: '/images/pwa-icon-192.png',
-    badge: '/images/pwa-icon-192.png',
+    badge: '/images/pwa-badge-96.png',
     ...payload,
   }
 

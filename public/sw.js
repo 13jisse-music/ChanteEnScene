@@ -44,7 +44,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/images/pwa-icon-192.png',
-    badge: payload.badge || '/images/pwa-icon-192.png',
+    badge: payload.badge || '/images/pwa-badge-96.png',
     tag: payload.tag || 'ces-default',
     data: { url: payload.url || '/', ...payload.data },
     vibrate: [200, 100, 200],
