@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   const reportEmail = (config.report_email as string) || ''
 
   if (frequency === 'disabled' || !reportEmail) {
-    return NextResponse.json({ message: 'Reports disabled or no email configured', sent: false })
+    return NextResponse.json({ message: 'Reports disabled or no email configured', sent: false, debug: { frequency, reportEmail, sessionId: session.id, configKeys: Object.keys(config) } })
   }
 
   // Check if it's time to send
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     const elapsed = Date.now() - new Date(lastSent).getTime()
     const minInterval = FREQUENCY_MS[frequency]
     if (minInterval && elapsed < minInterval) {
-      return NextResponse.json({ message: 'Too soon for next report', sent: false })
+      return NextResponse.json({ message: 'Too soon for next report', sent: false, debug: { frequency, lastSent, elapsed, minInterval } })
     }
   }
 
