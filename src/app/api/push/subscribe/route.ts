@@ -12,20 +12,24 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
+    // Delete any existing subscription for this endpoint first
+    await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', endpoint)
+      .eq('session_id', sessionId)
+
     const { error } = await supabase
       .from('push_subscriptions')
-      .upsert(
-        {
-          session_id: sessionId,
-          endpoint,
-          p256dh,
-          auth,
-          role: role || 'public',
-          juror_id: jurorId || null,
-          fingerprint: fingerprint || null,
-        },
-        { onConflict: 'endpoint,session_id,role' }
-      )
+      .insert({
+        session_id: sessionId,
+        endpoint,
+        p256dh,
+        auth,
+        role: role || 'public',
+        juror_id: jurorId || null,
+        fingerprint: fingerprint || null,
+      })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
