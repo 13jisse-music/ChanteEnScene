@@ -52,3 +52,5 @@ nul
 
 # claude code
 .claude/
+
+.vercel
