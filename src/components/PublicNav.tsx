@@ -16,10 +16,10 @@ const LEFT_LINKS = [
 
 const RIGHT_LINKS = [
   { href: `/${SESSION_SLUG}/candidats`, label: 'Candidats' },
-  { href: `/${SESSION_SLUG}/galerie`, label: 'Galerie' },
   { href: `/${SESSION_SLUG}/partenaires`, label: 'Partenaires' },
   { href: `/${SESSION_SLUG}/live`, label: 'Live / Votes' },
   { href: '/palmares', label: 'Palmarès' },
+  { href: '/editions', label: 'Editions' },
 ]
 
 const ALL_LINKS = [...LEFT_LINKS, ...RIGHT_LINKS]

@@ -52,6 +52,9 @@
 - `backup-db.js` — Script de backup local
 - `migrate-prod-to-dev.js` — Migration données ancienne base → nouvelle
 - `migrate-create-tables.sql` — SQL pour créer tables manquantes
+- `extract-photos.ps1` — Extraction photos JPG depuis ZIP SwissTransfer
+- `triage-photos.js` — Triage auto qualité photos (sharp) + détection rafales
+- `import-photos-2025.js` — Import photos vers Supabase Storage + BDD (resize 1600px)
 
 ## Stack technique
 - **Framework** : Next.js 16.1.6 (React 19.2.3) + TypeScript
@@ -77,7 +80,8 @@
 - **live_events** : Demi-finales et finales en direct, statut pending→live→paused→completed
 - **lineup** : Ordre de passage, statut pending→performing→completed/absent/replay
 - **live_votes** : Votes temps réel pendant events live
-- **photos** : Galerie avec tags candidat/event
+- **photos** : Galerie avec tags candidat/event (81 photos 2025 dans Storage bucket `photos`)
+- **edition_videos** : Vidéos YouTube par session (titre, URL, description, published)
 - **chatbot_faq** / **chatbot_conversations** : FAQ automatique
 - **admin_users** : super_admin ou local_admin avec session_ids
 - **page_views** : Analytics par fingerprint
@@ -101,6 +105,7 @@
 - `/:slug/mon-profil` — Gestion profil candidat
 - `/:slug/galerie` — Galerie photos
 - `/palmares` — Palmarès
+- `/editions` — Galerie des éditions (photos + vidéos YouTube par année)
 - `/mentions-legales`, `/reglement`, `/confidentialite` — Pages légales
 
 ## Routes admin
@@ -118,6 +123,7 @@
 - `/admin/export-mp3` — Export ZIP par catégorie
 - `/admin/photos` — Gestion galerie
 - `/admin/chatbot` — Gestion FAQ
+- `/admin/editions` — Galerie éditions (photos publish/unpublish, vidéos YouTube)
 - `/admin/seed` — Données de test
 
 ## Routes jury
@@ -164,7 +170,7 @@
 ### Admin
 - `AdminConfig.tsx`, `CandidatsTable.tsx`, `FinalisteSelection.tsx`
 - `Mp3Uploader.tsx`, `ExportMp3Manager.tsx`, `EventManager.tsx`
-- `PhotoAdmin.tsx`, `PhotoGallery.tsx`, `SessionManager.tsx`
+- `PhotoAdmin.tsx`, `PhotoGallery.tsx`, `SessionManager.tsx`, `EditionsAdmin.tsx`
 - `ChatbotWidget.tsx`, `ChatbotAdmin.tsx`
 - `PwaFunnel.tsx` — Dashboard adoption PWA (Android/iOS/Desktop)
 - `InstallPrompt.tsx` — Bandeau installation PWA + notifications + email fallback
@@ -196,6 +202,20 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-19 — Galerie Editions + Import photos 2025
+- **Nouvelle page `/editions`** : Galerie publique année par année (2025, 2024, 2023...) avec photos + vidéos YouTube
+- **Nouvelle page `/admin/editions`** : Admin pour publier/dépublier photos et gérer vidéos YouTube
+- **Migration `023_edition_videos.sql`** : Table `edition_videos` (YouTube links par session)
+- **Composants** : `EditionsGallery.tsx` (public, lightbox, grille responsive), `EditionsAdmin.tsx` (admin, toggle publish, bulk actions)
+- **Server Actions** : `toggleEditionPhoto`, `bulkToggleEditionPhotos`, `deleteEditionPhoto`, `addEditionVideo`, `toggleEditionVideo`, `deleteEditionVideo`
+- **Navigation** : Lien "Editions" ajouté dans `PublicNav.tsx` et `AdminSidebar.tsx`
+- **Import photos 2025** : 81 photos importées dans Supabase Storage (bucket `photos`, public) + table `photos`
+  - Pipeline : SwissTransfer ZIP → extract → triage auto (sharp: brightness/contrast/entropy + burst detection) → slideshow review manuelle → resize 1600px → upload
+  - Scripts utilitaires (gitignored) : `extract-photos.ps1`, `triage-photos.js`, `import-photos-2025.js`
+  - Bucket Storage `photos` créé via API (n'existait pas)
+  - Toutes les photos importées en `published=false`, prêtes à publier depuis l'admin
+- **Vidéos 2025** : 5 vidéos montées gardées (rushes MVI_*.MOV supprimés), à uploader sur YouTube puis ajouter via admin
 
 ### 2026-02-19 — Migration & infrastructure
 - Split Android/iOS dans le dashboard PWA adoption (`PwaFunnel.tsx`, `admin/page.tsx`)
