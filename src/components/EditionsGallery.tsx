@@ -54,13 +54,13 @@ function YearBanner({ year, name, city, isOpen, onToggle, photoCount }: { year: 
       <div className="flex-1 min-w-0">
         <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-white text-sm sm:text-base md:text-lg truncate">{name}</h2>
         <p className="text-white/40 text-[11px] sm:text-sm truncate">
-          {city} — <a
+          {city} — Julien aka <a
             href="https://www.instagram.com/playy_mo/"
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="hover:text-[#e91e8c] transition-colors"
-          >Julien</a> aka Playymo &#128247;&#10084;&#65039;
+          >Playymo</a> &#128247;&#10084;&#65039;
         </p>
       </div>
       <div className="shrink-0 flex items-center gap-2">
