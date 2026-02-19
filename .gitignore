@@ -35,9 +35,13 @@ yarn-error.log*
 .env
 .env.keys
 
-# migration scripts
+# migration & utility scripts
 migrate-*.js
 migrate-*.sql
+backup-db.js
+
+# database backups
+backups/
 
 # SFTP
 .vscode/sftp.json
