@@ -11,8 +11,6 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
-    const city = request.headers.get('x-vercel-ip-city') || null
-    const region = request.headers.get('x-vercel-ip-country-region') || null
 
     const { error } = await supabase
       .from('push_subscriptions')
@@ -25,8 +23,6 @@ export async function POST(request: NextRequest) {
           role: role || 'public',
           juror_id: jurorId || null,
           fingerprint: fingerprint || null,
-          city,
-          region,
         },
         { onConflict: 'endpoint,session_id,role' }
       )
