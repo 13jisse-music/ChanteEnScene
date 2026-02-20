@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 import EmailSubscribeForm from './EmailSubscribeForm'
@@ -35,7 +34,6 @@ async function trackInstall(sessionId: string | null, platform: string, installS
 }
 
 export default function InstallPrompt() {
-  const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
@@ -43,7 +41,6 @@ export default function InstallPrompt() {
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
-  const isAdmin = pathname?.startsWith('/admin')
 
   // Fetch the active session for push subscription
   useEffect(() => {
@@ -59,8 +56,6 @@ export default function InstallPrompt() {
   }, [])
 
   useEffect(() => {
-    // Skip on admin pages — admin has its own install flow
-    if (isAdmin) return
     // Hide on localhost (dev)
     if (window.location.hostname === 'localhost') return
 
@@ -136,7 +131,7 @@ export default function InstallPrompt() {
       window.removeEventListener('beforeinstallprompt', handler)
       window.removeEventListener('appinstalled', appInstalledHandler)
     }
-  }, [sessionId, isAdmin])
+  }, [sessionId])
 
   const handleInstall = async () => {
     if (deferredPrompt) {
@@ -213,7 +208,6 @@ export default function InstallPrompt() {
     }
   }
 
-  if (isAdmin) return null
   if (dismissed) return null
   if (phase === 'install' && !deferredPrompt && !isIOS) return null
   if (phase === 'notify' && (!('Notification' in window) || !('PushManager' in window))) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -46,50 +46,9 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [isStandalone, setIsStandalone] = useState(false)
-  const [showInstallHelp, setShowInstallHelp] = useState(false)
 
   // Hide entire sidebar on login page
   const isLoginPage = pathname === '/admin/login'
-
-  useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
-      setIsStandalone(true)
-      return
-    }
-
-    // Force admin manifest so Chrome detects a separate PWA
-    const existingManifest = document.querySelector('link[rel="manifest"]')
-    if (existingManifest) {
-      existingManifest.setAttribute('href', '/manifest-admin.json')
-    } else {
-      const link = document.createElement('link')
-      link.rel = 'manifest'
-      link.href = '/manifest-admin.json'
-      document.head.appendChild(link)
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setInstallPrompt(e)
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  async function handleInstall() {
-    if (installPrompt) {
-      installPrompt.prompt()
-      const result = await installPrompt.userChoice
-      if (result.outcome === 'accepted') {
-        setInstallPrompt(null)
-        setIsStandalone(true)
-      }
-    } else {
-      setShowInstallHelp(true)
-    }
-  }
 
   async function handleLogout() {
     const supabase = createClient()
@@ -183,22 +142,6 @@ export default function AdminSidebar() {
 
         {/* Footer */}
         <div className="p-3 border-t border-[#2a2545]">
-          {!isStandalone && (
-            <>
-              <button
-                onClick={handleInstall}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors w-full mb-1"
-              >
-                <span>📲</span>
-                Installer Admin
-              </button>
-              {showInstallHelp && (
-                <div className="px-3 pb-2 text-[11px] text-white/40 leading-relaxed">
-                  Menu Chrome (⋮) &rarr; &laquo;&nbsp;Installer l&apos;application&nbsp;&raquo;
-                </div>
-              )}
-            </>
-          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors w-full"
