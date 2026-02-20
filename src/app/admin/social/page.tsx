@@ -62,6 +62,7 @@ export default function SocialAdminPage() {
   const [pushTitle, setPushTitle] = useState('')
   const [pushBody, setPushBody] = useState('')
   const [pushUrl, setPushUrl] = useState('')
+  const [pushImage, setPushImage] = useState('')
   const [pushRole, setPushRole] = useState<'all' | 'public' | 'jury'>('all')
   const [pushMode, setPushMode] = useState<'instant' | 'phase'>('instant')
   const [pushPhase, setPushPhase] = useState<string>('')
@@ -265,6 +266,7 @@ export default function SocialAdminPage() {
             title: pushTitle.trim(),
             body: pushBody.trim(),
             url: pushUrl.trim() || undefined,
+            image: pushImage.trim() || undefined,
           },
         }),
       })
@@ -301,6 +303,7 @@ export default function SocialAdminPage() {
             title: pushTitle.trim(),
             body: pushBody.trim(),
             url: pushUrl.trim() || undefined,
+            image: pushImage.trim() || undefined,
           },
         }),
       })
@@ -314,6 +317,7 @@ export default function SocialAdminPage() {
         setPushTitle('')
         setPushBody('')
         setPushUrl('')
+        setPushImage('')
       }
     } catch {
       setPushResult('Erreur réseau')
@@ -867,6 +871,22 @@ export default function SocialAdminPage() {
               className={inputClass}
               placeholder="https://chantenscene.fr/saison-2025/candidats"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm text-white/60 mb-1">
+              Image (optionnel, Android/Chrome uniquement)
+            </label>
+            <input
+              type="url"
+              value={pushImage}
+              onChange={(e) => setPushImage(e.target.value)}
+              className={inputClass}
+              placeholder="https://... URL directe d'une image"
+            />
+            <p className="text-xs text-white/20 mt-1">
+              Affiche une grande image dans la notification. Ignoré sur iOS/Safari.
+            </p>
           </div>
 
           {pushMode === 'instant' && (
