@@ -675,8 +675,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ━━━ AFFICHE ━━━ */}
-      <section className="relative z-10 py-16 px-4">
+      {/* ━━━ AFFICHE ━━━ (masquée temporairement — dates à corriger) */}
+      {/* <section className="relative z-10 py-16 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <h2
             className="font-[family-name:var(--font-montserrat)] font-bold text-2xl md:text-3xl text-white mb-2"
@@ -697,7 +697,7 @@ export default async function HomePage() {
             className="mx-auto rounded-2xl shadow-2xl shadow-black/30 max-w-md w-full"
           />
         </div>
-      </section>
+      </section> */}
 
       {/* ━━━ SPONSORS ━━━ */}
       {sponsors.length > 0 && (
