@@ -81,6 +81,29 @@ export function isStatusBefore(current: string, target: SessionStatus): boolean 
 }
 
 /**
+ * Default push notification messages sent automatically when a phase transition occurs.
+ * These can be overridden per-session via config.custom_phase_notifications[phase].
+ */
+export const PHASE_PUSH_MESSAGES: Partial<Record<SessionStatus, { title: string; body: string }>> = {
+  registration_open: {
+    title: 'Les inscriptions sont ouvertes !',
+    body: 'Inscrivez-vous dès maintenant au concours ChanteEnScène 🎤',
+  },
+  registration_closed: {
+    title: 'Inscriptions fermées — Votes ouverts !',
+    body: 'Découvrez les candidats et votez pour vos favoris ❤️',
+  },
+  semifinal: {
+    title: 'La demi-finale commence !',
+    body: 'Suivez la demi-finale en direct sur l\'app 🌟',
+  },
+  final: {
+    title: 'C\'est la finale !',
+    body: 'Qui sera le grand gagnant ? Suivez la finale en direct 🏆',
+  },
+}
+
+/**
  * Maps session status to homepage timeline step index (0-4).
  * 0 = avant inscriptions, 1 = inscriptions, 2 = sélections/jury,
  * 3 = demi-finale, 4 = grande finale

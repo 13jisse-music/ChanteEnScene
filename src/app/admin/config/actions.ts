@@ -2,8 +2,9 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { SESSION_STATUSES, getStatusIndex, type SessionStatus } from '@/lib/phases'
+import { SESSION_STATUSES, getStatusIndex, PHASE_PUSH_MESSAGES, type SessionStatus } from '@/lib/phases'
 import { requireAdmin } from '@/lib/security'
+import { sendPushNotifications } from '@/lib/push'
 
 export async function updateSessionConfig(sessionId: string, config: Record<string, unknown>) {
   await requireAdmin()
@@ -74,7 +75,7 @@ export async function advanceSessionPhase(sessionId: string) {
 
   const { data: session, error: fetchError } = await supabase
     .from('sessions')
-    .select('status, config')
+    .select('status, config, slug')
     .eq('id', sessionId)
     .single()
 
@@ -102,6 +103,23 @@ export async function advanceSessionPhase(sessionId: string) {
     .eq('id', sessionId)
 
   if (error) return { error: error.message }
+
+  // Send auto push notification for this phase transition
+  const config = session.config as Record<string, unknown> | null
+  const customNotifs = (config?.custom_phase_notifications || {}) as Record<string, { title: string; body: string }>
+  const phaseMessage = customNotifs[nextStatus] || PHASE_PUSH_MESSAGES[nextStatus]
+  if (phaseMessage) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
+    await sendPushNotifications({
+      sessionId,
+      role: 'public',
+      payload: {
+        title: phaseMessage.title,
+        body: phaseMessage.body,
+        url: `${siteUrl}/${session.slug}`,
+      },
+    })
+  }
 
   revalidatePath('/admin/config')
   revalidatePath('/admin')
