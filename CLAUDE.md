@@ -30,6 +30,7 @@
 | `/api/cron/social-post` | `0 9 * * *` | 10h tous les jours | Publication auto réseaux sociaux |
 | `/api/cron/jury-recap` | `0 10 * * 1` | 11h chaque lundi | Récap jury hebdomadaire |
 | `/api/cron/backup` | `0 0 * * 0` | 1h chaque dimanche | Backup BDD dans Supabase Storage |
+| `/api/cron/inscription-reminder` | `0 9 * * *` | 10h tous les jours | Rappel inscriptions J-5 + Jour J (email + push) |
 
 - Tous les crons ont `export const dynamic = 'force-dynamic'` (anti-cache Next.js)
 - Authentification par `Authorization: Bearer CRON_SECRET`
@@ -202,6 +203,40 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-20 — Push auto par étape + Carte installations + Cron inscriptions
+
+#### Carte des installations PWA (admin dashboard)
+- **Carte Leaflet** : Modal plein écran avec markers emoji par plateforme (🤖 Android, 🍎 iOS, 💻 Desktop)
+  - Import dynamique de Leaflet (évite SSR), CSS injecté via `<link>`, fitBounds auto
+  - Composant `InstallsMap.tsx` avec mini PieChart recharts (donut Android/iOS/Desktop)
+- **Géolocalisation** : Capture lat/lng via headers Vercel (`x-vercel-ip-latitude/longitude`) dans `api/pwa/install`
+- **Migration `024_pwa_installs_coordinates.sql`** : Colonnes `latitude`/`longitude` ajoutées à `pwa_installs`
+- **Backfill géocodage** : 14 installs existantes géocodées via Nominatim/OpenStreetMap
+- **Fix encodage URL** : `decodeURIComponent()` sur `x-vercel-ip-city` (Cébazat, Fort Worth, La Penne-sur-Huveaune corrigés)
+- **Liste installations** : Limitée à 5 visibles avec scroll (`max-height: 300px`)
+- Packages ajoutés : `leaflet`, `@types/leaflet`
+
+#### Cron rappel inscriptions
+- **`/api/cron/inscription-reminder`** : Cron quotidien 10h Paris (0 9 * * * UTC)
+  - Envoie email + push public à J-5 et Jour J avant `config.registration_start`
+  - Dédupliqué via `config.inscription_reminder_last_sent`
+  - Template email `inscriptionReminderEmail` dans `lib/emails.ts`
+- Ajouté dans `vercel.json`
+
+#### Push automatique par étape du concours
+- **`PHASE_PUSH_MESSAGES`** dans `lib/phases.ts` : Messages par défaut pour registration_open, registration_closed, semifinal, final
+- **`advanceSessionPhase()`** dans `admin/config/actions.ts` : Envoie auto un push public à chaque transition de phase
+  - Priorité aux messages personnalisés (`config.custom_phase_notifications[phase]`), sinon défaut
+- **Admin social** (`admin/social/page.tsx`) :
+  - Section "Notifications push programmées" : Affiche les phases restantes avec message (défaut/personnalisé) + info cron inscriptions
+  - Toggle "Envoi instantané" / "Liée à une étape" dans le formulaire push
+  - Mode étape : dropdown phase, pré-remplissage message, sauvegarde dans `config.custom_phase_notifications`
+  - Publications auto limitées à 4 lignes visibles (max-h réduit)
+
+#### Divers
+- 20 installations PWA analysées : zéro bot (PWA = action physique obligatoire)
+- VS Code passé en français (pack `ms-ceintl.vscode-language-pack-fr`)
 
 ### 2026-02-19 — Galerie Editions + Import photos 2024/2025
 - **Nouvelle page `/editions`** : Galerie publique année par année (2025, 2024, 2023...) avec photos + vidéos YouTube
