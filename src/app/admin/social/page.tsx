@@ -43,6 +43,7 @@ export default function SocialAdminPage() {
   const [link, setLink] = useState('')
   const [publishing, setPublishing] = useState(false)
   const [socialResult, setSocialResult] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   // Push notification
   const [pushTitle, setPushTitle] = useState('')
@@ -418,24 +419,65 @@ export default function SocialAdminPage() {
 
           <div>
             <label className="block text-sm text-white/60 mb-1">
-              URL image (optionnel, requis pour Instagram)
+              Image (optionnel, requis pour Instagram)
             </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className={inputClass}
-              placeholder="Collez l'URL de l'image générée par ChatGPT..."
-            />
+            <div className="flex gap-2 items-center">
+              <label className={`cursor-pointer px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                uploading ? 'bg-white/10 text-white/30' : 'bg-[#8b5cf6] hover:bg-[#7c3aed] text-white'
+              }`}>
+                {uploading ? 'Upload...' : imageUrl ? 'Changer' : 'Uploader une image'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setUploading(true)
+                    try {
+                      const supabase = createClient()
+                      const ext = file.name.split('.').pop() || 'jpg'
+                      const fileName = `social/${Date.now()}.${ext}`
+                      const { error } = await supabase.storage
+                        .from('photos')
+                        .upload(fileName, file, { contentType: file.type })
+                      if (error) throw error
+                      const { data: urlData } = supabase.storage
+                        .from('photos')
+                        .getPublicUrl(fileName)
+                      setImageUrl(urlData.publicUrl)
+                    } catch (err) {
+                      setSocialResult(`Erreur upload : ${err instanceof Error ? err.message : 'inconnu'}`)
+                    } finally {
+                      setUploading(false)
+                      e.target.value = ''
+                    }
+                  }}
+                />
+              </label>
+              <span className="text-white/30 text-xs">ou</span>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className={`${inputClass} flex-1`}
+                placeholder="Coller une URL..."
+              />
+            </div>
             {imageUrl && (
-              <div className="mt-2 rounded-xl overflow-hidden border border-[#2a2545] max-w-xs">
+              <div className="mt-2 rounded-xl overflow-hidden border border-[#2a2545] max-w-xs relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageUrl} alt="Aperçu" className="w-full h-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl('')}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white/70 hover:text-white text-xs flex items-center justify-center"
+                >
+                  &times;
+                </button>
               </div>
             )}
-            <p className="text-xs text-white/30 mt-1">
-              Astuce : Générez une image avec ChatGPT/DALL-E, uploadez-la sur imgur.com ou postimg.cc, puis collez le lien ici.
-            </p>
           </div>
 
           <div>
