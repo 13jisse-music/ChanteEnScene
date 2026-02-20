@@ -27,6 +27,19 @@ interface CalendarEntry {
   daysUntil: number
 }
 
+interface SocialPostLog {
+  id: string
+  post_type: string
+  source: string
+  message: string
+  image_url: string | null
+  link: string | null
+  facebook_post_id: string | null
+  instagram_post_id: string | null
+  error: string | null
+  created_at: string
+}
+
 export default function SocialAdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [sessionId, setSessionId] = useState('')
@@ -58,6 +71,10 @@ export default function SocialAdminPage() {
   // Copie prompt
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null)
 
+  // Historique des publications
+  const [postLogs, setPostLogs] = useState<SocialPostLog[]>([])
+  const [loadingLogs, setLoadingLogs] = useState(true)
+
   useEffect(() => {
     const supabase = createClient()
     supabase
@@ -77,6 +94,23 @@ export default function SocialAdminPage() {
   useEffect(() => {
     loadPreviews()
   }, [])
+
+  // Charger l'historique des publications
+  useEffect(() => {
+    loadPostLogs()
+  }, [])
+
+  async function loadPostLogs() {
+    setLoadingLogs(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('social_posts_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setPostLogs((data as SocialPostLog[]) || [])
+    setLoadingLogs(false)
+  }
 
   async function loadPreviews() {
     setLoadingPreviews(true)
@@ -184,6 +218,7 @@ export default function SocialAdminPage() {
           message: message.trim(),
           image_url: imageUrl.trim() || undefined,
           link: link.trim() || undefined,
+          session_id: sessionId || undefined,
         }),
       })
       const data = await res.json()
@@ -198,6 +233,7 @@ export default function SocialAdminPage() {
           : data.instagram?.error || 'pas d\'image fournie'
         setSocialResult(`Facebook: ${fbStatus}\nInstagram: ${igStatus}`)
         setSelectedPreview(null)
+        loadPostLogs()
       }
     } catch {
       setSocialResult('Erreur réseau')
@@ -266,6 +302,91 @@ export default function SocialAdminPage() {
       <p className="text-white/50 mb-6 sm:mb-8">
         Prévisualisez, personnalisez et publiez sur Facebook, Instagram et en push.
       </p>
+
+      {/* ── Historique des publications ── */}
+      <div className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-xl">📋</span> Historique des publications
+        </h2>
+
+        {loadingLogs ? (
+          <div className="text-white/30 text-sm py-4 text-center">Chargement...</div>
+        ) : postLogs.length === 0 ? (
+          <div className="text-white/30 text-sm py-4 text-center">Aucune publication pour le moment.</div>
+        ) : (
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {postLogs.map((log) => {
+              const date = new Date(log.created_at)
+              const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+              const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              const fbOk = !!log.facebook_post_id
+              const igOk = !!log.instagram_post_id
+              const hasError = !!log.error
+
+              return (
+                <div
+                  key={log.id}
+                  className={`rounded-xl border p-3 ${
+                    hasError && !fbOk && !igOk
+                      ? 'border-red-500/20 bg-red-500/5'
+                      : 'border-[#2a2545] bg-white/[0.02]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                        log.source === 'manual'
+                          ? 'bg-[#e91e8c]/20 text-[#e91e8c] border-[#e91e8c]/30'
+                          : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                      }`}>
+                        {log.source === 'manual' ? 'Manuel' : 'Auto'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white/70 line-clamp-2">{log.message}</p>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <span className="text-[10px] text-white/30">{dateStr} {timeStr}</span>
+                        {log.source !== 'manual' && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                            TYPE_COLORS[log.post_type] || 'bg-white/10 text-white/50 border-white/20'
+                          }`}>
+                            {log.post_type}
+                          </span>
+                        )}
+                        <span className={`text-[10px] ${fbOk ? 'text-green-400' : 'text-white/20'}`}>
+                          FB {fbOk ? '✓' : '✗'}
+                        </span>
+                        <span className={`text-[10px] ${igOk ? 'text-green-400' : 'text-white/20'}`}>
+                          IG {igOk ? '✓' : '✗'}
+                        </span>
+                        {fbOk && log.facebook_post_id && (
+                          <a
+                            href={`https://www.facebook.com/${log.facebook_post_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-blue-400 hover:text-blue-300"
+                          >
+                            Voir sur FB →
+                          </a>
+                        )}
+                      </div>
+                      {hasError && (
+                        <p className="text-[10px] text-red-400/70 mt-1">{log.error}</p>
+                      )}
+                    </div>
+                    {log.image_url && (
+                      <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-[#2a2545]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={log.image_url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── Prévisualisation des posts ── */}
       <div className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">

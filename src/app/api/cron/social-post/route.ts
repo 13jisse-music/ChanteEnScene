@@ -231,7 +231,9 @@ export async function GET(request: Request) {
         await supabase.from('social_posts_log').insert({
           session_id: session.id,
           post_type: postToPublish.type,
+          source: 'cron',
           message: postToPublish.message,
+          link: postToPublish.link || null,
           facebook_post_id: fbOk && 'id' in result.facebook! ? result.facebook.id : null,
           instagram_post_id: result.instagram && 'id' in result.instagram ? result.instagram.id : null,
           error: fbError || (result.instagram && 'error' in result.instagram ? result.instagram.error : null),
