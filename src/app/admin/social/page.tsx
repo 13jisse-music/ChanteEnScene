@@ -27,6 +27,21 @@ interface CalendarEntry {
   daysUntil: number
 }
 
+interface PushLog {
+  id: string
+  title: string
+  body: string
+  url: string | null
+  image: string | null
+  role: string
+  is_test: boolean
+  sent: number
+  failed: number
+  expired: number
+  sent_by: string | null
+  created_at: string
+}
+
 interface SocialPostLog {
   id: string
   post_type: string
@@ -75,6 +90,10 @@ export default function SocialAdminPage() {
   // Copie prompt
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null)
 
+  // Historique push
+  const [pushLogs, setPushLogs] = useState<PushLog[]>([])
+  const [loadingPushLogs, setLoadingPushLogs] = useState(true)
+
   // Historique des publications
   const [postLogs, setPostLogs] = useState<SocialPostLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(true)
@@ -103,6 +122,23 @@ export default function SocialAdminPage() {
   useEffect(() => {
     loadPostLogs()
   }, [])
+
+  // Charger l'historique push
+  useEffect(() => {
+    loadPushLogs()
+  }, [])
+
+  async function loadPushLogs() {
+    setLoadingPushLogs(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('push_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setPushLogs((data as PushLog[]) || [])
+    setLoadingPushLogs(false)
+  }
 
   async function loadPostLogs() {
     setLoadingLogs(true)
@@ -292,6 +328,7 @@ export default function SocialAdminPage() {
         setPushResult(`Erreur : ${data.error}`)
       } else if (data.sent > 0) {
         setPushResult('Test envoyé sur cet appareil !')
+        loadPushLogs()
       } else {
         setPushResult('Aucun abonnement trouvé pour cet appareil.')
       }
@@ -335,6 +372,7 @@ export default function SocialAdminPage() {
         setPushBody('')
         setPushUrl('')
         setPushImage('')
+        loadPushLogs()
       }
     } catch {
       setPushResult('Erreur réseau')
@@ -1017,6 +1055,63 @@ export default function SocialAdminPage() {
             </div>
           )}
         </form>
+
+        {/* ── Historique push ── */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-xl">📋</span> Historique des notifications
+          </h3>
+          {loadingPushLogs ? (
+            <p className="text-white/30 text-sm">Chargement...</p>
+          ) : pushLogs.length === 0 ? (
+            <p className="text-white/30 text-sm">Aucune notification envoyée</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-white/40 text-xs border-b border-white/10">
+                    <th className="text-left py-2 px-2">Date</th>
+                    <th className="text-left py-2 px-2">Titre</th>
+                    <th className="text-left py-2 px-2">Message</th>
+                    <th className="text-center py-2 px-2">Type</th>
+                    <th className="text-center py-2 px-2">Résultat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pushLogs.map((log) => (
+                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                      <td className="py-2 px-2 text-white/40 whitespace-nowrap text-xs">
+                        {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-2 px-2 text-white/70 max-w-[150px] truncate">
+                        {log.url ? (
+                          <a href={log.url} target="_blank" rel="noopener noreferrer" className="text-[#e91e8c] hover:underline">
+                            {log.title}
+                          </a>
+                        ) : log.title}
+                      </td>
+                      <td className="py-2 px-2 text-white/50 max-w-[200px] truncate">{log.body}</td>
+                      <td className="py-2 px-2 text-center">
+                        {log.is_test ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-300">Test</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-[#e91e8c]/20 text-[#e91e8c]">
+                            {log.role === 'all' ? 'Tous' : log.role === 'public' ? 'Public' : 'Jury'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 px-2 text-center text-xs">
+                        <span className="text-green-400">{log.sent}</span>
+                        {log.failed > 0 && <span className="text-red-400 ml-1">/ {log.failed} err</span>}
+                        {log.expired > 0 && <span className="text-yellow-400 ml-1">/ {log.expired} exp</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

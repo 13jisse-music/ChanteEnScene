@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPushNotifications, PushPayload } from '@/lib/push'
 
 export async function POST(request: NextRequest) {
@@ -38,6 +39,23 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sendPushNotifications({ sessionId, role, jurorId, endpoint, payload })
+
+    // Logger dans push_log
+    const admin = createAdminClient()
+    await admin.from('push_log').insert({
+      session_id: sessionId,
+      title: payload.title,
+      body: payload.body,
+      url: payload.url || null,
+      image: payload.image || null,
+      role: role || 'all',
+      is_test: !!endpoint,
+      sent: result.sent,
+      failed: result.failed,
+      expired: result.expired,
+      sent_by: user.email,
+    })
+
     return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
