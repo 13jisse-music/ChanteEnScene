@@ -29,13 +29,14 @@ interface SendPushOptions {
   sessionId: string
   role?: 'public' | 'jury' | 'admin' | 'all'
   jurorId?: string
+  endpoint?: string
   payload: PushPayload
 }
 
 export async function sendPushNotifications(options: SendPushOptions) {
   if (!vapidReady) return { sent: 0, failed: 0, expired: 0 }
 
-  const { sessionId, role = 'all', jurorId, payload } = options
+  const { sessionId, role = 'all', jurorId, endpoint, payload } = options
   const supabase = createAdminClient()
 
   let query = supabase
@@ -43,7 +44,10 @@ export async function sendPushNotifications(options: SendPushOptions) {
     .select('id, endpoint, p256dh, auth')
     .eq('session_id', sessionId)
 
-  if (role !== 'all') {
+  if (endpoint) {
+    // Test mode: send to a specific endpoint only
+    query = query.eq('endpoint', endpoint)
+  } else if (role !== 'all') {
     query = query.eq('role', role)
   }
   if (jurorId) {

@@ -242,6 +242,47 @@ export default function SocialAdminPage() {
     }
   }
 
+  // ─── Test Push (admin seul) ──────────────────────────
+  async function handleTestPush() {
+    if (!pushTitle.trim() || !pushBody.trim() || !sessionId) return
+    setSending(true)
+    setPushResult(null)
+    try {
+      const reg = await navigator.serviceWorker?.ready
+      const sub = await reg?.pushManager?.getSubscription()
+      if (!sub) {
+        setPushResult('Pas d\'abonnement push sur cet appareil. Activez les notifications d\'abord.')
+        setSending(false)
+        return
+      }
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          endpoint: sub.endpoint,
+          payload: {
+            title: pushTitle.trim(),
+            body: pushBody.trim(),
+            url: pushUrl.trim() || undefined,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setPushResult(`Erreur : ${data.error}`)
+      } else if (data.sent > 0) {
+        setPushResult('Test envoyé sur cet appareil !')
+      } else {
+        setPushResult('Aucun abonnement trouvé pour cet appareil.')
+      }
+    } catch {
+      setPushResult('Erreur réseau')
+    } finally {
+      setSending(false)
+    }
+  }
+
   // ─── Push Notification ────────────────────────────────
   async function handlePush(e: React.FormEvent) {
     e.preventDefault()
@@ -854,15 +895,27 @@ export default function SocialAdminPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={sending || !pushTitle.trim() || !pushBody.trim() || (pushMode === 'instant' ? !sessionId : !pushPhase)}
-            className="bg-[#e91e8c] hover:bg-[#d11a7d] disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-          >
-            {sending
-              ? (pushMode === 'phase' ? 'Sauvegarde...' : 'Envoi en cours...')
-              : (pushMode === 'phase' ? 'Sauvegarder pour cette étape' : 'Envoyer la notification')}
-          </button>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              type="submit"
+              disabled={sending || !pushTitle.trim() || !pushBody.trim() || (pushMode === 'instant' ? !sessionId : !pushPhase)}
+              className="bg-[#e91e8c] hover:bg-[#d11a7d] disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
+              {sending
+                ? (pushMode === 'phase' ? 'Sauvegarde...' : 'Envoi en cours...')
+                : (pushMode === 'phase' ? 'Sauvegarder pour cette étape' : 'Envoyer la notification')}
+            </button>
+            {pushMode === 'instant' && (
+              <button
+                type="button"
+                onClick={handleTestPush}
+                disabled={sending || !pushTitle.trim() || !pushBody.trim() || !sessionId}
+                className="bg-[#0d0b1a] border border-[#2a2545] hover:border-[#e91e8c]/50 disabled:opacity-50 text-white/60 hover:text-white font-medium px-5 py-3 rounded-xl transition-colors text-sm"
+              >
+                Tester sur mon appareil
+              </button>
+            )}
+          </div>
 
           {pushResult && (
             <div

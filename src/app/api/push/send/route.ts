@@ -22,10 +22,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { sessionId, role, jurorId, payload } = body as {
+    const { sessionId, role, jurorId, endpoint, payload } = body as {
       sessionId: string
       role?: 'public' | 'jury' | 'admin' | 'all'
       jurorId?: string
+      endpoint?: string
       payload: PushPayload
     }
 
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await sendPushNotifications({ sessionId, role, jurorId, payload })
+    const result = await sendPushNotifications({ sessionId, role, jurorId, endpoint, payload })
     return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
