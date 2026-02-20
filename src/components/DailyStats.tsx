@@ -47,10 +47,11 @@ export default function DailyStats({ data }: { data: DayData[] }) {
                 fontSize: 12,
               }}
               labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
-              formatter={(value: number, name: string) => [
-                value,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={((value: any, name: any) => [
+                value ?? 0,
                 name === 'pageViews' ? 'Pages vues' : 'Visiteurs uniques',
-              ]}
+              ]) as any}
             />
             <Legend
               formatter={(value: string) =>

@@ -3,6 +3,12 @@ import ToastProvider from '@/components/ToastProvider'
 
 export const metadata = {
   title: 'Admin — ChanteEnScène',
+  manifest: '/manifest-admin.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent' as const,
+    title: 'CES Admin',
+  },
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
