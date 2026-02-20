@@ -436,17 +436,15 @@ export default function SocialAdminPage() {
                     if (!file) return
                     setUploading(true)
                     try {
-                      const supabase = createClient()
-                      const ext = file.name.split('.').pop() || 'jpg'
-                      const fileName = `social/${Date.now()}.${ext}`
-                      const { error } = await supabase.storage
-                        .from('photos')
-                        .upload(fileName, file, { contentType: file.type })
-                      if (error) throw error
-                      const { data: urlData } = supabase.storage
-                        .from('photos')
-                        .getPublicUrl(fileName)
-                      setImageUrl(urlData.publicUrl)
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      const res = await fetch('/api/admin/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                      })
+                      const data = await res.json()
+                      if (data.error) throw new Error(data.error)
+                      setImageUrl(data.url)
                     } catch (err) {
                       setSocialResult(`Erreur upload : ${err instanceof Error ? err.message : 'inconnu'}`)
                     } finally {
