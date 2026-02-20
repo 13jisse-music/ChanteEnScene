@@ -203,19 +203,28 @@
 
 ## Historique des interventions
 
-### 2026-02-19 — Galerie Editions + Import photos 2025
+### 2026-02-19 — Galerie Editions + Import photos 2024/2025
 - **Nouvelle page `/editions`** : Galerie publique année par année (2025, 2024, 2023...) avec photos + vidéos YouTube
+  - Accordéon par année (cliquer pour plier/déplier), première édition avec contenu ouverte par défaut
+  - Lightbox plein écran avec swipe gauche/droite (navigation) + swipe haut/bas (fermer), drag feedback visuel
+  - Crédit photographe : "Julien aka Playymo" avec lien Instagram sur "Playymo" (https://www.instagram.com/playy_mo/)
+  - Filtre `.eq('status', 'archived')` pour exclure l'édition en cours (2026)
 - **Nouvelle page `/admin/editions`** : Admin pour publier/dépublier photos et gérer vidéos YouTube
 - **Migration `023_edition_videos.sql`** : Table `edition_videos` (YouTube links par session)
 - **Composants** : `EditionsGallery.tsx` (public, lightbox, grille responsive), `EditionsAdmin.tsx` (admin, toggle publish, bulk actions)
 - **Server Actions** : `toggleEditionPhoto`, `bulkToggleEditionPhotos`, `deleteEditionPhoto`, `addEditionVideo`, `toggleEditionVideo`, `deleteEditionVideo`
-- **Navigation** : Lien "Editions" ajouté dans `PublicNav.tsx` et `AdminSidebar.tsx`
+- **Navigation** : Lien "Galerie" remplacé par "Editions" dans `PublicNav.tsx`, ajouté dans `AdminSidebar.tsx`
 - **Import photos 2025** : 81 photos importées dans Supabase Storage (bucket `photos`, public) + table `photos`
   - Pipeline : SwissTransfer ZIP → extract → triage auto (sharp: brightness/contrast/entropy + burst detection) → slideshow review manuelle → resize 1600px → upload
   - Scripts utilitaires (gitignored) : `extract-photos.ps1`, `triage-photos.js`, `import-photos-2025.js`
   - Bucket Storage `photos` créé via API (n'existait pas)
-  - Toutes les photos importées en `published=false`, prêtes à publier depuis l'admin
+  - Fix orientation EXIF : ajout `.rotate()` avant `.resize()` dans le pipeline sharp, re-import des 81 photos
+  - Toutes les photos importées en `published=false`, publiées manuellement depuis l'admin
+- **Import photos 2024** : 19 photos importées (`import-photos-2024.js`, session `a0000000-0000-0000-0000-000000002024`)
 - **Vidéos 2025** : 5 vidéos montées gardées (rushes MVI_*.MOV supprimés), à uploader sur YouTube puis ajouter via admin
+- **Notification push envoyée** (19 fév) : "Les Editions" annoncée à tous les abonnés (10 reçues, 12 expirées/nettoyées)
+  - Bug badge : le script ponctuel utilisait `pwa-icon-192.png` au lieu de `pwa-badge-96.png` → le "C" n'apparaissait pas. `push.ts` utilise le bon fichier par défaut, OK pour les prochaines notifs via l'admin
+- **Déployé en production** sur Vercel (commit + push master)
 
 ### 2026-02-19 — Migration & infrastructure
 - Split Android/iOS dans le dashboard PWA adoption (`PwaFunnel.tsx`, `admin/page.tsx`)

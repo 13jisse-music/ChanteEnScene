@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || null
     const city = request.headers.get('x-vercel-ip-city') || null
     const region = request.headers.get('x-vercel-ip-country-region') || null
+    const latStr = request.headers.get('x-vercel-ip-latitude')
+    const lngStr = request.headers.get('x-vercel-ip-longitude')
+    const latitude = latStr ? parseFloat(latStr) : null
+    const longitude = lngStr ? parseFloat(lngStr) : null
 
     const { error } = await supabase
       .from('pwa_installs')
@@ -26,6 +30,8 @@ export async function POST(request: NextRequest) {
           user_agent: userAgent,
           city,
           region,
+          latitude,
+          longitude,
         },
         { onConflict: 'session_id,fingerprint' }
       )

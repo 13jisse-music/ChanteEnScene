@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import SemifinalPrep from '@/components/SemifinalPrep'
 import PwaFunnel from '@/components/PwaFunnel'
+import InstallsMap from '@/components/InstallsMap'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -84,10 +85,9 @@ async function getStats() {
   // Recent PWA installs
   const { data: recentInstalls } = await supabase
     .from('pwa_installs')
-    .select('id, platform, install_source, city, region, created_at')
+    .select('id, platform, install_source, city, region, latitude, longitude, created_at')
     .eq('session_id', activeSession.id)
     .order('created_at', { ascending: false })
-    .limit(10)
 
   // All-time totals
   const { count: totalPwaInstalls } = await supabase
@@ -352,12 +352,13 @@ export default async function AdminDashboard() {
       {/* Recent PWA Installs & Notifications */}
       {recentInstalls.length > 0 && (
         <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-6 sm:mb-10">
-          <div className="p-4 sm:p-5 border-b border-[#2a2545]">
+          <div className="p-4 sm:p-5 border-b border-[#2a2545] flex items-center justify-between">
             <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base">
               Installations récentes
             </h2>
+            <InstallsMap installs={recentInstalls} />
           </div>
-          <div className="divide-y divide-[#2a2545]">
+          <div className="divide-y divide-[#2a2545] overflow-y-auto" style={{ maxHeight: '300px' }}>
             {recentInstalls.map((i) => {
               const platformIcon = i.platform === 'android' ? '🤖' : i.platform === 'ios' ? '🍎' : '💻'
               const sourceLabel = i.install_source === 'prompt' ? 'Install' : i.install_source === 'ios_instructions' ? 'iOS' : 'Standalone'
