@@ -206,14 +206,15 @@ export default async function InfraPage() {
         </h2>
         <div className="space-y-2">
           {parsedBuckets.map((b) => {
-            const pct = totalStorageBytes > 0 ? (b.total_bytes / totalStorageBytes) * 100 : 0
+            const pct = (b.total_bytes / STORAGE_LIMIT_BYTES) * 100
+            const barColor = pct < 5 ? 'bg-green-500' : pct < 20 ? 'bg-green-400' : pct < 50 ? 'bg-yellow-400' : 'bg-red-400'
             return (
               <div key={b.bucket_id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-white/[0.02]">
                 <span className="text-sm font-mono text-white/70 w-24 shrink-0">{b.bucket_id}</span>
                 <div className="flex-1 h-2 bg-[#0d0b1a] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-[#e91e8c]" style={{ width: `${pct}%` }} />
+                  <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(pct, 0.5)}%` }} />
                 </div>
-                <span className="text-xs text-white/40 w-16 text-right">{formatBytes(b.total_bytes)}</span>
+                <span className="text-xs text-white/40 w-20 text-right">{formatBytes(b.total_bytes)} ({pct.toFixed(1)}%)</span>
                 <span className="text-xs text-white/25 w-12 text-right">{b.file_count} f.</span>
               </div>
             )
