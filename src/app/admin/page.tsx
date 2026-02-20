@@ -363,13 +363,21 @@ export default async function AdminDashboard() {
               const platformIcon = i.platform === 'android' ? '🤖' : i.platform === 'ios' ? '🍎' : '💻'
               const sourceLabel = i.install_source === 'prompt' ? 'Install' : i.install_source === 'ios_instructions' ? 'iOS' : 'Standalone'
               const location = [i.city, i.region].filter(Boolean).join(', ')
+              const hasCoords = i.latitude && i.longitude
+              const mapsUrl = hasCoords ? `https://www.google.com/maps?q=${i.latitude},${i.longitude}` : null
+              const Wrapper = mapsUrl ? 'a' : 'div'
               return (
-                <div key={i.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-white/[0.02] transition-colors">
+                <Wrapper
+                  key={i.id}
+                  {...(mapsUrl ? { href: mapsUrl, target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-white/[0.02] transition-colors ${mapsUrl ? 'cursor-pointer' : ''}`}
+                >
                   <span className="text-lg sm:text-xl shrink-0">{platformIcon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">
                       {i.platform === 'android' ? 'Android' : i.platform === 'ios' ? 'iOS' : 'Desktop'}
                       {location && <span className="text-white/40 font-normal"> — {location}</span>}
+                      {mapsUrl && <span className="text-white/20 ml-1 text-xs">📍</span>}
                     </p>
                     <p className="text-xs text-white/30">
                       {new Date(i.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -381,7 +389,7 @@ export default async function AdminDashboard() {
                   >
                     {sourceLabel}
                   </span>
-                </div>
+                </Wrapper>
               )
             })}
           </div>
