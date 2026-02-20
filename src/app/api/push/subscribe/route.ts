@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,27 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
+
+    // Auto-detect admin: if user is logged in and is an admin, upgrade role
+    let resolvedRole = role || 'public'
+    if (resolvedRole === 'public') {
+      try {
+        const serverClient = await createClient()
+        const { data: { user } } = await serverClient.auth.getUser()
+        if (user) {
+          const { data: adminUser } = await supabase
+            .from('admin_users')
+            .select('role')
+            .eq('email', user.email!)
+            .maybeSingle()
+          if (adminUser) {
+            resolvedRole = 'admin'
+          }
+        }
+      } catch {
+        // Silent — keep public role if auth check fails
+      }
+    }
 
     // Delete any existing subscription for this endpoint first
     await supabase
@@ -26,7 +48,7 @@ export async function POST(request: NextRequest) {
         endpoint,
         p256dh,
         auth,
-        role: role || 'public',
+        role: resolvedRole,
         juror_id: jurorId || null,
         fingerprint: fingerprint || null,
       })
