@@ -480,6 +480,89 @@ export function newsletterEmail({
   return { subject, html }
 }
 
+// ─── Inscription reminder email (J-5 / Jour J) ───
+
+export function inscriptionReminderEmail({
+  sessionName,
+  daysLeft,
+  formattedDate,
+  inscriptionUrl,
+  siteUrl,
+  unsubscribeUrl,
+}: {
+  sessionName: string
+  daysLeft: number
+  formattedDate: string
+  inscriptionUrl: string
+  siteUrl: string
+  unsubscribeUrl: string
+}) {
+  const safeSessionName = escapeHtml(sessionName)
+  const isOpenDay = daysLeft === 0
+
+  const subject = isOpenDay
+    ? `Les inscriptions sont ouvertes ! — ${safeSessionName}`
+    : `Les inscriptions ouvrent dans ${daysLeft} jours ! — ${safeSessionName}`
+
+  const headline = isOpenDay
+    ? 'Les inscriptions sont ouvertes !'
+    : `Plus que ${daysLeft} jours avant l\u2019ouverture !`
+
+  const bodyText = isOpenDay
+    ? `Les inscriptions pour <strong style="color:#ffffff;">${safeSessionName}</strong> sont officiellement ouvertes ! Vous pouvez d\u00e8s maintenant d\u00e9poser votre candidature.`
+    : `Les inscriptions pour <strong style="color:#ffffff;">${safeSessionName}</strong> ouvrent le <strong style="color:#ffffff;">${escapeHtml(formattedDate)}</strong>. Pr\u00e9parez votre candidature !`
+
+  const ctaText = isOpenDay ? "S'inscrire maintenant" : 'Visiter le site'
+  const ctaUrl = isOpenDay ? inscriptionUrl : siteUrl
+
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:22px;font-weight:bold;">
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
+      </span>
+    </div>
+
+    <!-- Card -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
+      <div style="text-align:center;font-size:40px;margin-bottom:16px;">${isOpenDay ? '\ud83c\udf89' : '\u23f3'}</div>
+      <h1 style="color:#e91e8c;font-size:20px;margin:0 0 20px 0;text-align:center;">
+        ${headline}
+      </h1>
+
+      <p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;text-align:center;">
+        ${bodyText}
+      </p>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:24px 0 0 0;">
+        <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+          ${ctaText}
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:32px;">
+      <p style="color:#ffffff33;font-size:11px;line-height:1.6;">
+        Vous recevez cet email car vous \u00eates abonn\u00e9 aux actualit\u00e9s ChanteEnSc\u00e8ne.<br/>
+        <a href="${escapeHtml(unsubscribeUrl)}" style="color:#e91e8c;">Se d\u00e9sinscrire</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`
+
+  return { subject, html }
+}
+
 export function juryInvitationEmail({
   jurorName,
   role,
