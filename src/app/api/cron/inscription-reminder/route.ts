@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { inscriptionReminderEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
+import { publishEverywhere } from '@/lib/social'
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -150,6 +151,19 @@ export async function GET(request: Request) {
     }
   }
 
+  // --- Publish on Facebook + Instagram on Jour J ---
+  let socialPosted = false
+  if (daysLeft === 0) {
+    try {
+      const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chantenscene.fr' : siteUrl
+      const socialMessage = `🎤 Les inscriptions pour ${session.name} sont officiellement ouvertes !\n\nVous avez du talent et envie de monter sur scène ? C'est le moment ! Inscrivez-vous dès maintenant 👉 ${socialSiteUrl}/${session.slug}/inscription\n\n#ChanteEnScène #ConcoursDeChant #Aubagne #Inscription`
+      await publishEverywhere(socialMessage, undefined, `${socialSiteUrl}/${session.slug}/inscription`)
+      socialPosted = true
+    } catch {
+      // Silent — social post failure should not block the rest
+    }
+  }
+
   // Mark as sent today
   await supabase
     .from('sessions')
@@ -162,6 +176,7 @@ export async function GET(request: Request) {
     message: `Inscription reminder J-${daysLeft} sent`,
     daysLeft,
     autoOpened,
+    socialPosted,
     pushSent: pushResult.sent,
     pushFailed: pushResult.failed,
     emailsSent,
