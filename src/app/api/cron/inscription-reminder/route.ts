@@ -73,6 +73,24 @@ export async function GET(request: Request) {
 
   const inscriptionUrl = `${siteUrl}/${session.slug}/inscription`
 
+  // --- Auto-open registrations on Jour J ---
+  let autoOpened = false
+  if (daysLeft === 0) {
+    const { error: statusError } = await supabase
+      .from('sessions')
+      .update({ status: 'registration_open' })
+      .eq('id', session.id)
+
+    if (!statusError) {
+      autoOpened = true
+      // Also update config date
+      await supabase
+        .from('sessions')
+        .update({ config: { ...config, registration_start: todayStr } })
+        .eq('id', session.id)
+    }
+  }
+
   // --- Send push notification ---
   const pushBody = daysLeft === 0
     ? 'Les inscriptions sont ouvertes ! Inscrivez-vous maintenant 🎤'
@@ -143,6 +161,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     message: `Inscription reminder J-${daysLeft} sent`,
     daysLeft,
+    autoOpened,
     pushSent: pushResult.sent,
     pushFailed: pushResult.failed,
     emailsSent,
