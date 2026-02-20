@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -46,6 +46,33 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [isStandalone, setIsStandalone] = useState(false)
+
+  useEffect(() => {
+    // Detect if already installed as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsStandalone(true)
+      return
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function handleInstall() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const result = await installPrompt.userChoice
+    if (result.outcome === 'accepted') {
+      setInstallPrompt(null)
+      setIsStandalone(true)
+    }
+  }
 
   async function handleLogout() {
     const supabase = createClient()
@@ -137,6 +164,15 @@ export default function AdminSidebar() {
 
         {/* Footer */}
         <div className="p-3 border-t border-[#2a2545]">
+          {installPrompt && !isStandalone && (
+            <button
+              onClick={handleInstall}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors w-full mb-1"
+            >
+              <span>📲</span>
+              Installer Admin
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors w-full"
