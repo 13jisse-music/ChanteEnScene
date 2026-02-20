@@ -111,11 +111,7 @@ export default function InstallPrompt() {
     const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     setIsIOS(isiOS)
 
-    // Track iOS install prompt display (they see instructions to add to home screen)
-    if (isiOS && sessionId && !localStorage.getItem('pwa-install-tracked')) {
-      trackInstall(sessionId, 'ios', 'ios_instructions')
-      localStorage.setItem('pwa-install-tracked', '1')
-    }
+    // iOS: don't track banner display as install — only standalone_detected counts
 
     const handler = (e: Event) => {
       e.preventDefault()
