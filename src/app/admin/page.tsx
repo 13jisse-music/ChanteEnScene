@@ -5,6 +5,7 @@ import Link from 'next/link'
 import SemifinalPrep from '@/components/SemifinalPrep'
 import PwaFunnel from '@/components/PwaFunnel'
 import InstallsMap from '@/components/InstallsMap'
+import DailyStats from '@/components/DailyStats'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -186,6 +187,39 @@ async function getStats() {
     .select('*', { count: 'exact', head: true })
     .eq('session_id', activeSession.id)
 
+  // Daily stats for last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: dailyViewsRaw } = await supabase
+    .from('page_views')
+    .select('fingerprint, created_at')
+    .eq('session_id', activeSession.id)
+    .gte('created_at', sevenDaysAgo)
+
+  const dailyStats: { date: string; label: string; pageViews: number; uniqueVisitors: number }[] = []
+  if (dailyViewsRaw) {
+    const byDay = new Map<string, { views: number; fingerprints: Set<string> }>()
+    for (const row of dailyViewsRaw) {
+      const day = new Date(row.created_at).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' })
+      if (!byDay.has(day)) byDay.set(day, { views: 0, fingerprints: new Set() })
+      const d = byDay.get(day)!
+      d.views++
+      if (row.fingerprint) d.fingerprints.add(row.fingerprint)
+    }
+    // Fill all 7 days (even empty ones)
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+      const key = d.toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' })
+      const label = d.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', weekday: 'short', day: 'numeric' })
+      const data = byDay.get(key)
+      dailyStats.push({
+        date: key,
+        label,
+        pageViews: data?.views || 0,
+        uniqueVisitors: data?.fingerprints.size || 0,
+      })
+    }
+  }
+
   return {
     sessions,
     activeSession,
@@ -205,6 +239,7 @@ async function getStats() {
       installsByDevice,
       pushByDevice,
     },
+    dailyStats,
     recentCandidates: recentCandidates || [],
     recentInstalls: recentInstalls || [],
     semifinalists: semifinalists || [],
@@ -262,7 +297,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default async function AdminDashboard() {
-  const { activeSession, stats, recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config } = await getStats()
+  const { activeSession, stats, dailyStats = [], recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config } = await getStats()
 
   const semifinalistCount = semifinalists.length
   const mp3Count = semifinalists.filter((c) => c.mp3_url).length
@@ -336,6 +371,13 @@ export default async function AdminDashboard() {
         <StatCard icon="📄" label="Pages vues" value={stats.totalPageViews ?? 0} color="#6366f1" />
         <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" />
       </div>
+
+      {/* Daily Traffic Chart */}
+      {dailyStats.length > 0 && (
+        <div className="mb-6 sm:mb-10">
+          <DailyStats data={dailyStats} />
+        </div>
+      )}
 
       {/* PWA Adoption Funnel */}
       <div className="mb-6 sm:mb-10">
