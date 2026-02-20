@@ -59,6 +59,17 @@ export default function AdminSidebar() {
       return
     }
 
+    // Force admin manifest so Chrome detects a separate PWA
+    const existingManifest = document.querySelector('link[rel="manifest"]')
+    if (existingManifest) {
+      existingManifest.setAttribute('href', '/manifest-admin.json')
+    } else {
+      const link = document.createElement('link')
+      link.rel = 'manifest'
+      link.href = '/manifest-admin.json'
+      document.head.appendChild(link)
+    }
+
     const handler = (e: Event) => {
       e.preventDefault()
       setInstallPrompt(e)
