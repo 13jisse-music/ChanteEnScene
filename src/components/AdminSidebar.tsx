@@ -48,9 +48,12 @@ export default function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [showInstallHelp, setShowInstallHelp] = useState(false)
+
+  // Hide entire sidebar on login page
+  const isLoginPage = pathname === '/admin/login'
 
   useEffect(() => {
-    // Detect if already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
       setIsStandalone(true)
       return
@@ -65,12 +68,15 @@ export default function AdminSidebar() {
   }, [])
 
   async function handleInstall() {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    const result = await installPrompt.userChoice
-    if (result.outcome === 'accepted') {
-      setInstallPrompt(null)
-      setIsStandalone(true)
+    if (installPrompt) {
+      installPrompt.prompt()
+      const result = await installPrompt.userChoice
+      if (result.outcome === 'accepted') {
+        setInstallPrompt(null)
+        setIsStandalone(true)
+      }
+    } else {
+      setShowInstallHelp(true)
     }
   }
 
@@ -80,6 +86,8 @@ export default function AdminSidebar() {
     router.push('/admin/login')
     router.refresh()
   }
+
+  if (isLoginPage) return null
 
   return (
     <>
@@ -164,14 +172,21 @@ export default function AdminSidebar() {
 
         {/* Footer */}
         <div className="p-3 border-t border-[#2a2545]">
-          {installPrompt && !isStandalone && (
-            <button
-              onClick={handleInstall}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors w-full mb-1"
-            >
-              <span>📲</span>
-              Installer Admin
-            </button>
+          {!isStandalone && (
+            <>
+              <button
+                onClick={handleInstall}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-colors w-full mb-1"
+              >
+                <span>📲</span>
+                Installer Admin
+              </button>
+              {showInstallHelp && (
+                <div className="px-3 pb-2 text-[11px] text-white/40 leading-relaxed">
+                  Menu Chrome (⋮) &rarr; &laquo;&nbsp;Installer l&apos;application&nbsp;&raquo;
+                </div>
+              )}
+            </>
           )}
           <button
             onClick={handleLogout}
