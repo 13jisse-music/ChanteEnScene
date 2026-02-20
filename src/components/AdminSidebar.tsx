@@ -104,7 +104,7 @@ export default function AdminSidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`bg-[#0a0818] border-r border-[#2a2545] flex flex-col w-64 min-h-screen
+        className={`bg-[#0a0818] border-r border-[#2a2545] flex flex-col w-64 h-screen
           ${mobileOpen ? 'fixed inset-y-0 left-0 z-[56]' : 'hidden'}
           md:relative md:flex md:z-auto`}
       >
