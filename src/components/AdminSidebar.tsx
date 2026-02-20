@@ -38,6 +38,7 @@ const NAV_ITEMS: { href: string; label: string; icon: string; section?: string }
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📧' },
   // Dev
   { href: '/admin/seed', label: 'Données test', icon: '🧪', section: 'Dev' },
+  { href: '/admin/infra', label: 'Infrastructure', icon: '🔧' },
   // Aide
   { href: '/admin/guide', label: "Mode d'emploi", icon: '📖', section: 'Aide' },
 ]
