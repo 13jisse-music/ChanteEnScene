@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
     const userAgent = request.headers.get('user-agent') || null
-    const city = request.headers.get('x-vercel-ip-city') || null
+    const rawCity = request.headers.get('x-vercel-ip-city')
+    const city = rawCity ? decodeURIComponent(rawCity) : null
     const region = request.headers.get('x-vercel-ip-country-region') || null
     const latStr = request.headers.get('x-vercel-ip-latitude')
     const lngStr = request.headers.get('x-vercel-ip-longitude')
