@@ -72,10 +72,11 @@ export default function InstallPrompt() {
 
   // Dedicated standalone detection — runs independently of UI flow
   // This catches iOS installs that the main flow might miss (email-subscribed, desktop early returns)
+  // No localStorage guard: upsert is idempotent, and old localStorage flags may block
+  // tracking after database migrations
   useEffect(() => {
     if (!sessionId) return
     if (window.location.hostname === 'localhost') return
-    if (localStorage.getItem('pwa-install-tracked')) return
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || (navigator as unknown as { standalone?: boolean }).standalone === true // iOS Safari
