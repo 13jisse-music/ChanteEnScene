@@ -44,14 +44,29 @@ export default function InstallPrompt() {
 
   // Fetch the active session for push subscription
   useEffect(() => {
-    createClient()
+    const supabase = createClient()
+    supabase
       .from('sessions')
       .select('id')
       .eq('is_active', true)
       .limit(1)
       .single()
       .then(({ data }) => {
-        if (data) setSessionId(data.id)
+        if (data) {
+          setSessionId(data.id)
+        } else {
+          // Fallback: most recent non-archived session (same pattern as crons)
+          supabase
+            .from('sessions')
+            .select('id')
+            .neq('status', 'archived')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+            .then(({ data: fallback }) => {
+              if (fallback) setSessionId(fallback.id)
+            })
+        }
       })
   }, [])
 
@@ -91,6 +106,11 @@ export default function InstallPrompt() {
     }
 
     // Mobile flow below
+
+    // Already installed — don't bother the user again in the browser
+    // (iOS Safari and PWA have separate localStorage, so pwa-ios-installed is set from Safari)
+    if (localStorage.getItem('pwa-ios-installed') || localStorage.getItem('pwa-install-tracked')) return
+
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || (navigator as unknown as { standalone?: boolean }).standalone === true // iOS Safari
 
@@ -214,6 +234,11 @@ export default function InstallPrompt() {
     setDismissed(true)
     if (phase === 'install') {
       localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+      if (isIOS) {
+        // iOS: permanent dismiss — Safari and PWA have separate localStorage,
+        // so the 24h expiry causes the banner to reappear in Safari
+        localStorage.setItem('pwa-ios-installed', '1')
+      }
     } else if (phase === 'notify') {
       localStorage.setItem('pwa-notify-dismissed', Date.now().toString())
     } else {
