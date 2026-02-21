@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { slugify, getCategory, calculateAge } from '@/lib/utils'
 import { getFingerprint } from '@/lib/fingerprint'
+import { subscribeEmail } from '@/app/actions/subscribe-email'
 
 interface SessionConfig {
   age_categories: { name: string; min_age: number; max_age: number }[]
@@ -147,6 +148,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
   const [videoMode, setVideoMode] = useState<'url' | 'file'>('url')
   const [videoPublic, setVideoPublic] = useState(false)
   const [consent, setConsent] = useState<File | null>(null)
+  const [newsletterOptIn, setNewsletterOptIn] = useState(true)
 
   // UI
   const [loading, setLoading] = useState(false)
@@ -302,6 +304,15 @@ export default function InscriptionForm({ session }: { session: Session }) {
         })
       } catch {
         // Email failure should not block registration success
+      }
+
+      // Subscribe to newsletter if opted in (non-blocking)
+      if (newsletterOptIn) {
+        try {
+          await subscribeEmail(session.id, email.trim().toLowerCase(), 'inscription', fingerprint || undefined)
+        } catch {
+          // Newsletter subscribe failure should not block registration
+        }
       }
 
       setSuccess(true)
@@ -603,6 +614,19 @@ export default function InscriptionForm({ session }: { session: Session }) {
               />
             </div>
           )}
+
+          {/* Newsletter opt-in */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newsletterOptIn}
+              onChange={(e) => setNewsletterOptIn(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-[#2e2555] bg-[#1a1232] text-[#e91e8c] focus:ring-[#e91e8c] accent-[#e91e8c]"
+            />
+            <span className="text-sm text-white/60">
+              Recevoir les actualités ChanteEnScène par email (résultats, dates, newsletter)
+            </span>
+          </label>
 
           {/* Recap */}
           <div className="bg-[#1a1232] border border-[#2e2555] rounded-xl p-4 space-y-2">

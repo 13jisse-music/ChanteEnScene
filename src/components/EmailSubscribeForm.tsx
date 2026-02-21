@@ -6,7 +6,7 @@ import { getFingerprint } from '@/lib/fingerprint'
 
 interface Props {
   sessionId: string
-  source?: 'footer' | 'live' | 'install_prompt' | 'mobile_fallback' | 'countdown'
+  source?: 'footer' | 'live' | 'install_prompt' | 'mobile_fallback' | 'countdown' | 'inscription'
   compact?: boolean
   subtitle?: string
   onSuccess?: () => void
