@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { slugify, getCategory, calculateAge } from '@/lib/utils'
+import { getFingerprint } from '@/lib/fingerprint'
 
 interface SessionConfig {
   age_categories: { name: string; min_age: number; max_age: number }[]
@@ -245,6 +246,10 @@ export default function InscriptionForm({ session }: { session: Session }) {
         consentUrl = await uploadFile(supabase, `${basePath}/consent`, consent)
       }
 
+      // Capture fingerprint for push notification targeting (silent fail)
+      let fingerprint: string | null = null
+      try { fingerprint = await getFingerprint() } catch {}
+
       setUploadStep('Enregistrement...')
       const { error: insertError } = await supabase.from('candidates').insert({
         session_id: session.id,
@@ -270,6 +275,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
         tiktok_url: tiktokUrl.trim() || null,
         website_url: websiteUrl.trim() || null,
         parental_consent_url: consentUrl || null,
+        fingerprint,
         status: 'pending',
       })
 

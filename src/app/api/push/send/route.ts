@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendPushNotifications, PushPayload } from '@/lib/push'
+import { sendPushNotifications, PushPayload, PushSegment } from '@/lib/push'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,11 +23,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { sessionId, role, jurorId, endpoint, payload } = body as {
+    const { sessionId, role, jurorId, endpoint, segment, candidateId, payload } = body as {
       sessionId: string
       role?: 'public' | 'jury' | 'admin' | 'all'
       jurorId?: string
       endpoint?: string
+      segment?: PushSegment
+      candidateId?: string
       payload: PushPayload
     }
 
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await sendPushNotifications({ sessionId, role, jurorId, endpoint, payload })
+    const result = await sendPushNotifications({ sessionId, role, jurorId, endpoint, segment, candidateId, payload })
 
     // Logger dans push_log
     const admin = createAdminClient()
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
       body: payload.body,
       url: payload.url || null,
       role: role || 'all',
+      segment: segment || null,
       is_test: !!endpoint,
       sent: result.sent,
       failed: result.failed,

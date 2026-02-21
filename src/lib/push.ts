@@ -25,39 +25,94 @@ export interface PushPayload {
   data?: Record<string, unknown>
 }
 
+export type PushSegment =
+  | 'all_candidates'
+  | 'approved'
+  | 'semifinalist'
+  | 'finalist'
+  | 'specific_candidate'
+
 interface SendPushOptions {
   sessionId: string
   role?: 'public' | 'jury' | 'admin' | 'all'
   jurorId?: string
   endpoint?: string
+  segment?: PushSegment
+  candidateId?: string
   payload: PushPayload
 }
 
 export async function sendPushNotifications(options: SendPushOptions) {
   if (!vapidReady) return { sent: 0, failed: 0, expired: 0 }
 
-  const { sessionId, role = 'all', jurorId, endpoint, payload } = options
+  const { sessionId, role = 'all', jurorId, endpoint, segment, candidateId, payload } = options
   const supabase = createAdminClient()
 
-  let query = supabase
-    .from('push_subscriptions')
-    .select('id, endpoint, p256dh, auth')
-    .eq('session_id', sessionId)
+  let subscriptions: { id: string; endpoint: string; p256dh: string; auth: string }[] | null = null
 
-  if (endpoint) {
-    // Test mode: send to a specific endpoint only
-    query = query.eq('endpoint', endpoint)
-  } else if (role !== 'all') {
-    query = query.eq('role', role)
-  }
-  if (jurorId) {
-    query = query.eq('juror_id', jurorId)
-  }
+  if (segment) {
+    // Segment-based targeting: find candidates by status, get fingerprints,
+    // then find matching push_subscriptions
+    let candidateQuery = supabase
+      .from('candidates')
+      .select('fingerprint')
+      .eq('session_id', sessionId)
+      .not('fingerprint', 'is', null)
 
-  const { data: subscriptions, error } = await query
+    if (segment === 'specific_candidate' && candidateId) {
+      candidateQuery = candidateQuery.eq('id', candidateId)
+    } else if (segment !== 'all_candidates') {
+      const statusMap: Record<string, string> = {
+        approved: 'approved',
+        semifinalist: 'semifinalist',
+        finalist: 'finalist',
+      }
+      const status = statusMap[segment]
+      if (status) {
+        candidateQuery = candidateQuery.eq('status', status)
+      }
+    }
 
-  if (error || !subscriptions || subscriptions.length === 0) {
-    return { sent: 0, failed: 0, expired: 0 }
+    const { data: candidates } = await candidateQuery
+    const fingerprints = (candidates || [])
+      .map((c) => c.fingerprint)
+      .filter((f): f is string => !!f)
+
+    if (fingerprints.length === 0) {
+      return { sent: 0, failed: 0, expired: 0 }
+    }
+
+    const { data, error } = await supabase
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth')
+      .eq('session_id', sessionId)
+      .in('fingerprint', fingerprints)
+
+    if (error || !data || data.length === 0) {
+      return { sent: 0, failed: 0, expired: 0 }
+    }
+    subscriptions = data
+  } else {
+    // Role-based targeting (existing behavior)
+    let query = supabase
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth')
+      .eq('session_id', sessionId)
+
+    if (endpoint) {
+      query = query.eq('endpoint', endpoint)
+    } else if (role !== 'all') {
+      query = query.eq('role', role)
+    }
+    if (jurorId) {
+      query = query.eq('juror_id', jurorId)
+    }
+
+    const { data, error } = await query
+    if (error || !data || data.length === 0) {
+      return { sent: 0, failed: 0, expired: 0 }
+    }
+    subscriptions = data
   }
 
   const fullPayload: PushPayload = {

@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { PHASE_PUSH_MESSAGES, STATUS_CONFIG, SESSION_STATUSES, getStatusIndex, type SessionStatus } from '@/lib/phases'
 
 interface Session {
   id: string
@@ -25,20 +24,6 @@ interface CalendarEntry {
   type: string
   label: string
   daysUntil: number
-}
-
-interface PushLog {
-  id: string
-  title: string
-  body: string
-  url: string | null
-  role: string
-  is_test: boolean
-  sent: number
-  failed: number
-  expired: number
-  sent_by: string | null
-  created_at: string
 }
 
 interface SocialPostLog {
@@ -72,22 +57,8 @@ export default function SocialAdminPage() {
   const [socialResult, setSocialResult] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
 
-  // Push notification
-  const [pushTitle, setPushTitle] = useState('')
-  const [pushBody, setPushBody] = useState('')
-  const [pushUrl, setPushUrl] = useState('')
-  const [pushRole, setPushRole] = useState<'all' | 'public' | 'jury'>('all')
-  const [pushMode, setPushMode] = useState<'instant' | 'phase'>('instant')
-  const [pushPhase, setPushPhase] = useState<string>('')
-  const [sending, setSending] = useState(false)
-  const [pushResult, setPushResult] = useState<string | null>(null)
-
   // Copie prompt
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null)
-
-  // Historique push
-  const [pushLogs, setPushLogs] = useState<PushLog[]>([])
-  const [loadingPushLogs, setLoadingPushLogs] = useState(true)
 
   // Historique des publications
   const [postLogs, setPostLogs] = useState<SocialPostLog[]>([])
@@ -117,23 +88,6 @@ export default function SocialAdminPage() {
   useEffect(() => {
     loadPostLogs()
   }, [])
-
-  // Charger l'historique push
-  useEffect(() => {
-    loadPushLogs()
-  }, [])
-
-  async function loadPushLogs() {
-    setLoadingPushLogs(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('push_log')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setPushLogs((data as PushLog[]) || [])
-    setLoadingPushLogs(false)
-  }
 
   async function loadPostLogs() {
     setLoadingLogs(true)
@@ -178,66 +132,6 @@ export default function SocialAdminPage() {
     setTimeout(() => setCopiedPrompt(null), 2000)
   }
 
-  // ─── Phases restantes pour notifications programmées ──
-  const activeSession = sessions.find((s) => s.id === sessionId)
-  const remainingPhases = useMemo(() => {
-    if (!activeSession) return []
-    const currentIdx = getStatusIndex(activeSession.status)
-    return SESSION_STATUSES.filter((s) => {
-      const idx = getStatusIndex(s)
-      return idx > currentIdx && s !== 'archived' && PHASE_PUSH_MESSAGES[s]
-    })
-  }, [activeSession])
-
-  const customNotifs = (activeSession?.config?.custom_phase_notifications || {}) as Record<string, { title: string; body: string }>
-
-  function prefillPhase(phase: string) {
-    setPushPhase(phase)
-    const custom = customNotifs[phase]
-    const defaultMsg = PHASE_PUSH_MESSAGES[phase as SessionStatus]
-    if (custom) {
-      setPushTitle(custom.title)
-      setPushBody(custom.body)
-    } else if (defaultMsg) {
-      setPushTitle(defaultMsg.title)
-      setPushBody(defaultMsg.body)
-    }
-  }
-
-  async function handleSavePhaseNotification() {
-    if (!pushPhase || !pushTitle.trim() || !pushBody.trim() || !activeSession) return
-    setSending(true)
-    setPushResult(null)
-    try {
-      const supabase = createClient()
-      const config = { ...(activeSession.config || {}) }
-      const existing = (config.custom_phase_notifications || {}) as Record<string, { title: string; body: string }>
-      existing[pushPhase] = { title: pushTitle.trim(), body: pushBody.trim() }
-      config.custom_phase_notifications = existing
-
-      const { error } = await supabase
-        .from('sessions')
-        .update({ config })
-        .eq('id', activeSession.id)
-
-      if (error) {
-        setPushResult(`Erreur : ${error.message}`)
-      } else {
-        // Update local state
-        activeSession.config = config
-        const phaseLabel = STATUS_CONFIG[pushPhase as SessionStatus]?.label || pushPhase
-        setPushResult(`Notification programmée pour "${phaseLabel}" sauvegardée`)
-        setPushTitle('')
-        setPushBody('')
-        setPushPhase('')
-      }
-    } catch {
-      setPushResult('Erreur réseau')
-    } finally {
-      setSending(false)
-    }
-  }
-
   // ─── Publication FB + IG ──────────────────────────────
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault()
@@ -277,89 +171,6 @@ export default function SocialAdminPage() {
     }
   }
 
-  // ─── Test Push (admin seul) ──────────────────────────
-  async function handleTestPush() {
-    if (!pushTitle.trim() || !pushBody.trim() || !sessionId) return
-    setSending(true)
-    setPushResult(null)
-    try {
-      const reg = await navigator.serviceWorker?.ready
-      const sub = await reg?.pushManager?.getSubscription()
-      if (!sub) {
-        setPushResult('Pas d\'abonnement push sur cet appareil. Activez les notifications d\'abord.')
-        setSending(false)
-        return
-      }
-      const res = await fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          endpoint: sub.endpoint,
-          payload: {
-            title: pushTitle.trim(),
-            body: pushBody.trim(),
-            url: pushUrl.trim() || undefined,
-          },
-        }),
-      })
-      const data = await res.json()
-      if (data.error) {
-        setPushResult(`Erreur : ${data.error}`)
-      } else if (data.sent > 0) {
-        setPushResult('Test envoyé sur cet appareil !')
-        loadPushLogs()
-      } else {
-        setPushResult('Aucun abonnement trouvé pour cet appareil.')
-      }
-    } catch {
-      setPushResult('Erreur réseau')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  // ─── Push Notification ────────────────────────────────
-  async function handlePush(e: React.FormEvent) {
-    e.preventDefault()
-    if (!pushTitle.trim() || !pushBody.trim() || !sessionId) return
-
-    setSending(true)
-    setPushResult(null)
-    try {
-      const res = await fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          role: pushRole,
-          payload: {
-            title: pushTitle.trim(),
-            body: pushBody.trim(),
-            url: pushUrl.trim() || undefined,
-          },
-        }),
-      })
-      const data = await res.json()
-      if (data.error) {
-        setPushResult(`Erreur : ${data.error}`)
-      } else {
-        setPushResult(
-          `Envoyé : ${data.sent} | Échoué : ${data.failed} | Expiré : ${data.expired}`
-        )
-        setPushTitle('')
-        setPushBody('')
-        setPushUrl('')
-
-        loadPushLogs()
-      }
-    } catch {
-      setPushResult('Erreur réseau')
-    } finally {
-      setSending(false)
-    }
-  }
-
   const inputClass =
     'w-full bg-[#0d0b1a] border border-[#2a2545] rounded-xl p-3 text-white placeholder:text-white/20 focus:border-[#e91e8c] focus:outline-none'
 
@@ -377,10 +188,24 @@ export default function SocialAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-xl sm:text-2xl font-bold mb-2">Communication</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-2">Réseaux sociaux</h1>
       <p className="text-white/50 mb-6 sm:mb-8">
-        Prévisualisez, personnalisez et publiez sur Facebook, Instagram et en push.
+        Prévisualisez, personnalisez et publiez sur Facebook et Instagram.
       </p>
+
+      {/* ── Lien vers Notifications ── */}
+      <div className="bg-[#1a1232]/40 rounded-2xl p-4 mb-6 border border-[#2a2545]/40 flex items-center gap-3">
+        <span className="text-lg">🔔</span>
+        <p className="text-white/50 text-sm flex-1">
+          Les notifications push ont leur propre page dédiée.
+        </p>
+        <a
+          href="/admin/notifications"
+          className="text-[#e91e8c] hover:text-[#ff3da5] text-sm font-medium whitespace-nowrap"
+        >
+          Notifications →
+        </a>
+      </div>
 
       {/* ── Historique des publications ── */}
       <div className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">
@@ -728,302 +553,6 @@ export default function SocialAdminPage() {
             </div>
           )}
         </form>
-      </div>
-
-      {/* ── Notifications programmées ── */}
-      {activeSession && remainingPhases.length > 0 && (
-        <div className="bg-[#1a1232]/60 rounded-2xl p-5 mb-8 border border-[#2a2545]/60">
-          <h2 className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2">
-            <span>🔔</span> Notifications push programmées
-          </h2>
-          <p className="text-white/30 text-xs mb-3">
-            Ces notifications seront envoyées automatiquement quand la session change de phase.
-          </p>
-          <div className="space-y-2">
-            {remainingPhases.map((phase) => {
-              const sc = STATUS_CONFIG[phase]
-              const custom = customNotifs[phase]
-              const defaultMsg = PHASE_PUSH_MESSAGES[phase]!
-              const msg = custom || defaultMsg
-              return (
-                <div
-                  key={phase}
-                  className="flex items-start gap-3 py-2 px-3 rounded-lg bg-white/[0.02] border border-white/5"
-                >
-                  <span className="text-lg shrink-0 mt-0.5">{sc.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-medium text-white/60">{sc.label}</span>
-                      {custom ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/30">
-                          personnalisée
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/30 border border-white/10">
-                          défaut
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-white/40 truncate">
-                      <span className="font-medium text-white/50">{msg.title}</span>
-                      {' — '}{msg.body}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setPushMode('phase')
-                      prefillPhase(phase)
-                      document.getElementById('push-section')?.scrollIntoView({ behavior: 'smooth' })
-                    }}
-                    className="text-[10px] text-white/30 hover:text-[#e91e8c] transition-colors shrink-0"
-                  >
-                    Modifier
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-          {/* Inscription reminder cron info */}
-          {!!activeSession.config?.registration_start && (
-            <div className="mt-3 pt-3 border-t border-white/5">
-              <p className="text-white/25 text-[10px] font-medium mb-1">Rappel inscriptions (cron) :</p>
-              <p className="text-white/15 text-[10px]">
-                📧 J-5 + Jour J avant le {new Date((activeSession.config.registration_start as string) + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} — email + push public
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Push Notifications ── */}
-      <div id="push-section" className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="text-xl">🔔</span> Notification push
-        </h2>
-        <form onSubmit={pushMode === 'phase' ? (e) => { e.preventDefault(); handleSavePhaseNotification() } : handlePush} className="space-y-4">
-          {/* Mode toggle */}
-          <div>
-            <label className="block text-sm text-white/60 mb-2">Mode d&apos;envoi</label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => { setPushMode('instant'); setPushPhase(''); setPushTitle(''); setPushBody('') }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  pushMode === 'instant'
-                    ? 'bg-[#e91e8c] text-white'
-                    : 'bg-[#0d0b1a] border border-[#2a2545] text-white/50 hover:text-white/70'
-                }`}
-              >
-                Envoi instantané
-              </button>
-              <button
-                type="button"
-                onClick={() => { setPushMode('phase'); if (remainingPhases.length && !pushPhase) prefillPhase(remainingPhases[0]) }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  pushMode === 'phase'
-                    ? 'bg-[#e91e8c] text-white'
-                    : 'bg-[#0d0b1a] border border-[#2a2545] text-white/50 hover:text-white/70'
-                }`}
-                disabled={remainingPhases.length === 0}
-                title={remainingPhases.length === 0 ? 'Aucune étape restante' : undefined}
-              >
-                Liée à une étape
-              </button>
-            </div>
-          </div>
-
-          {/* Phase selector (only in phase mode) */}
-          {pushMode === 'phase' && (
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Étape du concours</label>
-              <select
-                value={pushPhase}
-                onChange={(e) => prefillPhase(e.target.value)}
-                className={inputClass}
-              >
-                {remainingPhases.map((phase) => (
-                  <option key={phase} value={phase}>
-                    {STATUS_CONFIG[phase].icon} {STATUS_CONFIG[phase].label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-white/30 mt-1">
-                La notification sera envoyée automatiquement quand la session passera à cette étape.
-              </p>
-            </div>
-          )}
-
-          {sessions.length > 1 && pushMode === 'instant' && (
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Session</label>
-              <select
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                className={inputClass}
-              >
-                {sessions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm text-white/60 mb-1">Titre *</label>
-            <input
-              type="text"
-              value={pushTitle}
-              onChange={(e) => setPushTitle(e.target.value)}
-              className={inputClass}
-              placeholder="ChanteEnScene"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-white/60 mb-1">Message *</label>
-            <textarea
-              value={pushBody}
-              onChange={(e) => setPushBody(e.target.value)}
-              rows={3}
-              className={inputClass}
-              placeholder="Nouveaux candidats cette semaine ! Venez voter..."
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-white/60 mb-1">
-              URL de redirection (optionnel)
-            </label>
-            <input
-              type="url"
-              value={pushUrl}
-              onChange={(e) => setPushUrl(e.target.value)}
-              className={inputClass}
-              placeholder="https://chantenscene.fr/saison-2025/candidats"
-            />
-          </div>
-
-          {pushMode === 'instant' && (
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Destinataires</label>
-              <div className="flex gap-3">
-                {[
-                  { value: 'all', label: 'Tout le monde' },
-                  { value: 'public', label: 'Public' },
-                  { value: 'jury', label: 'Jury' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPushRole(opt.value as typeof pushRole)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      pushRole === opt.value
-                        ? 'bg-[#e91e8c] text-white'
-                        : 'bg-[#0d0b1a] border border-[#2a2545] text-white/50 hover:text-white/70'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 flex-wrap">
-            <button
-              type="submit"
-              disabled={sending || !pushTitle.trim() || !pushBody.trim() || (pushMode === 'instant' ? !sessionId : !pushPhase)}
-              className="bg-[#e91e8c] hover:bg-[#d11a7d] disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-            >
-              {sending
-                ? (pushMode === 'phase' ? 'Sauvegarde...' : 'Envoi en cours...')
-                : (pushMode === 'phase' ? 'Sauvegarder pour cette étape' : 'Envoyer la notification')}
-            </button>
-            {pushMode === 'instant' && (
-              <button
-                type="button"
-                onClick={handleTestPush}
-                disabled={sending || !pushTitle.trim() || !pushBody.trim() || !sessionId}
-                className="bg-[#0d0b1a] border border-[#2a2545] hover:border-[#e91e8c]/50 disabled:opacity-50 text-white/60 hover:text-white font-medium px-5 py-3 rounded-xl transition-colors text-sm"
-              >
-                Tester sur mon appareil
-              </button>
-            )}
-          </div>
-
-          {pushResult && (
-            <div
-              className={`mt-3 p-3 rounded-xl border text-sm whitespace-pre-wrap ${
-                pushResult.startsWith('Erreur')
-                  ? 'bg-red-500/10 border-red-500/20 text-red-300'
-                  : 'bg-green-500/10 border-green-500/20 text-green-300'
-              }`}
-            >
-              {pushResult}
-            </div>
-          )}
-        </form>
-
-        {/* ── Historique push ── */}
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span className="text-xl">📋</span> Historique des notifications
-          </h3>
-          {loadingPushLogs ? (
-            <p className="text-white/30 text-sm">Chargement...</p>
-          ) : pushLogs.length === 0 ? (
-            <p className="text-white/30 text-sm">Aucune notification envoyée</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-white/40 text-xs border-b border-white/10">
-                    <th className="text-left py-2 px-2">Date</th>
-                    <th className="text-left py-2 px-2">Titre</th>
-                    <th className="text-left py-2 px-2">Message</th>
-                    <th className="text-center py-2 px-2">Type</th>
-                    <th className="text-center py-2 px-2">Résultat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pushLogs.map((log) => (
-                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                      <td className="py-2 px-2 text-white/40 whitespace-nowrap text-xs">
-                        {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="py-2 px-2 text-white/70 max-w-[150px] truncate">
-                        {log.url ? (
-                          <a href={log.url} target="_blank" rel="noopener noreferrer" className="text-[#e91e8c] hover:underline">
-                            {log.title}
-                          </a>
-                        ) : log.title}
-                      </td>
-                      <td className="py-2 px-2 text-white/50 max-w-[200px] truncate">{log.body}</td>
-                      <td className="py-2 px-2 text-center">
-                        {log.is_test ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-300">Test</span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-[#e91e8c]/20 text-[#e91e8c]">
-                            {log.role === 'all' ? 'Tous' : log.role === 'public' ? 'Public' : 'Jury'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-center text-xs">
-                        <span className="text-green-400">{log.sent}</span>
-                        {log.failed > 0 && <span className="text-red-400 ml-1">/ {log.failed} err</span>}
-                        {log.expired > 0 && <span className="text-yellow-400 ml-1">/ {log.expired} exp</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
