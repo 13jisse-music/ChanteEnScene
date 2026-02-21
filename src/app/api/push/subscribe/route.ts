@@ -34,12 +34,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Delete any existing subscription for this endpoint first
+    // Delete any existing subscription for this endpoint
     await supabase
       .from('push_subscriptions')
       .delete()
       .eq('endpoint', endpoint)
       .eq('session_id', sessionId)
+
+    // Also clean up old subscriptions for the same device (fingerprint)
+    // iOS PWA reinstalls generate new endpoints, leaving orphaned entries
+    if (fingerprint) {
+      await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('fingerprint', fingerprint)
+        .eq('session_id', sessionId)
+    }
 
     const { error } = await supabase
       .from('push_subscriptions')
