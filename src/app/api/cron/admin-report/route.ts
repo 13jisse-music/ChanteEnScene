@@ -33,11 +33,21 @@ export async function GET(request: Request) {
   const supabase = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
 
-  // Get active session
-  const { data: sessions } = await supabase
+  // Get active session (is_active flag, fallback to most recent non-archived)
+  let { data: sessions } = await supabase
     .from('sessions')
     .select('id, name, slug, config')
     .eq('is_active', true)
+
+  if (!sessions || sessions.length === 0) {
+    const { data: fallback } = await supabase
+      .from('sessions')
+      .select('id, name, slug, config')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    sessions = fallback
+  }
 
   if (!sessions || sessions.length === 0) {
     return NextResponse.json({ message: 'No active sessions', sent: false })

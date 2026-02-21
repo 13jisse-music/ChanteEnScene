@@ -32,7 +32,6 @@ interface PushLog {
   title: string
   body: string
   url: string | null
-  image: string | null
   role: string
   is_test: boolean
   sent: number
@@ -77,15 +76,11 @@ export default function SocialAdminPage() {
   const [pushTitle, setPushTitle] = useState('')
   const [pushBody, setPushBody] = useState('')
   const [pushUrl, setPushUrl] = useState('')
-  const [pushImage, setPushImage] = useState('')
   const [pushRole, setPushRole] = useState<'all' | 'public' | 'jury'>('all')
   const [pushMode, setPushMode] = useState<'instant' | 'phase'>('instant')
   const [pushPhase, setPushPhase] = useState<string>('')
   const [sending, setSending] = useState(false)
   const [pushResult, setPushResult] = useState<string | null>(null)
-  const [showImagePicker, setShowImagePicker] = useState(false)
-  const [bucketImages, setBucketImages] = useState<{ name: string; url: string; folder: string }[]>([])
-  const [loadingImages, setLoadingImages] = useState(false)
 
   // Copie prompt
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null)
@@ -103,8 +98,8 @@ export default function SocialAdminPage() {
     supabase
       .from('sessions')
       .select('id, name, slug, status, config')
-      .eq('is_active', true)
-      .order('year', { ascending: false })
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data?.length) {
           setSessions(data as Session[])
@@ -282,20 +277,6 @@ export default function SocialAdminPage() {
     }
   }
 
-  // ─── Sélecteur d'images du bucket ──────────────────────────
-  async function loadBucketImages() {
-    setLoadingImages(true)
-    try {
-      const res = await fetch('/api/admin/upload-image')
-      const data = await res.json()
-      setBucketImages(data.images || [])
-    } catch {
-      setBucketImages([])
-    } finally {
-      setLoadingImages(false)
-    }
-  }
-
   // ─── Test Push (admin seul) ──────────────────────────
   async function handleTestPush() {
     if (!pushTitle.trim() || !pushBody.trim() || !sessionId) return
@@ -319,7 +300,6 @@ export default function SocialAdminPage() {
             title: pushTitle.trim(),
             body: pushBody.trim(),
             url: pushUrl.trim() || undefined,
-            image: pushImage.trim() || undefined,
           },
         }),
       })
@@ -357,7 +337,6 @@ export default function SocialAdminPage() {
             title: pushTitle.trim(),
             body: pushBody.trim(),
             url: pushUrl.trim() || undefined,
-            image: pushImage.trim() || undefined,
           },
         }),
       })
@@ -371,7 +350,7 @@ export default function SocialAdminPage() {
         setPushTitle('')
         setPushBody('')
         setPushUrl('')
-        setPushImage('')
+
         loadPushLogs()
       }
     } catch {
@@ -926,73 +905,6 @@ export default function SocialAdminPage() {
               className={inputClass}
               placeholder="https://chantenscene.fr/saison-2025/candidats"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm text-white/60 mb-1">
-              Image (optionnel, Android/Chrome uniquement)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={pushImage}
-                onChange={(e) => setPushImage(e.target.value)}
-                className={`${inputClass} flex-1`}
-                placeholder="https://... URL directe d'une image"
-              />
-              <button
-                type="button"
-                onClick={() => { setShowImagePicker(true); loadBucketImages() }}
-                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm text-white/70 whitespace-nowrap transition-colors"
-              >
-                Parcourir
-              </button>
-            </div>
-            {pushImage && (
-              <div className="mt-2 flex items-center gap-2">
-                <img src={pushImage} alt="" className="h-12 w-12 object-cover rounded-lg" />
-                <button type="button" onClick={() => setPushImage('')} className="text-xs text-red-400 hover:text-red-300">
-                  Supprimer
-                </button>
-              </div>
-            )}
-            <p className="text-xs text-white/20 mt-1">
-              Affiche une grande image dans la notification. Ignoré sur iOS/Safari.
-            </p>
-
-            {showImagePicker && (
-              <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowImagePicker(false)}>
-                <div className="bg-[#1a1232] border border-[#2a2545] rounded-2xl p-5 max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Choisir une image</h3>
-                    <button onClick={() => setShowImagePicker(false)} className="text-white/40 hover:text-white text-xl">&times;</button>
-                  </div>
-                  {loadingImages ? (
-                    <p className="text-white/40 text-center py-8">Chargement...</p>
-                  ) : bucketImages.length === 0 ? (
-                    <p className="text-white/40 text-center py-8">Aucune image dans le bucket</p>
-                  ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {bucketImages.map((img) => (
-                        <button
-                          key={img.url}
-                          type="button"
-                          onClick={() => { setPushImage(img.url); setShowImagePicker(false) }}
-                          className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-[#e91e8c] transition-colors"
-                        >
-                          <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
-                            <span className="text-[10px] text-white/80 bg-black/60 w-full px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                              {img.name}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {pushMode === 'instant' && (

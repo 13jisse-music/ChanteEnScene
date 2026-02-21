@@ -277,10 +277,21 @@ export async function GET() {
   const siteUrl = rawSiteUrl.includes('localhost') ? 'https://chantenscene.fr' : rawSiteUrl
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const { data: sessions } = await admin
+  // Get active session (is_active flag, fallback to most recent non-archived)
+  let { data: sessions } = await admin
     .from('sessions')
     .select('id, name, slug, config, status')
     .eq('is_active', true)
+
+  if (!sessions?.length) {
+    const { data: fallback } = await admin
+      .from('sessions')
+      .select('id, name, slug, config, status')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    sessions = fallback
+  }
 
   if (!sessions?.length) {
     return NextResponse.json({ posts: [], calendar: [] })

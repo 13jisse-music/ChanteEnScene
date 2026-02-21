@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       title: payload.title,
       body: payload.body,
       url: payload.url || null,
-      image: payload.image || null,
       role: role || 'all',
       is_test: !!endpoint,
       sent: result.sent,

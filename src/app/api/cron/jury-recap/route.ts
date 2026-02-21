@@ -23,10 +23,20 @@ export async function GET(request: Request) {
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Find active sessions where jury voting is not closed
-  const { data: allSessions } = await supabase
+  let { data: allSessions } = await supabase
     .from('sessions')
     .select('id, name, slug, config')
     .eq('is_active', true)
+
+  if (!allSessions?.length) {
+    const { data: fallback } = await supabase
+      .from('sessions')
+      .select('id, name, slug, config')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    allSessions = fallback
+  }
 
   // Filter out sessions where jury voting is explicitly closed
   const sessions = (allSessions || []).filter((s) => {

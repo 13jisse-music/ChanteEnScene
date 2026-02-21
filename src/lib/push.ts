@@ -20,7 +20,6 @@ export interface PushPayload {
   body: string
   icon?: string
   badge?: string
-  image?: string
   url?: string
   tag?: string
   data?: Record<string, unknown>

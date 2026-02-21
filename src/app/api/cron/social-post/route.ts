@@ -175,10 +175,21 @@ export async function GET(request: Request) {
   const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chantenscene.fr' : siteUrl
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const { data: sessions } = await supabase
+  // Get active session (is_active flag, fallback to most recent non-archived)
+  let { data: sessions } = await supabase
     .from('sessions')
     .select('id, name, slug, config, status')
     .eq('is_active', true)
+
+  if (!sessions?.length) {
+    const { data: fallback } = await supabase
+      .from('sessions')
+      .select('id, name, slug, config, status')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    sessions = fallback
+  }
 
   if (!sessions?.length) {
     return NextResponse.json({ message: 'Aucune session active', posts: [] })
