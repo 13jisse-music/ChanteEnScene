@@ -12,6 +12,12 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
     const userAgent = request.headers.get('user-agent') || null
+
+    // Filter out known bots — PWA installs require a real browser
+    const BOT_UA = /bot|crawl|spider|slurp|googlebot|bingbot|yandex|duckduckbot|facebookexternalhit|twitterbot|linkedinbot|semrush|ahref|mj12|dotbot|headless|phantom|puppeteer|playwright/i
+    if (BOT_UA.test(userAgent || '')) {
+      return NextResponse.json({ ok: true }) // silent ignore
+    }
     const rawCity = request.headers.get('x-vercel-ip-city')
     const city = rawCity ? decodeURIComponent(rawCity) : null
     const region = request.headers.get('x-vercel-ip-country-region') || null

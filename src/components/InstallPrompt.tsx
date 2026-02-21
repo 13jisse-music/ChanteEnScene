@@ -55,6 +55,22 @@ export default function InstallPrompt() {
       })
   }, [])
 
+  // Dedicated standalone detection — runs independently of UI flow
+  // This catches iOS installs that the main flow might miss (email-subscribed, desktop early returns)
+  useEffect(() => {
+    if (!sessionId) return
+    if (window.location.hostname === 'localhost') return
+    if (localStorage.getItem('pwa-install-tracked')) return
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as unknown as { standalone?: boolean }).standalone === true // iOS Safari
+
+    if (isStandalone) {
+      trackInstall(sessionId, detectPlatform(), 'standalone_detected')
+      localStorage.setItem('pwa-install-tracked', '1')
+    }
+  }, [sessionId])
+
   useEffect(() => {
     // Hide on localhost (dev)
     if (window.location.hostname === 'localhost') return
@@ -76,13 +92,10 @@ export default function InstallPrompt() {
 
     // Mobile flow below
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as unknown as { standalone?: boolean }).standalone === true // iOS Safari
 
-    // If already installed as PWA, track and skip to notification phase
+    // If already installed as PWA, skip to notification phase
     if (isStandalone) {
-      if (sessionId && !localStorage.getItem('pwa-install-tracked')) {
-        trackInstall(sessionId, detectPlatform(), 'standalone_detected')
-        localStorage.setItem('pwa-install-tracked', '1')
-      }
       if ('Notification' in window && Notification.permission === 'granted') return
       if ('Notification' in window && Notification.permission === 'denied') {
         // Push denied → try email
