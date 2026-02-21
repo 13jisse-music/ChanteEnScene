@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-type SubscribeSource = 'footer' | 'live' | 'install_prompt' | 'mobile_fallback'
+type SubscribeSource = 'footer' | 'live' | 'install_prompt' | 'mobile_fallback' | 'countdown'
 
 export async function subscribeEmail(
   sessionId: string,

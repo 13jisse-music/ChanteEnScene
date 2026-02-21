@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { usePushSubscription } from '@/hooks/usePushSubscription'
+import EmailSubscribeForm from './EmailSubscribeForm'
 
 interface Props {
   targetDate: string
@@ -157,29 +158,42 @@ export default function RegistrationCountdown({ targetDate, sessionSlug }: Props
         ))}
       </div>
 
-      {/* Notify me */}
-      {sessionId && isSupported && (
+      {/* Notify me — push if supported, email fallback otherwise */}
+      {sessionId && (
         <div className="mt-10 flex flex-col items-center gap-3">
-          {isSubscribed ? (
+          {isSupported && isSubscribed ? (
             <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#7ec850]/10 border border-[#7ec850]/20">
               <span className="text-lg">🔔</span>
               <span className="text-[#7ec850] text-sm font-medium">
                 Vous serez pr&eacute;venu &agrave; l&apos;ouverture !
               </span>
             </div>
+          ) : isSupported ? (
+            <>
+              <button
+                onClick={subscribe}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#e91e8c] to-[#c4157a] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#e91e8c]/30 transition-all disabled:opacity-50"
+              >
+                <span className="text-lg">🔔</span>
+                {isLoading ? 'Activation...' : 'Me pr\u00e9venir \u00e0 l\u0027ouverture'}
+              </button>
+              <p className="text-white/30 text-xs">
+                Recevez une notification d&egrave;s que les inscriptions ouvrent
+              </p>
+            </>
           ) : (
-            <button
-              onClick={subscribe}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#e91e8c] to-[#c4157a] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#e91e8c]/30 transition-all disabled:opacity-50"
-            >
-              <span className="text-lg">🔔</span>
-              {isLoading ? 'Activation...' : 'Me pr\u00e9venir \u00e0 l\u0027ouverture'}
-            </button>
+            <div className="w-full max-w-sm">
+              <p className="text-white/50 text-xs text-center mb-2">
+                Laissez votre email pour &ecirc;tre pr&eacute;venu &agrave; l&apos;ouverture
+              </p>
+              <EmailSubscribeForm
+                sessionId={sessionId}
+                source="countdown"
+                compact
+              />
+            </div>
           )}
-          <p className="text-white/30 text-xs">
-            Recevez une notification d&egrave;s que les inscriptions ouvrent
-          </p>
         </div>
       )}
 
