@@ -76,28 +76,16 @@ export async function GET(request: Request) {
   const sinceMs = FREQUENCY_MS[frequency] || 24 * 60 * 60 * 1000
   const sinceDate = new Date(Date.now() - sinceMs).toISOString()
 
-  // Collect stats
+  // Collect stats — totals
   const { count: totalCandidates } = await supabase
     .from('candidates')
     .select('*', { count: 'exact', head: true })
     .eq('session_id', session.id)
 
-  const { count: newCandidatesCount } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-
   const { count: totalVotes } = await supabase
     .from('votes')
     .select('*', { count: 'exact', head: true })
     .eq('session_id', session.id)
-
-  const { count: newVotesCount } = await supabase
-    .from('votes')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
 
   const { count: pwaInstalls } = await supabase
     .from('pwa_installs')
@@ -110,21 +98,54 @@ export async function GET(request: Request) {
     .eq('session_id', session.id)
     .eq('role', 'public')
 
-  // Email subscribers
   const { count: emailSubscribers } = await supabase
     .from('email_subscribers')
     .select('*', { count: 'exact', head: true })
     .eq('session_id', session.id)
     .eq('is_active', true)
 
-  // Unique visitors (distinct fingerprints)
+  // Collect stats — new since last report (dernières 24h)
+  const { count: newCandidatesCount } = await supabase
+    .from('candidates')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .gte('created_at', sinceDate)
+
+  const { count: newVotesCount } = await supabase
+    .from('votes')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .gte('created_at', sinceDate)
+
+  const { count: newPwaInstalls } = await supabase
+    .from('pwa_installs')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .gte('created_at', sinceDate)
+
+  const { count: newPushSubs } = await supabase
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .eq('role', 'public')
+    .gte('created_at', sinceDate)
+
+  const { count: newEmailSubs } = await supabase
+    .from('email_subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', session.id)
+    .eq('is_active', true)
+    .gte('created_at', sinceDate)
+
+  // Unique visitors last 24h (distinct fingerprints)
   const { data: visitorsData } = await supabase
     .from('page_views')
     .select('fingerprint')
     .eq('session_id', session.id)
+    .gte('created_at', sinceDate)
     .not('fingerprint', 'is', null)
 
-  const uniqueVisitors = visitorsData
+  const newVisitors = visitorsData
     ? new Set(visitorsData.map((r) => r.fingerprint)).size
     : 0
 
@@ -157,13 +178,26 @@ export async function GET(request: Request) {
     adminUrl,
   })
 
+  // Build push body — only show what's new in last 24h
+  const pushParts: string[] = []
+  if (newVisitors > 0) pushParts.push(`👀 ${newVisitors} visiteur${newVisitors > 1 ? 's' : ''}`)
+  if ((newCandidatesCount || 0) > 0) pushParts.push(`🎤 ${newCandidatesCount} inscription${(newCandidatesCount || 0) > 1 ? 's' : ''}`)
+  if ((newVotesCount || 0) > 0) pushParts.push(`❤️ ${newVotesCount} vote${(newVotesCount || 0) > 1 ? 's' : ''}`)
+  if ((newPwaInstalls || 0) > 0) pushParts.push(`📲 ${newPwaInstalls} install${(newPwaInstalls || 0) > 1 ? 's' : ''}`)
+  if ((newPushSubs || 0) > 0) pushParts.push(`🔔 ${newPushSubs} abo push`)
+  if ((newEmailSubs || 0) > 0) pushParts.push(`📧 ${newEmailSubs} abo email`)
+
+  const pushBody = pushParts.length > 0
+    ? `Hier : ${pushParts.join(', ')}`
+    : 'Aucune activité hier'
+
   // Send push notification to admin subscribers
   const pushResult = await sendPushNotifications({
     sessionId: session.id,
     role: 'admin',
     payload: {
       title: `Rapport ${period}`,
-      body: `👀 ${uniqueVisitors} visiteurs, 📲 ${pwaInstalls || 0} installs, 🔔 ${Math.max((pushSubscriptions || 0) - 7, 0)} notifs, 📧 ${emailSubscribers || 0} emails | 🎤 ${totalCandidates || 0} candidats, ❤️ ${totalVotes || 0} votes`,
+      body: pushBody,
       url: adminUrl,
     },
   })
