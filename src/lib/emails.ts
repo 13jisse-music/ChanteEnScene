@@ -281,37 +281,88 @@ export function juryWeeklyRecapEmail({
 
 export function adminReportEmail({
   sessionName,
+  sessionStatus,
   period,
   totalCandidates,
   newCandidates,
   totalVotes,
   newVotes,
   pwaInstalls,
+  newPwaInstalls,
   pushSubscriptions,
+  newPushSubs,
+  emailSubscribers,
+  newEmailSubs,
+  newVisitors,
   recentCandidateNames,
+  recentCommits,
+  config,
   adminUrl,
 }: {
   sessionName: string
+  sessionStatus: string
   period: string
   totalCandidates: number
   newCandidates: number
   totalVotes: number
   newVotes: number
   pwaInstalls: number
+  newPwaInstalls: number
   pushSubscriptions: number
+  newPushSubs: number
+  emailSubscribers: number
+  newEmailSubs: number
+  newVisitors: number
   recentCandidateNames: { name: string; category: string }[]
+  recentCommits: string[]
+  config: Record<string, unknown>
   adminUrl: string
 }) {
-  const subject = `Rapport ${period} — ${sessionName}`
+  const subject = `Briefing ${period} — ${sessionName}`
 
   const safeSessionName = escapeHtml(sessionName)
-  const safePeriod = escapeHtml(period)
 
+  // Status labels
+  const statusLabels: Record<string, string> = {
+    draft: 'Brouillon', registration_open: 'Inscriptions ouvertes', registration_closed: 'Inscriptions ferm\u00e9es',
+    semifinal: 'Demi-finale', final: 'Finale', archived: 'Archiv\u00e9',
+  }
+  const statusLabel = statusLabels[sessionStatus] || sessionStatus
+
+  // Helper for delta badges
+  const delta = (n: number) => n > 0 ? `<span style="color:#7ec850;font-size:11px;"> (+${n})</span>` : ''
+
+  // Recent candidates rows
   const candidateRows = recentCandidateNames.slice(0, 5).map((c) => `
     <tr>
-      <td style="padding:6px 0;color:#ffffff;font-size:13px;">${escapeHtml(c.name)}</td>
-      <td style="padding:6px 0;color:#e91e8c;font-size:12px;text-align:right;">${escapeHtml(c.category)}</td>
+      <td style="padding:4px 0;color:#ffffff;font-size:13px;">${escapeHtml(c.name)}</td>
+      <td style="padding:4px 0;color:#e91e8c;font-size:12px;text-align:right;">${escapeHtml(c.category)}</td>
     </tr>`).join('')
+
+  // Commits rows
+  const commitRows = recentCommits.slice(0, 5).map((msg) => `
+    <tr><td style="padding:3px 0;color:#ffffffaa;font-size:12px;">\u2022 ${escapeHtml(msg)}</td></tr>`).join('')
+
+  // Build activity summary lines
+  const activityLines: string[] = []
+  if (newVisitors > 0) activityLines.push(`\uD83D\uDC41 <strong>${newVisitors}</strong> visiteur${newVisitors > 1 ? 's' : ''} unique${newVisitors > 1 ? 's' : ''}`)
+  if (newCandidates > 0) activityLines.push(`\uD83C\uDFA4 <strong>${newCandidates}</strong> nouvelle${newCandidates > 1 ? 's' : ''} inscription${newCandidates > 1 ? 's' : ''}`)
+  if (newVotes > 0) activityLines.push(`\u2764\uFE0F <strong>${newVotes}</strong> nouveau${newVotes > 1 ? 'x' : ''} vote${newVotes > 1 ? 's' : ''}`)
+  if (newPwaInstalls > 0) activityLines.push(`\uD83D\uDCF2 <strong>${newPwaInstalls}</strong> installation${newPwaInstalls > 1 ? 's' : ''} PWA`)
+  if (newPushSubs > 0) activityLines.push(`\uD83D\uDD14 <strong>${newPushSubs}</strong> nouvel${newPushSubs > 1 ? 'les' : ''} abo${newPushSubs > 1 ? 's' : ''} push`)
+  if (newEmailSubs > 0) activityLines.push(`\uD83D\uDCE7 <strong>${newEmailSubs}</strong> nouvel${newEmailSubs > 1 ? 'les' : ''} abo${newEmailSubs > 1 ? 's' : ''} email`)
+
+  // Build todo list based on session state and config
+  const todos: string[] = []
+  const prizes = config.prizes as { rank: string; description: string }[] | undefined
+  if (!prizes || prizes.length === 0) todos.push('Configurer les dotations/prix dans /admin/config')
+  if (!config.registration_start) todos.push('D\u00e9finir les dates d\u2019inscription')
+  if (!config.semifinal_date) todos.push('D\u00e9finir la date de demi-finale')
+  if (!config.final_date) todos.push('D\u00e9finir la date de finale')
+  if (sessionStatus === 'draft') todos.push('Passer la session en "Inscriptions ouvertes" quand pr\u00eat')
+  if (sessionStatus === 'registration_open' && totalCandidates === 0) todos.push('Communiquer pour attirer les premiers candidats')
+  const todoRows = todos.map((t) => `
+    <tr><td style="padding:3px 0;color:#f5a623;font-size:12px;">\u25CB ${t}</td></tr>`).join('')
 
   const html = `
 <!DOCTYPE html>
@@ -323,49 +374,70 @@ export function adminReportEmail({
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:32px;">
       <span style="font-size:22px;font-weight:bold;">
-        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Scène</span>
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
       </span>
     </div>
 
-    <!-- Card -->
+    <!-- Main Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
-      <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
-        Rapport ${safePeriod}
+      <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px 0;">
+        Briefing ${escapeHtml(period)}
       </h1>
-      <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
-        Voici les chiffres pour <strong style="color:#ffffff;">${safeSessionName}</strong>.
+      <p style="color:#ffffff60;font-size:13px;margin:0 0 24px 0;">
+        ${safeSessionName} \u2014 <span style="color:#e91e8c;">${statusLabel}</span>
       </p>
 
-      <!-- Stats Grid -->
-      <div style="margin:0 0 24px 0;">
+      <!-- Activité des dernières 24h -->
+      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
+        <p style="color:#7ec850;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
+          Activit\u00e9 des derni\u00e8res 24h
+        </p>
+        ${activityLines.length > 0
+          ? `<table style="width:100%;border-collapse:collapse;">${activityLines.map(l => `<tr><td style="padding:3px 0;font-size:13px;color:#ffffffcc;">${l}</td></tr>`).join('')}</table>`
+          : '<p style="color:#ffffff40;font-size:13px;margin:0;">Aucune activit\u00e9 hier</p>'
+        }
+      </div>
+
+      <!-- Totaux -->
+      <div style="margin:0 0 16px 0;">
         <table style="width:100%;border-collapse:collapse;">
           <tr>
-            <td style="width:50%;padding:8px;">
-              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
-                <div style="color:#e91e8c;font-size:28px;font-weight:bold;">${totalCandidates}</div>
-                <div style="color:#ffffff50;font-size:11px;">Candidats</div>
-                ${newCandidates > 0 ? `<div style="color:#7ec850;font-size:11px;">+${newCandidates} nouveau${newCandidates > 1 ? 'x' : ''}</div>` : ''}
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#e91e8c;font-size:24px;font-weight:bold;">${totalCandidates}${delta(newCandidates)}</div>
+                <div style="color:#ffffff40;font-size:10px;">Candidats</div>
               </div>
             </td>
-            <td style="width:50%;padding:8px;">
-              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
-                <div style="color:#3b82f6;font-size:28px;font-weight:bold;">${totalVotes}</div>
-                <div style="color:#ffffff50;font-size:11px;">Votes</div>
-                ${newVotes > 0 ? `<div style="color:#7ec850;font-size:11px;">+${newVotes} nouveau${newVotes > 1 ? 'x' : ''}</div>` : ''}
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#3b82f6;font-size:24px;font-weight:bold;">${totalVotes}${delta(newVotes)}</div>
+                <div style="color:#ffffff40;font-size:10px;">Votes</div>
+              </div>
+            </td>
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#8b5cf6;font-size:24px;font-weight:bold;">${newVisitors}</div>
+                <div style="color:#ffffff40;font-size:10px;">Visiteurs J-1</div>
               </div>
             </td>
           </tr>
           <tr>
-            <td style="width:50%;padding:8px;">
-              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
-                <div style="color:#10b981;font-size:28px;font-weight:bold;">${pwaInstalls}</div>
-                <div style="color:#ffffff50;font-size:11px;">Installations PWA</div>
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#10b981;font-size:24px;font-weight:bold;">${pwaInstalls}${delta(newPwaInstalls)}</div>
+                <div style="color:#ffffff40;font-size:10px;">Installs PWA</div>
               </div>
             </td>
-            <td style="width:50%;padding:8px;">
-              <div style="background:#0d0b1a;border-radius:12px;padding:16px;text-align:center;">
-                <div style="color:#f97316;font-size:28px;font-weight:bold;">${pushSubscriptions}</div>
-                <div style="color:#ffffff50;font-size:11px;">Notifications</div>
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#f97316;font-size:24px;font-weight:bold;">${pushSubscriptions}${delta(newPushSubs)}</div>
+                <div style="color:#ffffff40;font-size:10px;">Abos push</div>
+              </div>
+            </td>
+            <td style="width:33%;padding:6px;">
+              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:#ec4899;font-size:24px;font-weight:bold;">${emailSubscribers}${delta(newEmailSubs)}</div>
+                <div style="color:#ffffff40;font-size:10px;">Abos email</div>
               </div>
             </td>
           </tr>
@@ -374,28 +446,53 @@ export function adminReportEmail({
 
       ${recentCandidateNames.length > 0 ? `
       <!-- Recent candidates -->
-      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 24px 0;">
-        <p style="color:#f5a623;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px 0;">
-          Dernières inscriptions
+      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
+        <p style="color:#e91e8c;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
+          Derni\u00e8res inscriptions
         </p>
         <table style="width:100%;border-collapse:collapse;">
           ${candidateRows}
         </table>
-        ${recentCandidateNames.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:8px 0 0 0;">...et ${recentCandidateNames.length - 5} de plus</p>` : ''}
+        ${recentCandidateNames.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:6px 0 0 0;">...et ${recentCandidateNames.length - 5} de plus</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${recentCommits.length > 0 ? `
+      <!-- Deploys -->
+      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
+        <p style="color:#6366f1;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
+          \uD83D\uDE80 Mises \u00e0 jour du site (${recentCommits.length})
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${commitRows}
+        </table>
+        ${recentCommits.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:6px 0 0 0;">...et ${recentCommits.length - 5} de plus</p>` : ''}
+      </div>
+      ` : ''}
+
+      ${todos.length > 0 ? `
+      <!-- Reste à faire -->
+      <div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:12px;padding:16px;margin:0 0 16px 0;">
+        <p style="color:#f5a623;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
+          Reste \u00e0 faire
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${todoRows}
+        </table>
       </div>
       ` : ''}
 
       <!-- CTA -->
       <div style="text-align:center;margin:24px 0 0 0;">
         <a href="${adminUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
-          Voir le dashboard
+          Ouvrir le dashboard
         </a>
       </div>
     </div>
 
     <!-- Footer -->
     <p style="color:#ffffff30;font-size:11px;text-align:center;margin-top:24px;line-height:1.5;">
-      ChanteEnScène — Rapport automatique ${safePeriod}
+      ChanteEnSc\u00e8ne \u2014 Briefing automatique ${escapeHtml(period)}
     </p>
   </div>
 </body>

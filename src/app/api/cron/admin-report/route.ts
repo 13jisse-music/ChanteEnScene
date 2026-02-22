@@ -36,13 +36,13 @@ export async function GET(request: Request) {
   // Get active session (is_active flag, fallback to most recent non-archived)
   let { data: sessions } = await supabase
     .from('sessions')
-    .select('id, name, slug, config')
+    .select('id, name, slug, status, config')
     .eq('is_active', true)
 
   if (!sessions || sessions.length === 0) {
     const { data: fallback } = await supabase
       .from('sessions')
-      .select('id, name, slug, config')
+      .select('id, name, slug, status, config')
       .neq('status', 'archived')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -160,23 +160,7 @@ export async function GET(request: Request) {
 
   const period = FREQUENCY_LABELS[frequency] || frequency
   const adminUrl = `${siteUrl}/admin`
-
-  // Build email
-  const { subject, html } = adminReportEmail({
-    sessionName: session.name,
-    period,
-    totalCandidates: totalCandidates || 0,
-    newCandidates: newCandidatesCount || 0,
-    totalVotes: totalVotes || 0,
-    newVotes: newVotesCount || 0,
-    pwaInstalls: pwaInstalls || 0,
-    pushSubscriptions: pushSubscriptions || 0,
-    recentCandidateNames: (recentCandidates || []).map((c) => ({
-      name: c.stage_name || `${c.first_name} ${c.last_name}`,
-      category: c.category,
-    })),
-    adminUrl,
-  })
+  const sessionStatus = (session as { status?: string }).status || 'draft'
 
   // Fetch recent GitHub commits (last 24h)
   let recentCommits: string[] = []
@@ -192,6 +176,31 @@ export async function GET(request: Request) {
   } catch {
     // GitHub API unavailable — skip
   }
+
+  // Build email
+  const { subject, html } = adminReportEmail({
+    sessionName: session.name,
+    sessionStatus,
+    period,
+    totalCandidates: totalCandidates || 0,
+    newCandidates: newCandidatesCount || 0,
+    totalVotes: totalVotes || 0,
+    newVotes: newVotesCount || 0,
+    pwaInstalls: pwaInstalls || 0,
+    newPwaInstalls: newPwaInstalls || 0,
+    pushSubscriptions: pushSubscriptions || 0,
+    newPushSubs: newPushSubs || 0,
+    emailSubscribers: emailSubscribers || 0,
+    newEmailSubs: newEmailSubs || 0,
+    newVisitors,
+    recentCandidateNames: (recentCandidates || []).map((c) => ({
+      name: c.stage_name || `${c.first_name} ${c.last_name}`,
+      category: c.category,
+    })),
+    recentCommits,
+    config,
+    adminUrl,
+  })
 
   // Build push body — only show what's new in last 24h
   const pushParts: string[] = []
