@@ -76,87 +76,87 @@ export async function GET(request: Request) {
   const sinceMs = FREQUENCY_MS[frequency] || 24 * 60 * 60 * 1000
   const sinceDate = new Date(Date.now() - sinceMs).toISOString()
 
-  // Collect stats — totals
-  const { count: totalCandidates } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-
-  const { count: totalVotes } = await supabase
-    .from('votes')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-
-  const { count: pwaInstalls } = await supabase
-    .from('pwa_installs')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-
-  const { count: pushSubscriptions } = await supabase
-    .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .eq('role', 'public')
-
-  const { count: emailSubscribers } = await supabase
-    .from('email_subscribers')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .eq('is_active', true)
-
-  // Collect stats — new since last report (dernières 24h)
-  const { count: newCandidatesCount } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-
-  const { count: newVotesCount } = await supabase
-    .from('votes')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-
-  const { count: newPwaInstalls } = await supabase
-    .from('pwa_installs')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-
-  const { count: newPushSubs } = await supabase
-    .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .eq('role', 'public')
-    .gte('created_at', sinceDate)
-
-  const { count: newEmailSubs } = await supabase
-    .from('email_subscribers')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', session.id)
-    .eq('is_active', true)
-    .gte('created_at', sinceDate)
-
-  // Unique visitors last 24h (distinct fingerprints)
-  const { data: visitorsData } = await supabase
-    .from('page_views')
-    .select('fingerprint')
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-    .not('fingerprint', 'is', null)
+  // ── Collect all stats in parallel ──
+  const [
+    { count: totalCandidates },
+    { count: totalVotes },
+    { count: pwaInstalls },
+    { count: pushSubscriptions },
+    { count: emailSubscribers },
+    { count: newCandidatesCount },
+    { count: newVotesCount },
+    { count: newPwaInstalls },
+    { count: newPushSubs },
+    { count: newEmailSubs },
+    { count: totalPageViews },
+    { data: visitorsData },
+    { data: pageViewsData },
+    { data: recentCandidates },
+    { data: allCandidates },
+    { data: pwaByPlatform },
+    { data: pushByRole },
+  ] = await Promise.all([
+    // Totals
+    supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', session.id),
+    supabase.from('votes').select('*', { count: 'exact', head: true }).eq('session_id', session.id),
+    supabase.from('pwa_installs').select('*', { count: 'exact', head: true }).eq('session_id', session.id),
+    supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('session_id', session.id).eq('role', 'public'),
+    supabase.from('email_subscribers').select('*', { count: 'exact', head: true }).eq('session_id', session.id).eq('is_active', true),
+    // New since last report
+    supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', session.id).gte('created_at', sinceDate),
+    supabase.from('votes').select('*', { count: 'exact', head: true }).eq('session_id', session.id).gte('created_at', sinceDate),
+    supabase.from('pwa_installs').select('*', { count: 'exact', head: true }).eq('session_id', session.id).gte('created_at', sinceDate),
+    supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('session_id', session.id).eq('role', 'public').gte('created_at', sinceDate),
+    supabase.from('email_subscribers').select('*', { count: 'exact', head: true }).eq('session_id', session.id).eq('is_active', true).gte('created_at', sinceDate),
+    // Total page views J-1
+    supabase.from('page_views').select('*', { count: 'exact', head: true }).eq('session_id', session.id).gte('created_at', sinceDate),
+    // Unique visitors J-1 (fingerprints)
+    supabase.from('page_views').select('fingerprint').eq('session_id', session.id).gte('created_at', sinceDate).not('fingerprint', 'is', null),
+    // Top pages J-1
+    supabase.from('page_views').select('page_path').eq('session_id', session.id).gte('created_at', sinceDate),
+    // Recent candidates
+    supabase.from('candidates').select('first_name, last_name, stage_name, category, status').eq('session_id', session.id).gte('created_at', sinceDate).order('created_at', { ascending: false }).limit(10),
+    // All candidates for status breakdown
+    supabase.from('candidates').select('status').eq('session_id', session.id),
+    // PWA installs by platform
+    supabase.from('pwa_installs').select('platform').eq('session_id', session.id),
+    // Push subscriptions by role (all roles)
+    supabase.from('push_subscriptions').select('role').eq('session_id', session.id),
+  ])
 
   const newVisitors = visitorsData
     ? new Set(visitorsData.map((r) => r.fingerprint)).size
     : 0
 
-  // Recent candidates for the list
-  const { data: recentCandidates } = await supabase
-    .from('candidates')
-    .select('first_name, last_name, stage_name, category')
-    .eq('session_id', session.id)
-    .gte('created_at', sinceDate)
-    .order('created_at', { ascending: false })
-    .limit(10)
+  // Top 5 pages
+  const pageCounts: Record<string, number> = {}
+  for (const pv of pageViewsData || []) {
+    const path = pv.page_path || '/'
+    pageCounts[path] = (pageCounts[path] || 0) + 1
+  }
+  const topPages = Object.entries(pageCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([path, count]) => ({ path, count }))
+
+  // Candidate status breakdown
+  const statusBreakdown: Record<string, number> = {}
+  for (const c of allCandidates || []) {
+    statusBreakdown[c.status] = (statusBreakdown[c.status] || 0) + 1
+  }
+
+  // PWA platform breakdown
+  const platformBreakdown: Record<string, number> = {}
+  for (const p of pwaByPlatform || []) {
+    const platform = p.platform || 'unknown'
+    platformBreakdown[platform] = (platformBreakdown[platform] || 0) + 1
+  }
+
+  // Push role breakdown
+  const pushRoleBreakdown: Record<string, number> = {}
+  for (const p of pushByRole || []) {
+    pushRoleBreakdown[p.role] = (pushRoleBreakdown[p.role] || 0) + 1
+  }
 
   const period = FREQUENCY_LABELS[frequency] || frequency
   const adminUrl = `${siteUrl}/admin`
@@ -193,6 +193,11 @@ export async function GET(request: Request) {
     emailSubscribers: emailSubscribers || 0,
     newEmailSubs: newEmailSubs || 0,
     newVisitors,
+    totalPageViews: totalPageViews || 0,
+    topPages,
+    statusBreakdown,
+    platformBreakdown,
+    pushRoleBreakdown,
     recentCandidateNames: (recentCandidates || []).map((c) => ({
       name: c.stage_name || `${c.first_name} ${c.last_name}`,
       category: c.category,

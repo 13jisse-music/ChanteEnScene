@@ -294,6 +294,11 @@ export function adminReportEmail({
   emailSubscribers,
   newEmailSubs,
   newVisitors,
+  totalPageViews,
+  topPages,
+  statusBreakdown,
+  platformBreakdown,
+  pushRoleBreakdown,
   recentCandidateNames,
   recentCommits,
   config,
@@ -313,186 +318,312 @@ export function adminReportEmail({
   emailSubscribers: number
   newEmailSubs: number
   newVisitors: number
+  totalPageViews: number
+  topPages: { path: string; count: number }[]
+  statusBreakdown: Record<string, number>
+  platformBreakdown: Record<string, number>
+  pushRoleBreakdown: Record<string, number>
   recentCandidateNames: { name: string; category: string }[]
   recentCommits: string[]
   config: Record<string, unknown>
   adminUrl: string
 }) {
   const subject = `Briefing ${period} — ${sessionName}`
-
   const safeSessionName = escapeHtml(sessionName)
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })
 
-  // Status labels
-  const statusLabels: Record<string, string> = {
-    draft: 'Brouillon', registration_open: 'Inscriptions ouvertes', registration_closed: 'Inscriptions ferm\u00e9es',
-    semifinal: 'Demi-finale', final: 'Finale', archived: 'Archiv\u00e9',
+  // Status labels & colors
+  const statusMeta: Record<string, { label: string; color: string }> = {
+    draft: { label: 'Brouillon', color: '#94a3b8' },
+    registration_open: { label: 'Inscriptions ouvertes', color: '#7ec850' },
+    registration_closed: { label: 'Inscriptions fermées', color: '#f59e0b' },
+    semifinal: { label: 'Demi-finale', color: '#3b82f6' },
+    final: { label: 'Finale', color: '#e91e8c' },
+    archived: { label: 'Archivé', color: '#6b7280' },
   }
-  const statusLabel = statusLabels[sessionStatus] || sessionStatus
+  const status = statusMeta[sessionStatus] || { label: sessionStatus, color: '#94a3b8' }
 
-  // Helper for delta badges
-  const delta = (n: number) => n > 0 ? `<span style="color:#7ec850;font-size:11px;"> (+${n})</span>` : ''
+  // Helper: delta badge
+  const delta = (n: number) => n > 0 ? `<span style="color:#7ec850;font-size:11px;font-weight:bold;"> +${n}</span>` : ''
 
-  // Recent candidates rows
-  const candidateRows = recentCandidateNames.slice(0, 5).map((c) => `
-    <tr>
-      <td style="padding:4px 0;color:#ffffff;font-size:13px;">${escapeHtml(c.name)}</td>
-      <td style="padding:4px 0;color:#e91e8c;font-size:12px;text-align:right;">${escapeHtml(c.category)}</td>
-    </tr>`).join('')
+  // Helper: progress bar (for visual breakdowns)
+  const bar = (pct: number, color: string) => `
+    <div style="background:#0d0b1a;border-radius:4px;height:8px;width:100%;overflow:hidden;">
+      <div style="background:${color};height:100%;width:${Math.min(pct, 100)}%;border-radius:4px;"></div>
+    </div>`
 
-  // Commits rows
-  const commitRows = recentCommits.slice(0, 5).map((msg) => `
-    <tr><td style="padding:3px 0;color:#ffffffaa;font-size:12px;">\u2022 ${escapeHtml(msg)}</td></tr>`).join('')
+  // Audience totale
+  const totalAudience = (pwaInstalls || 0) + (pushSubscriptions || 0) + (emailSubscribers || 0)
 
-  // Build activity summary lines
-  const activityLines: string[] = []
-  if (newVisitors > 0) activityLines.push(`\uD83D\uDC41 <strong>${newVisitors}</strong> visiteur${newVisitors > 1 ? 's' : ''} unique${newVisitors > 1 ? 's' : ''}`)
-  if (newCandidates > 0) activityLines.push(`\uD83C\uDFA4 <strong>${newCandidates}</strong> nouvelle${newCandidates > 1 ? 's' : ''} inscription${newCandidates > 1 ? 's' : ''}`)
-  if (newVotes > 0) activityLines.push(`\u2764\uFE0F <strong>${newVotes}</strong> nouveau${newVotes > 1 ? 'x' : ''} vote${newVotes > 1 ? 's' : ''}`)
-  if (newPwaInstalls > 0) activityLines.push(`\uD83D\uDCF2 <strong>${newPwaInstalls}</strong> installation${newPwaInstalls > 1 ? 's' : ''} PWA`)
-  if (newPushSubs > 0) activityLines.push(`\uD83D\uDD14 <strong>${newPushSubs}</strong> nouvel${newPushSubs > 1 ? 'les' : ''} abo${newPushSubs > 1 ? 's' : ''} push`)
-  if (newEmailSubs > 0) activityLines.push(`\uD83D\uDCE7 <strong>${newEmailSubs}</strong> nouvel${newEmailSubs > 1 ? 'les' : ''} abo${newEmailSubs > 1 ? 's' : ''} email`)
+  // Conversion rate: visitors → installs (sur les données J-1)
+  const conversionRate = newVisitors > 0 && (newPwaInstalls || 0) > 0
+    ? Math.round((newPwaInstalls || 0) / newVisitors * 100) : 0
 
-  // Build todo list based on session state and config
+  // Candidate status labels
+  const statusCandidateLabels: Record<string, string> = {
+    pending: 'En attente', approved: 'Approuvés', rejected: 'Refusés',
+    semifinalist: 'Demi-finalistes', finalist: 'Finalistes', winner: 'Gagnant',
+  }
+
+  // Platform labels
+  const platformLabels: Record<string, string> = {
+    android: 'Android', ios: 'iOS', desktop: 'Desktop', unknown: 'Autre',
+  }
+  const platformColors: Record<string, string> = {
+    android: '#7ec850', ios: '#3b82f6', desktop: '#f97316', unknown: '#94a3b8',
+  }
+
+  // Push role labels
+  const pushRoleLabels: Record<string, string> = {
+    public: 'Public', jury: 'Jury', admin: 'Admin',
+  }
+  const totalPushAll = Object.values(pushRoleBreakdown).reduce((a, b) => a + b, 0)
+
+  // Build todo list
   const todos: string[] = []
   const prizes = config.prizes as { rank: string; description: string }[] | undefined
-  if (!prizes || prizes.length === 0) todos.push('Configurer les dotations/prix dans /admin/config')
-  if (!config.registration_start) todos.push('D\u00e9finir les dates d\u2019inscription')
-  if (!config.semifinal_date) todos.push('D\u00e9finir la date de demi-finale')
-  if (!config.final_date) todos.push('D\u00e9finir la date de finale')
-  if (sessionStatus === 'draft') todos.push('Passer la session en "Inscriptions ouvertes" quand pr\u00eat')
+  if (!prizes || prizes.length === 0) todos.push('Configurer les dotations/prix')
+  if (!config.registration_start) todos.push("Définir les dates d'inscription")
+  if (!config.semifinal_date) todos.push('Définir la date de demi-finale')
+  if (!config.final_date) todos.push('Définir la date de finale')
+  if (sessionStatus === 'draft') todos.push('Passer la session en "Inscriptions ouvertes"')
   if (sessionStatus === 'registration_open' && totalCandidates === 0) todos.push('Communiquer pour attirer les premiers candidats')
-  const todoRows = todos.map((t) => `
-    <tr><td style="padding:3px 0;color:#f5a623;font-size:12px;">\u25CB ${t}</td></tr>`).join('')
+  if (pwaInstalls > 0 && pushSubscriptions === 0) todos.push("Inciter les visiteurs à activer les notifications")
 
+  // ── Build HTML ──
   const html = `
 <!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="utf-8" /></head>
-<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
 
     <!-- Logo -->
-    <div style="text-align:center;margin-bottom:32px;">
+    <div style="text-align:center;margin-bottom:24px;">
       <span style="font-size:22px;font-weight:bold;">
-        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Scène</span>
       </span>
     </div>
 
-    <!-- Main Card -->
-    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
-      <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px 0;">
-        Briefing ${escapeHtml(period)}
-      </h1>
-      <p style="color:#ffffff60;font-size:13px;margin:0 0 24px 0;">
-        ${safeSessionName} \u2014 <span style="color:#e91e8c;">${statusLabel}</span>
-      </p>
+    <!-- Header Card -->
+    <div style="background:linear-gradient(135deg,#1e1744,#2a1f5e);border:1px solid #3a3070;border-radius:16px;padding:24px;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td>
+            <h1 style="color:#ffffff;font-size:18px;margin:0 0 4px 0;">Briefing ${escapeHtml(period)}</h1>
+            <p style="color:#ffffff60;font-size:12px;margin:0;">${today}</p>
+          </td>
+          <td style="text-align:right;vertical-align:top;">
+            <span style="display:inline-block;background:${status.color}22;color:${status.color};font-size:11px;font-weight:bold;padding:4px 10px;border-radius:20px;border:1px solid ${status.color}44;">
+              ${status.label}
+            </span>
+          </td>
+        </tr>
+      </table>
+      <p style="color:#ffffff50;font-size:12px;margin:10px 0 0 0;">${safeSessionName}</p>
+    </div>
 
-      <!-- Activité des dernières 24h -->
-      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
-        <p style="color:#7ec850;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
-          Activit\u00e9 des derni\u00e8res 24h
-        </p>
-        ${activityLines.length > 0
-          ? `<table style="width:100%;border-collapse:collapse;">${activityLines.map(l => `<tr><td style="padding:3px 0;font-size:13px;color:#ffffffcc;">${l}</td></tr>`).join('')}</table>`
-          : '<p style="color:#ffffff40;font-size:13px;margin:0;">Aucune activit\u00e9 hier</p>'
-        }
-      </div>
+    <!-- ===== SECTION 1: Activité J-1 ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+        <tr>
+          <td><p style="color:#7ec850;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0;">Hier en un coup d'oeil</p></td>
+          <td style="text-align:right;"><span style="color:#ffffff30;font-size:11px;">${totalPageViews} pages vues</span></td>
+        </tr>
+      </table>
 
-      <!-- Totaux -->
-      <div style="margin:0 0 16px 0;">
+      <!-- Activity summary bar -->
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#8b5cf6;font-size:22px;font-weight:bold;">${newVisitors}</div>
+              <div style="color:#ffffff40;font-size:9px;">Visiteurs</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#e91e8c;font-size:22px;font-weight:bold;">${newCandidates}</div>
+              <div style="color:#ffffff40;font-size:9px;">Inscriptions</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#3b82f6;font-size:22px;font-weight:bold;">${newVotes}</div>
+              <div style="color:#ffffff40;font-size:9px;">Votes</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#10b981;font-size:22px;font-weight:bold;">${(newPwaInstalls || 0) + (newPushSubs || 0) + (newEmailSubs || 0)}</div>
+              <div style="color:#ffffff40;font-size:9px;">Nouveaux abos</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      ${conversionRate > 0 ? `
+      <p style="color:#ffffff50;font-size:11px;margin:10px 0 0 0;text-align:center;">
+        Taux de conversion visiteur → install : <strong style="color:#7ec850;">${conversionRate}%</strong>
+      </p>` : ''}
+    </div>
+
+    <!-- ===== SECTION 2: Totaux & Progression ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Tableau de bord</p>
+
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Candidats</td>
+          <td style="padding:8px 0;text-align:right;color:#e91e8c;font-size:16px;font-weight:bold;">${totalCandidates}${delta(newCandidates)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Votes publics</td>
+          <td style="padding:8px 0;text-align:right;color:#3b82f6;font-size:16px;font-weight:bold;">${totalVotes}${delta(newVotes)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Installations PWA</td>
+          <td style="padding:8px 0;text-align:right;color:#10b981;font-size:16px;font-weight:bold;">${pwaInstalls}${delta(newPwaInstalls)}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Abonnés push</td>
+          <td style="padding:8px 0;text-align:right;color:#f97316;font-size:16px;font-weight:bold;">${pushSubscriptions}${delta(newPushSubs)}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Abonnés email</td>
+          <td style="padding:8px 0;text-align:right;color:#ec4899;font-size:16px;font-weight:bold;">${emailSubscribers}${delta(newEmailSubs)}</td>
+        </tr>
+      </table>
+
+      <div style="border-top:1px solid #2a2545;margin-top:12px;padding-top:12px;">
         <table style="width:100%;border-collapse:collapse;">
           <tr>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#e91e8c;font-size:24px;font-weight:bold;">${totalCandidates}${delta(newCandidates)}</div>
-                <div style="color:#ffffff40;font-size:10px;">Candidats</div>
-              </div>
-            </td>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#3b82f6;font-size:24px;font-weight:bold;">${totalVotes}${delta(newVotes)}</div>
-                <div style="color:#ffffff40;font-size:10px;">Votes</div>
-              </div>
-            </td>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#8b5cf6;font-size:24px;font-weight:bold;">${newVisitors}</div>
-                <div style="color:#ffffff40;font-size:10px;">Visiteurs J-1</div>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#10b981;font-size:24px;font-weight:bold;">${pwaInstalls}${delta(newPwaInstalls)}</div>
-                <div style="color:#ffffff40;font-size:10px;">Installs PWA</div>
-              </div>
-            </td>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#f97316;font-size:24px;font-weight:bold;">${pushSubscriptions}${delta(newPushSubs)}</div>
-                <div style="color:#ffffff40;font-size:10px;">Abos push</div>
-              </div>
-            </td>
-            <td style="width:33%;padding:6px;">
-              <div style="background:#0d0b1a;border-radius:10px;padding:12px;text-align:center;">
-                <div style="color:#ec4899;font-size:24px;font-weight:bold;">${emailSubscribers}${delta(newEmailSubs)}</div>
-                <div style="color:#ffffff40;font-size:10px;">Abos email</div>
-              </div>
-            </td>
+            <td style="color:#ffffff50;font-size:12px;">Audience totale</td>
+            <td style="text-align:right;color:#ffffff;font-size:18px;font-weight:bold;">${totalAudience}</td>
           </tr>
         </table>
-      </div>
-
-      ${recentCandidateNames.length > 0 ? `
-      <!-- Recent candidates -->
-      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
-        <p style="color:#e91e8c;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
-          Derni\u00e8res inscriptions
-        </p>
-        <table style="width:100%;border-collapse:collapse;">
-          ${candidateRows}
-        </table>
-        ${recentCandidateNames.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:6px 0 0 0;">...et ${recentCandidateNames.length - 5} de plus</p>` : ''}
-      </div>
-      ` : ''}
-
-      ${recentCommits.length > 0 ? `
-      <!-- Deploys -->
-      <div style="background:#0d0b1a;border-radius:12px;padding:16px;margin:0 0 16px 0;">
-        <p style="color:#6366f1;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
-          \uD83D\uDE80 Mises \u00e0 jour du site (${recentCommits.length})
-        </p>
-        <table style="width:100%;border-collapse:collapse;">
-          ${commitRows}
-        </table>
-        ${recentCommits.length > 5 ? `<p style="color:#ffffff30;font-size:11px;margin:6px 0 0 0;">...et ${recentCommits.length - 5} de plus</p>` : ''}
-      </div>
-      ` : ''}
-
-      ${todos.length > 0 ? `
-      <!-- Reste à faire -->
-      <div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:12px;padding:16px;margin:0 0 16px 0;">
-        <p style="color:#f5a623;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px 0;">
-          Reste \u00e0 faire
-        </p>
-        <table style="width:100%;border-collapse:collapse;">
-          ${todoRows}
-        </table>
-      </div>
-      ` : ''}
-
-      <!-- CTA -->
-      <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="${adminUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
-          Ouvrir le dashboard
-        </a>
       </div>
     </div>
 
+    <!-- ===== SECTION 3: Analyse d'audience ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Analyse d'audience</p>
+
+      <!-- PWA Platform breakdown -->
+      <p style="color:#ffffff60;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 0;">Plateformes (PWA)</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        ${Object.entries(platformBreakdown).map(([platform, count]) => {
+          const pct = pwaInstalls > 0 ? Math.round(count / pwaInstalls * 100) : 0
+          const color = platformColors[platform] || '#94a3b8'
+          const label = platformLabels[platform] || platform
+          return `<tr>
+            <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:80px;">${label}</td>
+            <td style="padding:3px 0;">${bar(pct, color)}</td>
+            <td style="padding:3px 0;color:#ffffff80;font-size:11px;width:60px;text-align:right;">${count} (${pct}%)</td>
+          </tr>`
+        }).join('')}
+      </table>
+
+      <!-- Push role breakdown -->
+      <p style="color:#ffffff60;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 0;">Abonnés push par rôle (${totalPushAll} total)</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
+        ${Object.entries(pushRoleBreakdown).map(([role, count]) => {
+          const pct = totalPushAll > 0 ? Math.round(count / totalPushAll * 100) : 0
+          const label = pushRoleLabels[role] || role
+          const colors: Record<string, string> = { public: '#e91e8c', jury: '#f59e0b', admin: '#6366f1' }
+          return `<tr>
+            <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:80px;">${label}</td>
+            <td style="padding:3px 0;">${bar(pct, colors[role] || '#94a3b8')}</td>
+            <td style="padding:3px 0;color:#ffffff80;font-size:11px;width:60px;text-align:right;">${count} (${pct}%)</td>
+          </tr>`
+        }).join('')}
+      </table>
+    </div>
+
+    ${totalCandidates > 0 ? `
+    <!-- ===== SECTION 4: Candidats ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Candidats (${totalCandidates})</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${Object.entries(statusBreakdown).map(([s, count]) => {
+          const pct = totalCandidates > 0 ? Math.round(count / totalCandidates * 100) : 0
+          const label = statusCandidateLabels[s] || s
+          const colors: Record<string, string> = { pending: '#f59e0b', approved: '#7ec850', rejected: '#ef4444', semifinalist: '#3b82f6', finalist: '#e91e8c', winner: '#fbbf24' }
+          return `<tr>
+            <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:110px;">${label}</td>
+            <td style="padding:3px 0;">${bar(pct, colors[s] || '#94a3b8')}</td>
+            <td style="padding:3px 0;color:#ffffff80;font-size:11px;width:50px;text-align:right;">${count}</td>
+          </tr>`
+        }).join('')}
+      </table>
+
+      ${recentCandidateNames.length > 0 ? `
+      <div style="border-top:1px solid #2a2545;margin-top:12px;padding-top:12px;">
+        <p style="color:#e91e8c;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0;">Nouvelles inscriptions</p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${recentCandidateNames.slice(0, 5).map(c => `
+          <tr>
+            <td style="padding:3px 0;color:#ffffff;font-size:12px;">${escapeHtml(c.name)}</td>
+            <td style="padding:3px 0;color:#e91e8c;font-size:11px;text-align:right;">${escapeHtml(c.category)}</td>
+          </tr>`).join('')}
+        </table>
+        ${recentCandidateNames.length > 5 ? `<p style="color:#ffffff30;font-size:10px;margin:4px 0 0 0;">...et ${recentCandidateNames.length - 5} de plus</p>` : ''}
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
+
+    ${topPages.length > 0 ? `
+    <!-- ===== SECTION 5: Pages populaires ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Pages les plus visitées hier</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${topPages.map((p, i) => `
+        <tr${i < topPages.length - 1 ? ' style="border-bottom:1px solid #1e1744;"' : ''}>
+          <td style="padding:6px 0;color:#ffffff90;font-size:12px;font-family:monospace;">${escapeHtml(p.path)}</td>
+          <td style="padding:6px 0;color:#8b5cf6;font-size:13px;font-weight:bold;text-align:right;width:50px;">${p.count}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+    ` : ''}
+
+    ${recentCommits.length > 0 ? `
+    <!-- ===== SECTION 6: Déploiements ===== -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#6366f1;font-size:13px;font-weight:bold;margin:0 0 12px 0;">Mises à jour du site (${recentCommits.length})</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${recentCommits.slice(0, 5).map(msg => `
+        <tr><td style="padding:3px 0;color:#ffffffaa;font-size:12px;">• ${escapeHtml(msg)}</td></tr>`).join('')}
+      </table>
+      ${recentCommits.length > 5 ? `<p style="color:#ffffff30;font-size:10px;margin:4px 0 0 0;">...et ${recentCommits.length - 5} de plus</p>` : ''}
+    </div>
+    ` : ''}
+
+    ${todos.length > 0 ? `
+    <!-- ===== SECTION 7: Reste à faire ===== -->
+    <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#f5a623;font-size:13px;font-weight:bold;margin:0 0 12px 0;">Prochaines actions</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${todos.map((t, i) => `
+        <tr>
+          <td style="padding:4px 0;color:#f5a623;font-size:12px;width:20px;vertical-align:top;">${i + 1}.</td>
+          <td style="padding:4px 0;color:#ffffffcc;font-size:12px;">${t}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+    ` : ''}
+
+    <!-- CTA -->
+    <div style="text-align:center;margin:20px 0 16px 0;">
+      <a href="${adminUrl}" style="display:inline-block;padding:14px 40px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+        Ouvrir le dashboard
+      </a>
+    </div>
+
     <!-- Footer -->
-    <p style="color:#ffffff30;font-size:11px;text-align:center;margin-top:24px;line-height:1.5;">
-      ChanteEnSc\u00e8ne \u2014 Briefing automatique ${escapeHtml(period)}
+    <p style="color:#ffffff25;font-size:10px;text-align:center;line-height:1.5;margin:0;">
+      ChanteEnScène — Briefing automatique ${escapeHtml(period)}<br/>
+      Généré le ${today}
     </p>
   </div>
 </body>
