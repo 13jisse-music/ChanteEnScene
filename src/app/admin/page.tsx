@@ -6,6 +6,7 @@ import SemifinalPrep from '@/components/SemifinalPrep'
 import PwaFunnel from '@/components/PwaFunnel'
 import InstallsMap from '@/components/InstallsMap'
 import DailyStats from '@/components/DailyStats'
+import ChangelogCard from '@/components/ChangelogCard'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -449,6 +450,24 @@ export default async function AdminDashboard() {
           />
         </div>
       )}
+
+      {/* Changelog — Dernières mises à jour du site */}
+      <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-6 sm:mb-10">
+        <div className="p-4 sm:p-5 border-b border-[#2a2545] flex items-center justify-between">
+          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base">
+            Mises à jour du site
+          </h2>
+          <a
+            href="https://github.com/13jisse-music/ChanteEnScene/commits/master"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[#e91e8c] hover:underline"
+          >
+            Historique complet →
+          </a>
+        </div>
+        <ChangelogCard />
+      </div>
 
       {/* Recent Candidates */}
       <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden">

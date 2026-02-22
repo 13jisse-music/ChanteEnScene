@@ -178,6 +178,21 @@ export async function GET(request: Request) {
     adminUrl,
   })
 
+  // Fetch recent GitHub commits (last 24h)
+  let recentCommits: string[] = []
+  try {
+    const ghRes = await fetch(
+      `https://api.github.com/repos/13jisse-music/ChanteEnScene/commits?since=${sinceDate}&per_page=10`,
+      { headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'ChanteEnScene-Cron' } }
+    )
+    if (ghRes.ok) {
+      const commits = await ghRes.json() as { commit: { message: string } }[]
+      recentCommits = commits.map(c => c.commit.message.split('\n')[0])
+    }
+  } catch {
+    // GitHub API unavailable — skip
+  }
+
   // Build push body — only show what's new in last 24h
   const pushParts: string[] = []
   if (newVisitors > 0) pushParts.push(`👀 ${newVisitors} visiteur${newVisitors > 1 ? 's' : ''}`)
@@ -187,9 +202,15 @@ export async function GET(request: Request) {
   if ((newPushSubs || 0) > 0) pushParts.push(`🔔 ${newPushSubs} abo push`)
   if ((newEmailSubs || 0) > 0) pushParts.push(`📧 ${newEmailSubs} abo email`)
 
-  const pushBody = pushParts.length > 0
+  const activityLine = pushParts.length > 0
     ? `Hier : ${pushParts.join(', ')}`
     : 'Aucune activité hier'
+
+  const deployLine = recentCommits.length > 0
+    ? `\n🚀 ${recentCommits.length} mise${recentCommits.length > 1 ? 's' : ''} à jour : ${recentCommits[0]}${recentCommits.length > 1 ? ` (+${recentCommits.length - 1})` : ''}`
+    : ''
+
+  const pushBody = activityLine + deployLine
 
   // Send push notification to admin subscribers
   const pushResult = await sendPushNotifications({
