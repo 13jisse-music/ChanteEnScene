@@ -30,6 +30,8 @@ interface SessionConfig {
   jury_online_voting_closed?: boolean
   report_email?: string
   report_frequency?: string
+  prizes?: { rank: string; description: string }[]
+  prizes_visible?: boolean
 }
 
 interface Props {
@@ -188,6 +190,22 @@ export default function AdminConfig({ session }: Props) {
   function removeCriterion(idx: number) {
     const criteria = (config.jury_criteria || []).filter((_, i) => i !== idx)
     updateField('jury_criteria', criteria)
+  }
+
+  function updatePrize(idx: number, field: string, value: string) {
+    const prizes = [...(config.prizes || [])]
+    prizes[idx] = { ...prizes[idx], [field]: value }
+    updateField('prizes', prizes)
+  }
+
+  function addPrize() {
+    const prizes = [...(config.prizes || []), { rank: '', description: '' }]
+    updateField('prizes', prizes)
+  }
+
+  function removePrize(idx: number) {
+    const prizes = (config.prizes || []).filter((_, i) => i !== idx)
+    updateField('prizes', prizes)
   }
 
   return (
@@ -586,6 +604,63 @@ export default function AdminConfig({ session }: Props) {
         <p className="text-white/30 text-xs mt-2">
           Le chrono passe en orange a 80% du temps conseille puis en rouge quand depasse. Le timer de vote est un compte a rebours.
         </p>
+      </Section>
+
+      {/* Dotations */}
+      <Section title="Dotations / Prix">
+        <p className="text-white/40 text-xs mb-4">
+          Configurez les lots pour chaque rang. L&apos;affichage public est désactivé par défaut.
+        </p>
+        <div className="space-y-3">
+          {(config.prizes || []).map((prize, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <input
+                value={prize.rank}
+                onChange={(e) => updatePrize(idx, 'rank', e.target.value)}
+                placeholder="Ex : Grand Prix, 2e prix..."
+                className={`${inputClass} w-40 shrink-0`}
+              />
+              <input
+                value={prize.description}
+                onChange={(e) => updatePrize(idx, 'description', e.target.value)}
+                placeholder="Ex : 500€ + séance studio"
+                className={`${inputClass} flex-1`}
+              />
+              <button
+                onClick={() => removePrize(idx)}
+                className="text-red-400/50 hover:text-red-400 text-sm px-2"
+              >
+                x
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={addPrize}
+            className="text-[#e91e8c] text-xs hover:underline"
+          >
+            + Ajouter un prix
+          </button>
+        </div>
+        <div className="mt-4 flex items-center justify-between bg-white/5 rounded-xl p-4">
+          <div>
+            <p className="text-sm text-white">Affichage public</p>
+            <p className="text-white/40 text-xs mt-0.5">
+              {config.prizes_visible
+                ? 'Les dotations sont visibles sur le site.'
+                : 'Les dotations ne sont pas affichées publiquement.'}
+            </p>
+          </div>
+          <button
+            onClick={() => updateField('prizes_visible', !config.prizes_visible)}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              config.prizes_visible
+                ? 'bg-[#7ec850]/15 border border-[#7ec850]/30 text-[#7ec850] hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400'
+                : 'bg-white/5 border border-white/10 text-white/40 hover:border-[#7ec850]/30 hover:text-[#7ec850]'
+            }`}
+          >
+            {config.prizes_visible ? 'Visible' : 'Masqué'}
+          </button>
+        </div>
       </Section>
 
       {/* Video promo */}
