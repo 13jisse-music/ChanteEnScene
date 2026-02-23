@@ -50,7 +50,10 @@ export default function PublicFooter() {
                 Palmar&egrave;s
               </Link>
               <Link href="/presse" className="text-white/40 text-xs hover:text-white/70 transition-colors">
-                Espace presse
+                Presse
+              </Link>
+              <Link href="/presse#contact" className="text-white/40 text-xs hover:text-white/70 transition-colors">
+                Contact
               </Link>
             </nav>
           </div>
@@ -73,17 +76,11 @@ export default function PublicFooter() {
             </nav>
           </div>
 
-          {/* Colonne 4 — Contact */}
+          {/* Colonne 4 — Réseaux */}
           <div>
             <p className="font-[family-name:var(--font-montserrat)] font-semibold text-xs text-white/70 uppercase tracking-wider mb-3">
-              Contact
+              Suivez-nous
             </p>
-            <Link
-              href="/presse#contact"
-              className="text-white/40 text-xs hover:text-white/70 transition-colors block mb-3"
-            >
-              Nous contacter
-            </Link>
             <div className="flex gap-3">
               <a
                 href="https://www.facebook.com/chantenscene"
