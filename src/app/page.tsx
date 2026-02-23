@@ -152,7 +152,13 @@ export default async function HomePage() {
   }
 
   const sessionConfig = (session?.config || {}) as Record<string, string>;
-  const currentStep = session ? statusToTimelineStep(session.status) : 0;
+  let currentStep = session ? statusToTimelineStep(session.status) : 0;
+
+  // Si draft mais registration_start passée → afficher comme "Inscriptions en cours"
+  if (currentStep === 0 && sessionConfig.registration_start) {
+    const regStart = new Date(sessionConfig.registration_start + "T00:00:00");
+    if (new Date() >= regStart) currentStep = 1;
+  }
 
   const steps = [
     {
