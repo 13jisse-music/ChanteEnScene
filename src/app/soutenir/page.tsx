@@ -75,12 +75,12 @@ export default function SoutenirPage() {
             <p className="text-white/50 text-sm">Noms de domaine, serveurs et services en ligne</p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-lg shrink-0">&#128227;</span>
-            <p className="text-white/50 text-sm">Communication : flyers, affiches, publicit&eacute; r&eacute;seaux sociaux</p>
+            <span className="text-lg shrink-0">&#127909;</span>
+            <p className="text-white/50 text-sm">Captation vid&eacute;o et montage des prestations</p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-lg shrink-0">&#128747;</span>
-            <p className="text-white/50 text-sm">D&eacute;placements pour d&eacute;velopper le concours dans d&apos;autres villes</p>
+            <span className="text-lg shrink-0">&#128230;</span>
+            <p className="text-white/50 text-sm">Frais administratifs et fonctionnement de l&apos;association</p>
           </div>
         </div>
       </div>
