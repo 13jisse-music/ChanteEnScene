@@ -125,6 +125,7 @@
 - `/editions` — Galerie des éditions (photos + vidéos YouTube par année)
 - `/presse` — Espace presse (dossier PDF, photos HD, formulaire contact)
 - `/proposer-un-lieu` — Formulaire proposition de lieu pour accueillir une édition
+- `/soutenir` — Page don libre Stripe (chiffres impact, postes numériques)
 - `/comment-ca-marche` — Explication du fonctionnement du concours
 - `/mentions-legales`, `/reglement`, `/confidentialite` — Pages légales
 
@@ -272,8 +273,17 @@
 - **`src/app/admin/candidats/actions.ts`** (MODIFIÉ) : Construction referralUrl passé à candidateApprovedEmail
 - **`src/app/api/cron/social-post/route.ts`** (MODIFIÉ) : Post parrainage auto chaque mercredi (section 7) si inscriptions ouvertes et 5+ candidats
 
+#### Page "Soutenir" (`/soutenir`)
+- **`src/app/soutenir/page.tsx`** (CRÉÉ) : Page don libre Stripe, chiffres impact (4 éditions, 73 candidats, 1800+ votes)
+  - Don libre via `buy.stripe.com` (lien existant), postes 100% numériques (dev, hébergement, newsletters, marketing)
+  - Lien discret vers partenaires en bas
+- **`src/components/PublicNav.tsx`** (MODIFIÉ) : Section "Nous soutenir" dans le menu mobile (Faire un don + Devenir partenaire)
+  - "Partenaires" retiré de la nav principale (accessible uniquement via "Devenir partenaire")
+- **`src/components/PublicFooter.tsx`** (MODIFIÉ) : Lien doré "Soutenir le projet" dans colonne Le concours
+- **`src/components/MobileMenu.tsx`** (MODIFIÉ) : Section "Nous soutenir" ajoutée (même pattern)
+
 #### Mise à jour guide-concours.html
-- Étape 1 : "Proposer un lieu" + "Google Analytics" passés des idées aux features actives (NEW)
+- Étape 1 : "Proposer un lieu" + "Google Analytics" + "Page Soutenir" + "Liens don" passés des idées aux features actives (NEW)
 - Étape 2 : "Top 10" + "Badge profil" + "Parrainage" + "Email bienvenue" + "Post parrainage mercredi" → actifs (NEW)
 - Étape 3 : "Email demi-finalistes" + "Email non-retenus" + "Page résultats animée" → actifs (NEW)
 
