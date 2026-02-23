@@ -193,6 +193,27 @@ export default function PublicNav() {
               </Link>
             ))}
           </nav>
+
+          {/* Nous soutenir */}
+          <div className="border-t border-white/10 pt-4 mt-2">
+            <p className="font-[family-name:var(--font-montserrat)] font-bold text-xs uppercase tracking-[0.3em] text-white/30 mb-3 px-4">
+              Nous soutenir
+            </p>
+            <Link
+              href="/soutenir"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 rounded-xl text-sm text-[#ffc44d] hover:bg-[#ffc44d]/10 transition-colors"
+            >
+              Faire un don
+            </Link>
+            <Link
+              href={`/${SESSION_SLUG}/partenaires`}
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+            >
+              Devenir partenaire
+            </Link>
+          </div>
         </div>
         <div className="px-6 pb-8 pt-4 shrink-0">
           <div className="border-t border-white/10 pt-4 space-y-4">
