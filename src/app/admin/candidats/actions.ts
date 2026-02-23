@@ -41,11 +41,14 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         const profileUrl = `${siteUrl}/${session?.slug || ''}/candidats/${candidate.slug}`
         const galleryUrl = `${siteUrl}/${session?.slug || ''}/candidats`
 
+        const referralUrl = `${siteUrl}/${session?.slug || ''}/inscription?ref=${candidate.slug}`
+
         const { subject, html } = candidateApprovedEmail({
           candidateName: escapeHtml(displayName),
           sessionName: escapeHtml(session?.name || 'ChanteEnScène'),
           profileUrl,
           galleryUrl,
+          referralUrl,
         })
 
         await getResend().emails.send({

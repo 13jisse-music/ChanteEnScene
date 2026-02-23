@@ -176,6 +176,35 @@ export default function CommentCaMarchePage() {
           </div>
         </Feature>
 
+        {/* ─── PARRAINAGE ─── */}
+        <Feature
+          icon="🤝"
+          title="Parrainage"
+          accent="#8b5cf6"
+          reverse={false}
+          image="/images/comment-ca-marche/voter.png"
+        >
+          <div className="space-y-4">
+            <p className="text-white/60 text-sm leading-relaxed">
+              Vous êtes candidat(e) ? <strong className="text-white/80">Parrainez vos proches</strong> et faites grandir le concours !
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <InfoCard icon="🔗" title="Votre lien unique" desc="Chaque candidat dispose d'un lien de parrainage personnalisé sur sa page profil" />
+              <InfoCard icon="📲" title="Partagez-le" desc="Envoyez-le par WhatsApp, SMS, Instagram… à ceux qui aiment chanter" />
+              <InfoCard icon="📊" title="Compteur" desc="Suivez en direct le nombre de filleuls inscrits grâce à vous" />
+              <InfoCard icon="⭐" title="Visibilité" desc="Plus vous parrainez, plus votre profil attire l'attention !" />
+            </div>
+            <div className="bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 rounded-xl p-4 text-center">
+              <p className="text-[#8b5cf6] text-sm font-semibold">
+                Comment ça marche ?
+              </p>
+              <p className="text-white/60 text-xs mt-1">
+                1. Inscrivez-vous &bull; 2. Allez sur &laquo;&nbsp;Mon profil&nbsp;&raquo; &bull; 3. Copiez votre lien de parrainage &bull; 4. Partagez-le !
+              </p>
+            </div>
+          </div>
+        </Feature>
+
         {/* ─── GALERIE & PARTAGE ─── */}
         <Feature
           icon="🖼️"

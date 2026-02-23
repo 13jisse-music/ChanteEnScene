@@ -63,6 +63,46 @@ export default async function CandidatsPage({ params }: { params: Params }) {
           </p>
         </div>
 
+        {/* Top 10 ranking — only visible on desktop when 10+ candidates */}
+        {candidates && candidates.length >= 10 && (
+          <div className="hidden md:block mb-8 animate-fade-up">
+            <div className="bg-[#161228]/80 border border-[#2a2545] rounded-2xl p-6">
+              <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-white text-center mb-4 flex items-center justify-center gap-2">
+                <span className="text-lg">🏅</span>
+                <span>Top 10 des votes</span>
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {candidates.slice(0, 10).map((c, i) => {
+                  const name = c.stage_name || `${c.first_name} ${c.last_name}`
+                  const medals = ['🥇', '🥈', '🥉']
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/${slug}/candidats/${c.slug}`}
+                      className="flex items-center gap-2.5 bg-[#1a1232] border border-[#2e2555] rounded-xl px-3 py-2.5 hover:border-[#e91e8c]/30 transition-colors group"
+                    >
+                      <span className="text-sm font-bold text-white/30 w-5 shrink-0 text-center">
+                        {i < 3 ? medals[i] : `${i + 1}`}
+                      </span>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#2e2555] shrink-0">
+                        {c.photo_url ? (
+                          <img src={c.photo_url} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-white/20">🎤</div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white text-xs font-medium truncate group-hover:text-[#e91e8c] transition-colors">{name}</p>
+                        <p className="text-[#6b5d85] text-[10px]">{c.likes_count} vote{c.likes_count !== 1 ? 's' : ''}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {candidates && candidates.length > 0 ? (
           <CandidateGallery
             candidates={candidates}

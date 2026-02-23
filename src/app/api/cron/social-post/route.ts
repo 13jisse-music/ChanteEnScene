@@ -135,7 +135,17 @@ function generatePosts(
     }
   }
 
-  // ── 7. Promo hebdo (lundi) ──────────────────────────────────
+  // ── 7. Parrainage (mercredi, inscriptions ouvertes, 5+ candidats) ─
+  if (dayOfWeek === 3 && totalCandidates >= 5 && session.status === 'registration_open') {
+    posts.push({
+      type: 'referral_promo',
+      priority: 4,
+      message: `🤝 Tu es candidat(e) à ${session.name} ? Parraine tes proches !\n\nVa sur "Mon profil" pour copier ton lien de parrainage unique et envoie-le à ceux qui aiment chanter ! Chaque filleul inscrit booste ta visibilité ⭐\n\n👉 ${sessionUrl}/comment-ca-marche\n\n#ChanteEnScène #Parrainage #ConcoursDeChant`,
+      link: `${siteUrl}/comment-ca-marche`,
+    })
+  }
+
+  // ── 8. Promo hebdo (lundi) ──────────────────────────────────
   if (dayOfWeek === 1) {
     if (session.status === 'registration_open') {
       posts.push({

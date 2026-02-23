@@ -70,6 +70,12 @@ export default async function MonProfilPage({
     .eq('slug', token)
     .single()
 
+  // Count referrals
+  const { count: referralCount } = await supabase
+    .from('candidates')
+    .select('id', { count: 'exact', head: true })
+    .eq('referred_by', candidate?.id || '')
+
   if (!candidate) {
     return (
       <section className="relative z-10 py-16 px-4 max-w-md mx-auto text-center">
@@ -85,7 +91,7 @@ export default async function MonProfilPage({
 
   return (
     <section className="relative z-10 py-8 px-4">
-      <CandidateProfile candidate={candidate} sessionSlug={slug} />
+      <CandidateProfile candidate={candidate} sessionSlug={slug} referralCount={referralCount || 0} />
     </section>
   )
 }

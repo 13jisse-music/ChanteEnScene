@@ -46,6 +46,7 @@ export default function CandidateCard({ candidate, sessionId, isSemifinalist }: 
   const sessionSlug = pathname.split('/')[1]
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
   const accent = candidate.accent_color || '#e91e8c'
+  const isProfileComplete = !!(candidate.photo_url && candidate.bio && candidate.song_title && candidate.song_artist)
 
   // Check if user already voted
   useEffect(() => {
@@ -163,6 +164,16 @@ export default function CandidateCard({ candidate, sessionId, isSemifinalist }: 
               <span className="shrink-0">{STATUS_LABELS[candidate.status].medal}</span>
             )}
             {displayName}
+            {isProfileComplete && (
+              <span
+                className="shrink-0 w-4 h-4 rounded-full bg-[#7ec850] flex items-center justify-center"
+                title="Profil complet"
+              >
+                <svg viewBox="0 0 16 16" className="w-2.5 h-2.5">
+                  <path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            )}
           </h3>
         </Link>
         <p className="text-[#6b5d85] text-sm truncate">

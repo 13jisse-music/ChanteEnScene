@@ -93,11 +93,13 @@ export function candidateApprovedEmail({
   sessionName,
   profileUrl,
   galleryUrl,
+  referralUrl,
 }: {
   candidateName: string
   sessionName: string
   profileUrl: string
   galleryUrl?: string
+  referralUrl?: string
 }) {
   const safeName = escapeHtml(candidateName)
   const safeSession = escapeHtml(sessionName)
@@ -156,6 +158,21 @@ export function candidateApprovedEmail({
           <a href="${profileUrl}" style="color:#38bdf8;font-size:12px;word-break:break-all;text-decoration:none;">${profileUrl}</a>
         </div>
       </div>
+
+      ${referralUrl ? `
+      <!-- Referral section -->
+      <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;margin:20px 0 0 0;">
+        <p style="color:#8b5cf6;font-size:13px;font-weight:bold;margin:0 0 8px 0;text-align:center;">
+          🤝 Parraine tes proches !
+        </p>
+        <p style="color:#ffffff80;font-size:12px;line-height:1.6;margin:0;text-align:center;">
+          Envoie ce lien à ceux qui aiment chanter — chaque filleul inscrit booste ta visibilité :
+        </p>
+        <div style="background:#0d0b1a;border-radius:8px;padding:10px;margin-top:10px;text-align:center;">
+          <a href="${referralUrl}" style="color:#8b5cf6;font-size:12px;word-break:break-all;text-decoration:none;">${referralUrl}</a>
+        </div>
+      </div>
+      ` : ''}
 
       ${galleryUrl ? `
       <div style="text-align:center;margin-top:20px;">

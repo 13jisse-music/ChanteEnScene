@@ -124,6 +124,8 @@
 - `/palmares` — Palmarès
 - `/editions` — Galerie des éditions (photos + vidéos YouTube par année)
 - `/presse` — Espace presse (dossier PDF, photos HD, formulaire contact)
+- `/proposer-un-lieu` — Formulaire proposition de lieu pour accueillir une édition
+- `/comment-ca-marche` — Explication du fonctionnement du concours
 - `/mentions-legales`, `/reglement`, `/confidentialite` — Pages légales
 
 ## Routes admin
@@ -165,6 +167,8 @@
 - `/api/admin/social-publish` (POST) — Publication manuelle FB/IG, log dans social_posts_log
 - `/api/admin/social-preview` (GET) — Prévisualisation publications auto
 - `/api/contact-presse` (POST) — Formulaire contact presse → email via Resend
+- `/api/proposer-lieu` (POST) — Formulaire proposition de lieu → email via Resend
+- `/api/stripe/webhook` (POST) — Webhook Stripe → email + push admin + insert donations
 
 ## Hooks Realtime (src/hooks/)
 - `useRealtimeEvent` — Écoute live_events (status, candidat courant, voting)
@@ -203,6 +207,8 @@
 - `EmailSubscribeForm.tsx` — Formulaire abonnement email
 - `ChangelogCard.tsx` — Commits GitHub récents (server component, cache 1h)
 - `PresseContactForm.tsx` — Formulaire contact presse (client component)
+- `ProposerLieuForm.tsx` — Formulaire proposition de lieu (client component)
+- `GoogleAnalytics.tsx` — Google Analytics gtag.js (conditionnel NEXT_PUBLIC_GA_ID)
 
 ### Stats & Résultats
 - `FinaleStats.tsx`, `StatsEnLigne.tsx`, `StatsDemiFinale.tsx`
@@ -230,6 +236,74 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-23 — Google Analytics + Proposer un lieu + Top 10 + Badge profil + Parrainage
+
+#### Google Analytics (`GoogleAnalytics.tsx`)
+- **`src/components/GoogleAnalytics.tsx`** (CRÉÉ) : Composant client gtag.js avec `next/script` strategy afterInteractive
+- **`src/app/layout.tsx`** (MODIFIÉ) : `<GoogleAnalytics />` ajouté avant ServiceWorkerRegistrar
+- Conditionnel : ne charge rien si `NEXT_PUBLIC_GA_ID` n'est pas défini
+- **À faire** : Créer compte GA4, récupérer ID G-XXXXXXX, ajouter dans Vercel
+
+#### Page "Proposer un lieu" (`/proposer-un-lieu`)
+- **`src/app/proposer-un-lieu/page.tsx`** (CRÉÉ) : Page server-rendered avec 3 arguments + chiffres clés + formulaire
+- **`src/components/ProposerLieuForm.tsx`** (CRÉÉ) : Formulaire client (ville, région, nom, fonction, email, téléphone, message)
+- **`src/app/api/proposer-lieu/route.ts`** (CRÉÉ) : API Resend → inscriptions@chantenscene.fr (escapeHtml, replyTo)
+- **`PublicFooter.tsx`** (MODIFIÉ) : Lien "Proposer un lieu" ajouté dans colonne Le concours
+
+#### Classement Top 10 public (`candidats/page.tsx`)
+- **`src/app/[slug]/candidats/page.tsx`** (MODIFIÉ) : Section Top 10 desktop (`hidden md:block`)
+- Grille 5×2 avec médailles (🥇🥈🥉) pour les 3 premiers, affiché seulement quand 10+ candidats
+- Photo miniature + nom + votes, lien vers profil candidat
+
+#### Badge "Profil complet" (`CandidateCard.tsx`)
+- **`src/components/CandidateCard.tsx`** (MODIFIÉ) : Checkmark vert après le nom si photo_url + bio + song_title + song_artist
+- **`src/components/CandidateProfile.tsx`** (MODIFIÉ) : Barre de complétion + checklist (photo, bio, chanson, réseau social) + section parrainage
+
+#### Système de parrainage
+- **Migration `029_referrals.sql`** : `ALTER TABLE candidates ADD COLUMN referred_by UUID REFERENCES candidates(id)` + index
+- **`src/components/InscriptionForm.tsx`** (MODIFIÉ) : Lecture `?ref=slug` → résolution candidat → `referred_by` à l'insert + bannière parrain + lien partage en succès
+- **`src/app/[slug]/mon-profil/page.tsx`** (MODIFIÉ) : Query count referrals, passé à CandidateProfile
+- **`src/components/CandidateProfile.tsx`** (MODIFIÉ) : Section parrainage avec lien copiable + compteur filleuls
+
+#### Communication parrainage
+- **`src/app/comment-ca-marche/page.tsx`** (MODIFIÉ) : Nouvelle section Parrainage (4 InfoCards + guide pas-à-pas)
+- **`src/lib/emails.ts`** (MODIFIÉ) : Section parrainage dans l'email d'approbation candidat (lien violet copiable)
+- **`src/app/admin/candidats/actions.ts`** (MODIFIÉ) : Construction referralUrl passé à candidateApprovedEmail
+- **`src/app/api/cron/social-post/route.ts`** (MODIFIÉ) : Post parrainage auto chaque mercredi (section 7) si inscriptions ouvertes et 5+ candidats
+
+#### Mise à jour guide-concours.html
+- Étape 1 : "Proposer un lieu" + "Google Analytics" passés des idées aux features actives (NEW)
+- Étape 2 : "Top 10" + "Badge profil" + "Parrainage" + "Email bienvenue" + "Post parrainage mercredi" → actifs (NEW)
+- Étape 3 : "Email demi-finalistes" + "Email non-retenus" + "Page résultats animée" → actifs (NEW)
+
+### 2026-02-23 — Suivi dons Stripe + Guide concours visuel + Fixes social/homepage
+
+#### Suivi dons Stripe sur dashboard admin
+- **Migration `028_donations.sql`** : Table `donations` (amount_cents, tier, donor_name, donor_email, stripe_session_id)
+- **Webhook Stripe** (`api/stripe/webhook/route.ts`) : Ajout insert `donations` en base à chaque paiement (en plus de email + push admin existants)
+- **Dashboard admin** (`admin/page.tsx`) : Carte "Dons & Partenariats" — total €, nombre de dons, dernier don (nom, montant, tier, date)
+- Tiers automatiques : Don (<50€), Supporter (50€+), Bronze (100€+), Argent (250€+), Or (500€+)
+
+#### Guide concours visuel (`guide-concours.html`)
+- **Fichier HTML interactif** : 7 slides (intro + 6 étapes) avec navigation flèches/swipe/dots
+- **4 sections par slide** : Ce que tu fais (rose), Ce que le site affiche (vert), Ce qui se fait tout seul (violet), Améliorations possibles (bleu pointillé)
+- **Données réelles** : dates Aubagne 2026 (1 mars, 1 juin, 17 juin, 16 juillet), config BDD, lieux
+- **Raccourci bureau** : "Guide ChanteEnScene" sur le bureau Windows
+- Mis à jour à chaque nouvelle fonctionnalité pour garder la vue d'ensemble
+
+#### Fix posts sociaux prématurés
+- **Problème** : Le cron social-post publiait des countdowns demi-finale/finale sur FB/IG alors que la session était encore en draft
+- **Fix** : Ajout guards de statut dans `social-post/route.ts` — countdown_semifinal requiert `registration_closed`/`semifinal`, countdown_final requiert `semifinal`/`final`
+
+#### Fix gap midnight-10h sur la homepage
+- **Problème** : Entre minuit (date passée) et 10h (cron inscription-reminder), la homepage montrait "Prochainement" au lieu de "En cours"
+- **Fix** : Dans `page.tsx`, détection si `registration_start` est passée même en statut draft → affiche timeline step 1
+
+#### Footer restructuré
+- Colonne 4 renommée "Contact" → "Suivez-nous" (icônes FB/IG uniquement)
+- Lien "Contact" déplacé dans colonne 2 "Le concours"
+- Suppression lien redondant "Nous contacter"
 
 ### 2026-02-23 — Checkup automatique + suppression projet Vercel batx
 

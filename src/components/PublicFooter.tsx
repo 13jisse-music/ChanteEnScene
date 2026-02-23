@@ -52,6 +52,12 @@ export default function PublicFooter() {
               <Link href="/presse" className="text-white/40 text-xs hover:text-white/70 transition-colors">
                 Presse
               </Link>
+              <Link href="/proposer-un-lieu" className="text-white/40 text-xs hover:text-white/70 transition-colors">
+                Proposer un lieu
+              </Link>
+              <Link href="/soutenir" className="text-[#e91e8c]/60 text-xs hover:text-[#e91e8c] transition-colors">
+                Soutenir le projet
+              </Link>
               <Link href="/presse#contact" className="text-white/40 text-xs hover:text-white/70 transition-colors">
                 Contact
               </Link>

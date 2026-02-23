@@ -31,6 +31,7 @@ interface Candidate {
 interface Props {
   candidate: Candidate
   sessionSlug: string
+  referralCount?: number
 }
 
 const EMPTY_SONG: FinaleSong = { title: '', artist: '', youtube_url: '' }
@@ -49,7 +50,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   winner: { label: 'Gagnant(e) !', color: '#f5a623' },
 }
 
-export default function CandidateProfile({ candidate, sessionSlug }: Props) {
+export default function CandidateProfile({ candidate, sessionSlug, referralCount = 0 }: Props) {
   const isFinalist = candidate.status === 'finalist' || candidate.status === 'winner'
 
   const [stageName, setStageName] = useState(candidate.stage_name || '')
@@ -78,6 +79,16 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
 
   const st = STATUS_LABELS[candidate.status] || { label: candidate.status, color: '#666' }
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
+
+  // Profile completeness
+  const completionChecks = [
+    { done: !!candidate.photo_url, label: 'Photo de profil' },
+    { done: !!candidate.bio, label: 'Bio / Présentation' },
+    { done: !!candidate.song_title && !!candidate.song_artist, label: 'Chanson renseignée' },
+    { done: !!(candidate.youtube_url || candidate.instagram_url || candidate.tiktok_url || candidate.website_url), label: 'Un réseau social' },
+  ]
+  const completedCount = completionChecks.filter(c => c.done).length
+  const isProfileComplete = completedCount === completionChecks.length
 
   function updateSong(index: number, field: keyof FinaleSong, value: string) {
     setFinaleSongs(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s))
@@ -200,6 +211,46 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
             : 'bg-red-500/10 border border-red-500/30 text-red-400'
         }`}>
           {message.text}
+        </div>
+      )}
+
+      {/* Profile completeness indicator (only when not finalist and incomplete) */}
+      {!isFinalist && !isProfileComplete && (
+        <div className="bg-[#161228]/80 border border-[#f5a623]/20 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white text-sm font-semibold">
+              Profil {completedCount}/{completionChecks.length}
+            </p>
+            <div className="flex gap-1">
+              {completionChecks.map((c, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 w-6 rounded-full ${c.done ? 'bg-[#7ec850]' : 'bg-white/10'}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {completionChecks.filter(c => !c.done).map((c, i) => (
+              <p key={i} className="text-white/40 text-xs flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center text-[10px]">?</span>
+                {c.label}
+              </p>
+            ))}
+          </div>
+          <p className="text-[#f5a623]/70 text-xs mt-3">
+            Un profil complet attire plus de votes et retient l&apos;attention du jury !
+          </p>
+        </div>
+      )}
+      {!isFinalist && isProfileComplete && (
+        <div className="flex items-center justify-center gap-2 py-2">
+          <span className="w-5 h-5 rounded-full bg-[#7ec850] flex items-center justify-center">
+            <svg viewBox="0 0 16 16" className="w-3 h-3">
+              <path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <p className="text-[#7ec850] text-sm font-medium">Profil complet</p>
         </div>
       )}
 
@@ -601,6 +652,40 @@ export default function CandidateProfile({ candidate, sessionSlug }: Props) {
             >
               {saving ? 'Sauvegarde...' : 'Sauvegarder mon profil'}
             </button>
+          </div>
+
+          {/* Referral section */}
+          <div className="bg-[#161228]/80 border border-[#8b5cf6]/20 rounded-2xl p-6 space-y-4">
+            <h3 className="font-[family-name:var(--font-montserrat)] font-bold text-white flex items-center gap-2">
+              <span>🤝</span> Parrainage
+            </h3>
+            <p className="text-white/50 text-xs leading-relaxed">
+              Partagez votre lien de parrainage ! Chaque personne qui s&apos;inscrit via votre lien sera comptabilisée comme votre filleul(e).
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                readOnly
+                value={`https://www.chantenscene.fr/${sessionSlug}/inscription?ref=${candidate.slug}`}
+                className="flex-1 px-3 py-2.5 rounded-xl bg-[#1a1533] border border-[#2a2545] text-xs text-white/70 select-all focus:outline-none"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://www.chantenscene.fr/${sessionSlug}/inscription?ref=${candidate.slug}`)
+                  setMessage({ type: 'success', text: 'Lien copié !' })
+                  setTimeout(() => setMessage(null), 2000)
+                }}
+                className="px-4 py-2.5 rounded-xl bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 text-[#8b5cf6] text-xs font-medium hover:bg-[#8b5cf6]/30 transition-colors shrink-0"
+              >
+                Copier
+              </button>
+            </div>
+            {referralCount > 0 && (
+              <p className="text-[#8b5cf6] text-sm font-medium text-center">
+                {referralCount} filleul{referralCount > 1 ? 's' : ''} inscrit{referralCount > 1 ? 's' : ''}
+              </p>
+            )}
           </div>
 
           {/* Public profile link */}

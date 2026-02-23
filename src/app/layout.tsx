@@ -7,6 +7,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import PublicFooter from "@/components/PublicFooter";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -68,6 +69,7 @@ export default function RootLayout({
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
+        <GoogleAnalytics />
         <ServiceWorkerRegistrar />
         <SplashScreen />
         <InstallPrompt />

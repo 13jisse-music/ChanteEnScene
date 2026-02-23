@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify, getCategory, calculateAge } from '@/lib/utils'
 import { getFingerprint } from '@/lib/fingerprint'
@@ -150,10 +151,34 @@ export default function InscriptionForm({ session }: { session: Session }) {
   const [consent, setConsent] = useState<File | null>(null)
   const [newsletterOptIn, setNewsletterOptIn] = useState(true)
 
+  // Referral
+  const searchParams = useSearchParams()
+  const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [referrerName, setReferrerName] = useState<string | null>(null)
+
+  useEffect(() => {
+    const refSlug = searchParams.get('ref')
+    if (!refSlug) return
+    const supabase = createClient()
+    supabase
+      .from('candidates')
+      .select('id, first_name, last_name, stage_name')
+      .eq('session_id', session.id)
+      .eq('slug', refSlug)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setReferredBy(data.id)
+          setReferrerName(data.stage_name || `${data.first_name} ${data.last_name}`)
+        }
+      })
+  }, [searchParams, session.id])
+
   // UI
   const [loading, setLoading] = useState(false)
   const [uploadStep, setUploadStep] = useState('')
   const [success, setSuccess] = useState(false)
+  const [createdSlug, setCreatedSlug] = useState('')
   const [error, setError] = useState('')
 
   // Derived
@@ -278,6 +303,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
         website_url: websiteUrl.trim() || null,
         parental_consent_url: consentUrl || null,
         fingerprint,
+        referred_by: referredBy,
         status: 'pending',
       })
 
@@ -315,6 +341,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
         }
       }
 
+      setCreatedSlug(candidateSlug)
       setSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue.')
@@ -359,6 +386,30 @@ export default function InscriptionForm({ session }: { session: Session }) {
           </div>
         </div>
 
+        {/* Referral sharing */}
+        {createdSlug && (
+          <div className="bg-[#8b5cf6]/10 border border-[#8b5cf6]/25 rounded-xl p-5 mt-6 text-center space-y-3">
+            <p className="text-[#8b5cf6] font-semibold text-sm flex items-center justify-center gap-2">
+              <span>🤝</span> Parraine tes proches !
+            </p>
+            <p className="text-[#a899c2] text-xs leading-relaxed">
+              Tu connais quelqu&apos;un qui aime chanter ? Partage ce lien — chaque filleul inscrit booste ta visibilité !
+            </p>
+            <div className="bg-[#0d0b1a] rounded-lg px-3 py-2 text-xs text-[#8b5cf6] break-all select-all">
+              https://www.chantenscene.fr/{session.slug}/inscription?ref={createdSlug}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(`https://www.chantenscene.fr/${session.slug}/inscription?ref=${createdSlug}`)
+              }}
+              className="px-5 py-2 rounded-full bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 text-[#8b5cf6] text-xs font-medium hover:bg-[#8b5cf6]/30 transition-colors"
+            >
+              Copier le lien
+            </button>
+          </div>
+        )}
+
       </div>
     )
   }
@@ -368,6 +419,16 @@ export default function InscriptionForm({ session }: { session: Session }) {
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="animate-fade-up pb-6 sm:pb-8 bg-[#0d0b1a]/70 backdrop-blur-md border border-[#2a2545]/50 rounded-2xl p-4 sm:p-6">
+      {/* Referral banner */}
+      {referrerName && (
+        <div className="flex items-center gap-2 bg-[#8b5cf6]/10 border border-[#8b5cf6]/25 rounded-xl px-4 py-3 mb-4 text-sm">
+          <span>🤝</span>
+          <p className="text-[#8b5cf6]">
+            Parrainé(e) par <strong className="text-white">{referrerName}</strong>
+          </p>
+        </div>
+      )}
+
       {/* Step indicator */}
       <div className="mb-5 sm:mb-8">
         {/* Progress bar */}
