@@ -18,7 +18,7 @@ interface Props {
   slug: string
 }
 
-const TIER_ORDER = ['gold', 'silver', 'bronze', 'partner'] as const
+const TIER_ORDER = ['gold', 'silver', 'bronze', 'supporter', 'partner'] as const
 
 const TIER_CONFIG: Record<string, { label: string; labelColor: string; borderColor: string; gridCols: string }> = {
   gold: {
@@ -37,6 +37,12 @@ const TIER_CONFIG: Record<string, { label: string; labelColor: string; borderCol
     label: 'Partenaires Bronze',
     labelColor: 'text-[#cd7f32]',
     borderColor: 'border-[#cd7f32]/20 hover:border-[#cd7f32]/40',
+    gridCols: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
+  },
+  supporter: {
+    label: 'Supporters',
+    labelColor: 'text-[#a78bfa]',
+    borderColor: 'border-[#a78bfa]/15 hover:border-[#a78bfa]/35',
     gridCols: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
   },
   partner: {

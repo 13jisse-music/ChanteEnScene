@@ -30,6 +30,7 @@ const TIERS = [
   { value: 'gold', label: 'Or', color: '#f5a623', bg: 'bg-[#f5a623]/15 border-[#f5a623]/30 text-[#f5a623]' },
   { value: 'silver', label: 'Argent', color: '#94a3b8', bg: 'bg-white/10 border-white/20 text-white/70' },
   { value: 'bronze', label: 'Bronze', color: '#cd7f32', bg: 'bg-[#cd7f32]/15 border-[#cd7f32]/30 text-[#cd7f32]' },
+  { value: 'supporter', label: 'Supporter', color: '#a78bfa', bg: 'bg-[#a78bfa]/15 border-[#a78bfa]/30 text-[#a78bfa]' },
   { value: 'partner', label: 'Partenaire', color: '#e91e8c', bg: 'bg-[#e91e8c]/10 border-[#e91e8c]/30 text-[#e91e8c]' },
 ]
 

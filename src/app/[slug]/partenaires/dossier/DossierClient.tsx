@@ -59,6 +59,16 @@ const TIERS = [
     ],
   },
   {
+    name: 'Supporter',
+    price: 'À partir de 50€',
+    color: '#a78bfa',
+    bg: 'bg-[#a78bfa]/10 border-[#a78bfa]/30',
+    features: [
+      'Nom sur la page Partenaires',
+      'Remerciement sur nos réseaux sociaux',
+    ],
+  },
+  {
     name: 'Partenaire',
     price: 'Échange de visibilité',
     color: '#e91e8c',
