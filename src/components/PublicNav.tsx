@@ -16,7 +16,6 @@ const LEFT_LINKS = [
 
 const RIGHT_LINKS = [
   { href: `/${SESSION_SLUG}/candidats`, label: 'Candidats' },
-  { href: `/${SESSION_SLUG}/partenaires`, label: 'Partenaires' },
   { href: `/${SESSION_SLUG}/live`, label: 'Live / Votes' },
   { href: '/palmares', label: 'Palmarès' },
   { href: '/editions', label: 'Editions' },
@@ -202,7 +201,7 @@ export default function PublicNav() {
             <Link
               href="/soutenir"
               onClick={() => setMobileOpen(false)}
-              className="block px-4 py-2.5 rounded-xl text-sm text-[#ffc44d] hover:bg-[#ffc44d]/10 transition-colors"
+              className="block px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors"
             >
               Faire un don
             </Link>
