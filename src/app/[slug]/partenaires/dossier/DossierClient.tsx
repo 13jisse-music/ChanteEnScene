@@ -24,13 +24,11 @@ const TIERS = [
     color: '#f5a623',
     bg: 'bg-[#f5a623]/10 border-[#f5a623]/30',
     features: [
-      'Logo en grand sur la page d\'accueil du site',
       'Logo sur la page Partenaires (placement premium)',
-      'Mention durant les événements live (demi-finale + finale)',
-      'Publication dédiée sur nos réseaux sociaux',
-      'Lien vers votre site web',
-      'Logo sur les supports imprimés (affiches, flyers)',
-      'Espace stand lors de la finale (sur demande)',
+      'Publication dédiée sur Facebook, Instagram et LinkedIn',
+      'Mention dans notre newsletter (80+ abonnés email)',
+      'Remerciement au micro lors de la demi-finale et la finale',
+      'Lien vers votre site web sur chantenscene.fr',
     ],
   },
   {
@@ -39,12 +37,10 @@ const TIERS = [
     color: '#94a3b8',
     bg: 'bg-white/5 border-white/20',
     features: [
-      'Logo sur la page d\'accueil du site',
-      'Logo sur la page Partenaires (placement visible)',
-      'Mention durant les événements live',
-      'Mention sur nos réseaux sociaux',
-      'Lien vers votre site web',
-      'Logo sur les supports imprimés',
+      'Logo sur la page Partenaires',
+      'Mention sur nos réseaux sociaux (Facebook, Instagram, LinkedIn)',
+      'Mention dans notre newsletter',
+      'Lien vers votre site web sur chantenscene.fr',
     ],
   },
   {
@@ -54,7 +50,7 @@ const TIERS = [
     bg: 'bg-[#cd7f32]/10 border-[#cd7f32]/30',
     features: [
       'Logo sur la page Partenaires',
-      'Mention dans le programme de l\'événement',
+      'Remerciement sur nos réseaux sociaux',
       'Lien vers votre site web',
     ],
   },
@@ -182,17 +178,17 @@ export default function DossierClient({ session, stats }: Props) {
           <VisibilityCard
             icon="📱"
             title="Réseaux sociaux"
-            description="Posts dédiés, stories, mentions dans les publications. Votre marque est associée à un événement festif et positif."
+            description="Publications dédiées sur Facebook, Instagram et LinkedIn. Votre marque est associée à un événement festif et positif."
           />
           <VisibilityCard
             icon="🎤"
             title="Événements live"
-            description="Demi-finale et finale avec un public de plusieurs centaines de personnes. Annonces micro, affichage sur écran, présence physique possible."
+            description="Demi-finale et finale devant public. Remerciement au micro, votre nom associé au concours le jour J."
           />
           <VisibilityCard
-            icon="📰"
-            title="Supports imprimés"
-            description="Affiches, flyers, programme de l'événement distribués dans les commerces et lieux publics de la ville."
+            icon="✉️"
+            title="Newsletter & notifications"
+            description="Mention dans nos emails et notifications push envoyés à nos abonnés tout au long du concours."
           />
         </div>
       </div>
@@ -206,35 +202,16 @@ export default function DossierClient({ session, stats }: Props) {
           Choisissez la formule qui correspond à votre budget et vos objectifs.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`border rounded-2xl p-6 ${tier.bg} print:border-gray-300 print:bg-gray-50`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3
-                  className="font-[family-name:var(--font-montserrat)] font-bold text-lg"
-                  style={{ color: tier.color }}
-                >
-                  {tier.name}
-                </h3>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: tier.color }}
-                >
-                  {tier.price}
-                </span>
-              </div>
-              <ul className="space-y-2">
-                {tier.features.map((feat, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-white/60 print:text-gray-600">
-                    <span className="mt-0.5 text-xs" style={{ color: tier.color }}>✓</span>
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-            </div>
+        {/* 3 premières offres payantes */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          {TIERS.slice(0, 3).map((tier) => (
+            <TierCard key={tier.name} tier={tier} />
+          ))}
+        </div>
+        {/* 2 offres accessibles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {TIERS.slice(3).map((tier) => (
+            <TierCard key={tier.name} tier={tier} />
           ))}
         </div>
 
@@ -265,6 +242,35 @@ export default function DossierClient({ session, stats }: Props) {
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+function TierCard({ tier }: { tier: typeof TIERS[number] }) {
+  return (
+    <div className={`border rounded-2xl p-5 ${tier.bg} print:border-gray-300 print:bg-gray-50`}>
+      <div className="flex items-center justify-between mb-3">
+        <h3
+          className="font-[family-name:var(--font-montserrat)] font-bold text-base"
+          style={{ color: tier.color }}
+        >
+          {tier.name}
+        </h3>
+        <span
+          className="text-xs font-bold whitespace-nowrap ml-2"
+          style={{ color: tier.color }}
+        >
+          {tier.price}
+        </span>
+      </div>
+      <ul className="space-y-1.5">
+        {tier.features.map((feat, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs text-white/60 print:text-gray-600">
+            <span className="mt-0.5 text-[10px]" style={{ color: tier.color }}>✓</span>
+            {feat}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
