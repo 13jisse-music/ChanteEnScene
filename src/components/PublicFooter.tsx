@@ -78,12 +78,12 @@ export default function PublicFooter() {
             <p className="font-[family-name:var(--font-montserrat)] font-semibold text-xs text-white/70 uppercase tracking-wider mb-3">
               Contact
             </p>
-            <a
-              href="mailto:inscriptions@chantenscene.fr"
+            <Link
+              href="/presse#contact"
               className="text-white/40 text-xs hover:text-white/70 transition-colors block mb-3"
             >
-              inscriptions@chantenscene.fr
-            </a>
+              Nous contacter
+            </Link>
             <div className="flex gap-3">
               <a
                 href="https://www.facebook.com/chantenscene"
