@@ -87,7 +87,7 @@ function generatePosts(
   }
 
   // ── 3. Countdown demi-finale (J-7 à J-1) ───────────────────
-  if (config.semifinal_date) {
+  if (config.semifinal_date && ['registration_closed', 'semifinal'].includes(session.status)) {
     const days = daysUntil(config.semifinal_date)
     if (days > 0 && days <= 7) {
       posts.push({
@@ -100,7 +100,7 @@ function generatePosts(
   }
 
   // ── 4. Countdown finale (J-7 à J-1) ────────────────────────
-  if (config.final_date) {
+  if (config.final_date && ['semifinal', 'final'].includes(session.status)) {
     const days = daysUntil(config.final_date)
     if (days > 0 && days <= 7) {
       posts.push({
