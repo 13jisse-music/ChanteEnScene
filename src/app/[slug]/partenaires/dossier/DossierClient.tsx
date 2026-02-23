@@ -23,6 +23,7 @@ const TIERS = [
     price: 'À partir de 500€',
     color: '#f5a623',
     bg: 'bg-[#f5a623]/10 border-[#f5a623]/30',
+    stripeUrl: 'https://buy.stripe.com/6oUeV5gVK5xk9wU7es14403',
     features: [
       'Logo sur la page Partenaires (placement premium)',
       'Publication dédiée sur Facebook, Instagram et LinkedIn',
@@ -36,6 +37,7 @@ const TIERS = [
     price: 'À partir de 250€',
     color: '#94a3b8',
     bg: 'bg-white/5 border-white/20',
+    stripeUrl: 'https://buy.stripe.com/3cIeV5gVKf7U8sQaqE14402',
     features: [
       'Logo sur la page Partenaires',
       'Mention sur nos réseaux sociaux (Facebook, Instagram, LinkedIn)',
@@ -48,6 +50,7 @@ const TIERS = [
     price: 'À partir de 100€',
     color: '#cd7f32',
     bg: 'bg-[#cd7f32]/10 border-[#cd7f32]/30',
+    stripeUrl: 'https://buy.stripe.com/cNi14f48Y3pc24s8iw14401',
     features: [
       'Logo sur la page Partenaires',
       'Remerciement sur nos réseaux sociaux',
@@ -59,6 +62,7 @@ const TIERS = [
     price: 'À partir de 50€',
     color: '#a78bfa',
     bg: 'bg-[#a78bfa]/10 border-[#a78bfa]/30',
+    stripeUrl: 'https://buy.stripe.com/9B6bIT0WM7Fs6kIcyM14400',
     features: [
       'Nom sur la page Partenaires',
       'Remerciement sur nos réseaux sociaux',
@@ -218,6 +222,21 @@ export default function DossierClient({ session, stats }: Props) {
         <p className="text-white/30 text-xs mt-6 text-center print:text-gray-400">
           Les montants sont indicatifs et peuvent être adaptés selon votre projet. N&apos;hésitez pas à nous contacter !
         </p>
+
+        {/* Don libre */}
+        <div className="no-print mt-6 pt-6 border-t border-white/10 text-center">
+          <p className="text-white/50 text-sm mb-3">
+            Vous souhaitez simplement soutenir le projet ?
+          </p>
+          <a
+            href="https://buy.stripe.com/fZucMX8pe9NAeRecyM14405"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-[#e91e8c] to-[#c4157a] hover:shadow-lg hover:shadow-[#e91e8c]/30 transition-all"
+          >
+            Faire un don libre
+          </a>
+        </div>
       </div>
 
       {/* ═══ PAGE 5 : CONTACT FORM ═══ */}
@@ -248,7 +267,7 @@ export default function DossierClient({ session, stats }: Props) {
 
 function TierCard({ tier }: { tier: typeof TIERS[number] }) {
   return (
-    <div className={`border rounded-2xl p-5 ${tier.bg} print:border-gray-300 print:bg-gray-50`}>
+    <div className={`border rounded-2xl p-5 ${tier.bg} print:border-gray-300 print:bg-gray-50 flex flex-col`}>
       <div className="flex items-center justify-between mb-3">
         <h3
           className="font-[family-name:var(--font-montserrat)] font-bold text-base"
@@ -263,7 +282,7 @@ function TierCard({ tier }: { tier: typeof TIERS[number] }) {
           {tier.price}
         </span>
       </div>
-      <ul className="space-y-1.5">
+      <ul className="space-y-1.5 flex-1">
         {tier.features.map((feat, i) => (
           <li key={i} className="flex items-start gap-2 text-xs text-white/60 print:text-gray-600">
             <span className="mt-0.5 text-[10px]" style={{ color: tier.color }}>✓</span>
@@ -271,6 +290,21 @@ function TierCard({ tier }: { tier: typeof TIERS[number] }) {
           </li>
         ))}
       </ul>
+      {tier.stripeUrl && (
+        <a
+          href={tier.stripeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="no-print mt-4 block text-center py-2 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] hover:shadow-lg"
+          style={{
+            backgroundColor: tier.color + '20',
+            color: tier.color,
+            border: `1px solid ${tier.color}50`,
+          }}
+        >
+          Choisir cette formule
+        </a>
+      )}
     </div>
   )
 }

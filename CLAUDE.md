@@ -51,6 +51,25 @@
 - Bouton "Tester sur mon appareil" dans l'admin notifications (envoie au endpoint du navigateur courant)
 - Page dédiée : `/admin/notifications` (séparée de la page social)
 
+### Stripe (paiements en ligne)
+- **Compte** : `acct_1Rd4NI1hThEYZogU`
+- **Statement descriptor** : CHANTENSCENE / CES
+- **Banque** : Société Générale (SOGEFRPP, terminant par 7716)
+- **Virements** : automatiques, hebdomadaires le lundi
+- **Clés** : dans `.env.keys` et `.env.local` (STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+- **Liens de paiement** (créés le 23/02/2026) :
+
+| Tier | Prix | Lien |
+|------|------|------|
+| Supporter | 50€ | https://buy.stripe.com/9B6bIT0WM7Fs6kIcyM14400 |
+| Bronze | 100€ | https://buy.stripe.com/cNi14f48Y3pc24s8iw14401 |
+| Argent | 250€ | https://buy.stripe.com/3cIeV5gVKf7U8sQaqE14402 |
+| Or | 500€ | https://buy.stripe.com/6oUeV5gVK5xk9wU7es14403 |
+| Don libre | min 5€ | https://buy.stripe.com/fZucMX8pe9NAeRecyM14405 |
+
+- Après paiement, redirection vers `/aubagne-2026/partenaires?merci=1` (ou `?merci=don`)
+- Scripts utilitaires : `create-stripe-products.js` (gitignored)
+
 ### Fichiers utilitaires (gitignored)
 - `.env.keys` — Toutes les clés centralisées (Supabase, Vercel, Resend, VAPID, Meta, IONOS)
 - `backup-db.js` — Script de backup local
