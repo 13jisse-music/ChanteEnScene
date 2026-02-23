@@ -15,12 +15,11 @@
 ### Vercel — 2 projets
 | Projet | URL | Usage |
 |--------|-----|-------|
-| **chante-en-scene** | www.chantenscene.fr | **PRODUCTION** — sert le site public |
-| **chante-en-scene-batx** | (preview) | Projet secondaire, non utilisé pour la prod |
+| **chante-en-scene** | www.chantenscene.fr | **PRODUCTION** — seul projet actif |
 
 - Le CLI `vercel` est linké au projet **chante-en-scene**
-- CRON_SECRET prod : `cron_chantenscene_2026_xK9mP` (sur chante-en-scene)
-- CRON_SECRET batx : `0945ba22ad2a185ad30228922d7af82aeafc0d5de9dbee65272cd8932dfa0b86`
+- CRON_SECRET prod : `cron_chantenscene_2026_xK9mP`
+- Ancien projet **chante-en-scene-batx** supprimé le 23/02/2026 (causait des crons en doublon)
 - Variables `NEXT_PUBLIC_*` sont baked dans le JS au build — tout changement nécessite un redéploiement
 
 ### Crons Vercel (vercel.json)
@@ -31,6 +30,7 @@
 | `/api/cron/jury-recap` | `0 10 * * 1` | 11h chaque lundi | Récap jury hebdomadaire |
 | `/api/cron/backup` | `0 0 * * 0` | 1h chaque dimanche | Backup BDD dans Supabase Storage |
 | `/api/cron/inscription-reminder` | `0 9 * * *` | 10h tous les jours | Rappel inscriptions J-5 + Jour J (email + push) |
+| `/api/cron/health-check` | `0 8 1 * *` | 9h le 1er du mois | Checkup complet du site (email + push admin) |
 
 - Tous les crons ont `export const dynamic = 'force-dynamic'` (anti-cache Next.js)
 - Authentification par `Authorization: Bearer CRON_SECRET`
@@ -149,6 +149,7 @@
 - `/api/cron/jury-recap` (GET) — Récap jury
 - `/api/cron/backup` (GET) — Backup BDD automatique
 - `/api/cron/inscription-reminder` (GET) — Rappel inscriptions J-5 + Jour J
+- `/api/cron/health-check` (GET) — Checkup complet du site (pages, APIs, Supabase, push, emails)
 - `/api/admin/upload-image` (GET/POST) — Liste images bucket Storage (GET) + Upload image (POST), protégé admin
 - `/api/admin/social-publish` (POST) — Publication manuelle FB/IG, log dans social_posts_log
 - `/api/admin/social-preview` (GET) — Prévisualisation publications auto
@@ -218,6 +219,32 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-23 — Checkup automatique + suppression projet Vercel batx
+
+#### Diagnostic email admin parasite
+- **Problème** : L'email admin du matin était l'ancien format (pas le nouveau dashboard analytique) + push non reçu
+- **Cause** : Le projet Vercel `chante-en-scene-batx` (secondaire) exécutait les mêmes crons avec l'ancien code, mettant à jour `last_report_sent_at` avant le vrai projet
+- **Fix** : Suppression du projet batx via `vercel remove chante-en-scene-batx`, reset du timestamp, déclenchement manuel du cron → email OK + 2 push envoyés
+
+#### Checkup complet du site (6 agents parallèles)
+- **Exécution** : 6 agents spécialisés en parallèle (pages, APIs, Supabase, Vercel, push, emails)
+- **Résultats** : 8/8 pages OK, 9/9 APIs OK, BDD 2.6%, Storage 3.8%, 13 push subscribers, 84 email subscribers
+- **Rapport HTML** envoyé par email (Resend) + push admin
+
+#### Cron health-check automatique + bouton admin
+- **`src/app/api/cron/health-check/route.ts`** (CRÉÉ) : Route cron complète
+  - Tests : 8 pages publiques (HTTP 200), 4 APIs sécurisées (HTTP 401), Supabase BDD/Storage/tables/backup, push (abonnés + VAPID + SW), emails (abonnés + campagnes)
+  - Exporte `runHealthCheck()` et `sendHealthCheckReport()` pour réutilisation par server action
+  - Interface `CheckResult` : category, label, status (ok/warn/ko), value, detail
+  - Envoi email HTML + push admin avec verdict global
+- **`src/lib/emails.ts`** (MODIFIÉ) : Ajout `healthCheckEmail()` — même style dark que adminReportEmail
+  - Synthèse 4 compteurs (OK/Warn/KO/Total), barres quotas BDD/Storage, audience push/email, checks par catégorie, tables principales
+- **`src/app/admin/infra/actions.ts`** (CRÉÉ) : Server action `triggerHealthCheck()` avec `requireAdmin()`
+- **`src/app/admin/infra/HealthCheckButton.tsx`** (CRÉÉ) : Bouton client avec loader + résultat coloré
+- **`src/app/admin/infra/page.tsx`** (MODIFIÉ) : Intégration du bouton checkup
+- **`vercel.json`** (MODIFIÉ) : Cron `0 8 1 * *` (1er du mois à 9h Paris)
+- **Commit** : `aba7322` — pushé sur master, déployé en production
 
 ### 2026-02-22 — Newsletter #1 + Dossier de presse + Page Presse + Footer + Email admin analytique
 
