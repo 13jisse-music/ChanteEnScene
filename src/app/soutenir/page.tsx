@@ -67,20 +67,20 @@ export default function SoutenirPage() {
         </h3>
         <div className="space-y-3">
           <div className="flex items-start gap-3">
-            <span className="text-lg shrink-0">&#127908;</span>
-            <p className="text-white/50 text-sm">Location de mat&eacute;riel son et lumi&egrave;re</p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-lg shrink-0">&#127915;</span>
-            <p className="text-white/50 text-sm">Organisation des demi-finales et de la finale</p>
-          </div>
-          <div className="flex items-start gap-3">
             <span className="text-lg shrink-0">&#128241;</span>
-            <p className="text-white/50 text-sm">D&eacute;veloppement et h&eacute;bergement de l&apos;application</p>
+            <p className="text-white/50 text-sm">D&eacute;veloppement et h&eacute;bergement de l&apos;application mobile</p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-lg shrink-0">&#127942;</span>
-            <p className="text-white/50 text-sm">R&eacute;compenses pour les gagnants</p>
+            <span className="text-lg shrink-0">&#127760;</span>
+            <p className="text-white/50 text-sm">Noms de domaine, serveurs et services en ligne</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-lg shrink-0">&#128227;</span>
+            <p className="text-white/50 text-sm">Communication : flyers, affiches, publicit&eacute; r&eacute;seaux sociaux</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-lg shrink-0">&#128747;</span>
+            <p className="text-white/50 text-sm">D&eacute;placements pour d&eacute;velopper le concours dans d&apos;autres villes</p>
           </div>
         </div>
       </div>
