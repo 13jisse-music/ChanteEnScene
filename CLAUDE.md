@@ -18,7 +18,7 @@
 | **chante-en-scene** | www.chantenscene.fr | **PRODUCTION** — seul projet actif |
 
 - Le CLI `vercel` est linké au projet **chante-en-scene**
-- CRON_SECRET prod : `cron_chantenscene_2026_xK9mP`
+- CRON_SECRET prod : dans `.env.keys` et Vercel (ne pas committer)
 - Ancien projet **chante-en-scene-batx** supprimé le 23/02/2026 (causait des crons en doublon)
 - Variables `NEXT_PUBLIC_*` sont baked dans le JS au build — tout changement nécessite un redéploiement
 
@@ -52,23 +52,13 @@
 - Page dédiée : `/admin/notifications` (séparée de la page social)
 
 ### Stripe (paiements en ligne)
-- **Compte** : `acct_1Rd4NI1hThEYZogU`
 - **Statement descriptor** : CHANTENSCENE / CES
-- **Banque** : Société Générale (SOGEFRPP, terminant par 7716)
 - **Virements** : automatiques, hebdomadaires le lundi
-- **Clés** : dans `.env.keys` et `.env.local` (STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-- **Liens de paiement** (créés le 23/02/2026) :
-
-| Tier | Prix | Lien |
-|------|------|------|
-| Supporter | 50€ | https://buy.stripe.com/9B6bIT0WM7Fs6kIcyM14400 |
-| Bronze | 100€ | https://buy.stripe.com/cNi14f48Y3pc24s8iw14401 |
-| Argent | 250€ | https://buy.stripe.com/3cIeV5gVKf7U8sQaqE14402 |
-| Or | 500€ | https://buy.stripe.com/6oUeV5gVK5xk9wU7es14403 |
-| Don libre | min 5€ | https://buy.stripe.com/fZucMX8pe9NAeRecyM14405 |
-
+- **Clés** : dans `.env.keys` et `.env.local` (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+- **Webhook** : `/api/stripe/webhook` — email + push admin à chaque paiement
+- 5 liens de paiement actifs (Supporter 50€, Bronze 100€, Argent 250€, Or 500€, Don libre)
 - Après paiement, redirection vers `/aubagne-2026/partenaires?merci=1` (ou `?merci=don`)
-- Scripts utilitaires : `create-stripe-products.js` (gitignored)
+- Détails complets (compte, liens, IDs) dans `.env.keys`
 
 ### Fichiers utilitaires (gitignored)
 - `.env.keys` — Toutes les clés centralisées (Supabase, Vercel, Resend, VAPID, Meta, IONOS)

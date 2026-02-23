@@ -9,6 +9,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
     { url: `${baseUrl}/palmares`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.8 },
+    { url: `${baseUrl}/editions`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/presse`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/mentions-legales`, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${baseUrl}/reglement`, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${baseUrl}/confidentialite`, changeFrequency: 'yearly', priority: 0.2 },
@@ -25,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/${s.slug}/candidats`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.8 },
     { url: `${baseUrl}/${s.slug}/galerie`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.6 },
     { url: `${baseUrl}/${s.slug}/inscription`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${baseUrl}/${s.slug}/partenaires`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/${s.slug}/partenaires/dossier`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
   ])
 
   // Candidate profile pages

@@ -35,10 +35,30 @@ yarn-error.log*
 .env
 .env.keys
 
-# migration & utility scripts
+# migration & utility scripts (contiennent potentiellement des clés)
 migrate-*.js
 migrate-*.sql
 backup-db.js
+create-stripe-*.js
+cleanup-stripe.js
+register-stripe-*.js
+update-don-*.js
+send-campaign.js
+send-push-test.js
+send-newsletter*.js
+check-*.js
+fix-*.js
+extract-*.js
+import-photos-*.js
+triage-photos.js
+parse-old-db.js
+fix-source-constraint.js
+telegram-bot.js
+start-telegram-bot.vbs
+
+# templates & kits (contiennent des liens Stripe)
+linkedin-templates.md
+kit-demarchage.md
 
 # database backups
 backups/
