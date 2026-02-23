@@ -92,14 +92,16 @@ export function candidateApprovedEmail({
   candidateName,
   sessionName,
   profileUrl,
+  galleryUrl,
 }: {
   candidateName: string
   sessionName: string
   profileUrl: string
+  galleryUrl?: string
 }) {
   const safeName = escapeHtml(candidateName)
   const safeSession = escapeHtml(sessionName)
-  const subject = `Candidature validée — ${sessionName}`
+  const subject = `C'est officiel — tu fais partie de ${sessionName} !`
 
   const html = `
 <!DOCTYPE html>
@@ -118,31 +120,50 @@ export function candidateApprovedEmail({
     <!-- Card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
       <div style="text-align:center;font-size:48px;margin-bottom:16px;">🎉</div>
-      <h1 style="color:#7ec850;font-size:20px;margin:0 0 8px 0;text-align:center;">
-        Candidature validée !
+      <h1 style="color:#7ec850;font-size:22px;margin:0 0 8px 0;text-align:center;">
+        Bienvenue dans l'aventure !
       </h1>
-      <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;text-align:center;">
+      <p style="color:#ffffff99;font-size:15px;line-height:1.6;margin:0 0 24px 0;text-align:center;">
         Félicitations <strong style="color:#ffffff;">${safeName}</strong> !<br/>
-        Votre candidature pour <strong style="color:#ffffff;">${safeSession}</strong> a été approuvée.
+        Ta candidature pour <strong style="color:#ffffff;">${safeSession}</strong> a été validée.
       </p>
 
       <div style="background:rgba(126,200,80,0.1);border:1px solid rgba(126,200,80,0.25);border-radius:12px;padding:16px;margin:0 0 24px 0;">
-        <p style="color:#7ec850;font-size:13px;line-height:1.6;margin:0;text-align:center;">
-          Votre profil est maintenant visible sur le site.<br/>
-          Le public et le jury en ligne peuvent voter pour vous !
+        <p style="color:#7ec850;font-size:13px;line-height:1.8;margin:0;text-align:center;">
+          ✅ Ton profil est en ligne — le public peut voter pour toi !<br/>
+          🎤 Le jury en ligne découvre ta candidature<br/>
+          📊 Suis tes votes sur ta page profil
         </p>
       </div>
 
-      <!-- CTA Button -->
-      <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="${profileUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+      <!-- CTA: Profile -->
+      <div style="text-align:center;margin:24px 0 16px 0;">
+        <a href="${profileUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:15px;font-weight:bold;">
           Voir mon profil
         </a>
       </div>
 
-      <p style="color:#ffffff50;font-size:12px;line-height:1.6;margin:24px 0 0 0;text-align:center;">
-        N'hésitez pas à partager votre profil avec vos proches pour récolter un maximum de votes !
-      </p>
+      <!-- Share section -->
+      <div style="background:rgba(233,30,140,0.06);border:1px solid rgba(233,30,140,0.15);border-radius:12px;padding:16px;margin:24px 0 0 0;">
+        <p style="color:#e91e8c;font-size:13px;font-weight:bold;margin:0 0 8px 0;text-align:center;">
+          Chaque vote compte !
+        </p>
+        <p style="color:#ffffff80;font-size:12px;line-height:1.6;margin:0;text-align:center;">
+          Partage ton profil avec tes proches pour récolter un maximum de votes.<br/>
+          Copie ce lien et envoie-le sur tes réseaux :
+        </p>
+        <div style="background:#0d0b1a;border-radius:8px;padding:10px;margin-top:10px;text-align:center;">
+          <a href="${profileUrl}" style="color:#38bdf8;font-size:12px;word-break:break-all;text-decoration:none;">${profileUrl}</a>
+        </div>
+      </div>
+
+      ${galleryUrl ? `
+      <div style="text-align:center;margin-top:20px;">
+        <a href="${galleryUrl}" style="color:#ffffff50;font-size:12px;text-decoration:underline;">
+          Découvrir tous les candidats →
+        </a>
+      </div>
+      ` : ''}
     </div>
 
     <!-- Footer -->

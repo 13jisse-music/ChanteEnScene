@@ -39,11 +39,13 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
         const profileUrl = `${siteUrl}/${session?.slug || ''}/candidats/${candidate.slug}`
+        const galleryUrl = `${siteUrl}/${session?.slug || ''}/candidats`
 
         const { subject, html } = candidateApprovedEmail({
           candidateName: escapeHtml(displayName),
           sessionName: escapeHtml(session?.name || 'ChanteEnScène'),
           profileUrl,
+          galleryUrl,
         })
 
         await getResend().emails.send({
