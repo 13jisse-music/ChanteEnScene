@@ -858,3 +858,212 @@ export function juryInvitationEmail({
 
   return { subject, html }
 }
+
+// ─── Health check report email ───
+
+export function healthCheckEmail({
+  checks,
+  summary,
+  globalStatus,
+  dbSizeBytes,
+  dbLimitBytes,
+  totalStorageBytes,
+  storageLimitBytes,
+  tables,
+  buckets,
+  pushByRole,
+  emailCount,
+  adminUrl,
+}: {
+  checks: { category: string; label: string; status: 'ok' | 'warn' | 'ko'; value: string; detail?: string }[]
+  summary: { ok: number; warn: number; ko: number; total: number }
+  globalStatus: 'ok' | 'warn' | 'ko'
+  dbSizeBytes: number
+  dbLimitBytes: number
+  totalStorageBytes: number
+  storageLimitBytes: number
+  tables: { name: string; rows: number }[]
+  buckets: { id: string; files: number; bytes: number }[]
+  pushByRole: Record<string, number>
+  emailCount: number
+  adminUrl: string
+}) {
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })
+
+  const statusMeta = {
+    ok: { label: 'TOUT EST OK', color: '#7ec850', emoji: '\u2705' },
+    warn: { label: 'ATTENTION', color: '#f59e0b', emoji: '\u26a0\ufe0f' },
+    ko: { label: 'PROBL\u00c8MES', color: '#ef4444', emoji: '\u274c' },
+  }
+  const meta = statusMeta[globalStatus]
+
+  const statusIcon = (s: 'ok' | 'warn' | 'ko') =>
+    s === 'ok' ? '\u2705' : s === 'warn' ? '\u26a0\ufe0f' : '\u274c'
+
+  const formatMB = (b: number) => (b / (1024 * 1024)).toFixed(1)
+  const dbPct = (dbSizeBytes / dbLimitBytes * 100).toFixed(1)
+  const storagePct = (totalStorageBytes / storageLimitBytes * 100).toFixed(1)
+
+  const bar = (pct: number, color: string) => `
+    <div style="background:#0d0b1a;border-radius:4px;height:8px;width:100%;overflow:hidden;">
+      <div style="background:${color};height:100%;width:${Math.min(pct, 100)}%;border-radius:4px;"></div>
+    </div>`
+
+  const categories = [...new Set(checks.map(c => c.category))]
+
+  const categoryRows = categories.map(cat => {
+    const catChecks = checks.filter(c => c.category === cat)
+    const catOk = catChecks.every(c => c.status === 'ok')
+    const catKo = catChecks.some(c => c.status === 'ko')
+    const catStatus: 'ok' | 'warn' | 'ko' = catKo ? 'ko' : catOk ? 'ok' : 'warn'
+    const rows = catChecks.map(c => `
+      <tr style="border-bottom:1px solid #2a2545;">
+        <td style="padding:6px 0;color:#ffffffcc;font-size:12px;">${statusIcon(c.status)} ${escapeHtml(c.label)}</td>
+        <td style="padding:6px 0;text-align:right;color:#ffffff80;font-size:12px;">${escapeHtml(c.value)}</td>
+      </tr>`).join('')
+
+    return `
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+        <tr>
+          <td><p style="color:#ffffff;font-size:14px;font-weight:bold;margin:0;">${escapeHtml(cat)}</p></td>
+          <td style="text-align:right;">
+            <span style="background:${statusMeta[catStatus].color}22;color:${statusMeta[catStatus].color};font-size:11px;font-weight:bold;padding:3px 10px;border-radius:12px;">
+              ${catChecks.filter(c => c.status === 'ok').length}/${catChecks.length} OK
+            </span>
+          </td>
+        </tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        ${rows}
+      </table>
+    </div>`
+  }).join('')
+
+  const totalPush = Object.values(pushByRole).reduce((a, b) => a + b, 0)
+
+  const subject = `${meta.emoji} Checkup site \u2014 ${meta.label}`
+
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+  <div style="max-width:640px;margin:0 auto;padding:32px 16px;">
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <span style="font-size:22px;font-weight:bold;">
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
+      </span>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#1e1744,#2a1f5e);border:1px solid #3a3070;border-radius:16px;padding:24px;margin-bottom:16px;">
+      <h1 style="color:#ffffff;font-size:20px;margin:0 0 6px 0;">Checkup complet du site</h1>
+      <p style="color:#ffffff60;font-size:13px;margin:0;">${today}</p>
+      <div style="margin-top:16px;text-align:center;">
+        <span style="display:inline-block;background:${meta.color}22;color:${meta.color};font-size:16px;font-weight:bold;padding:8px 20px;border-radius:24px;border:2px solid ${meta.color}44;">
+          ${meta.emoji} ${meta.label}
+        </span>
+      </div>
+    </div>
+
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#7ec850;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px 0;">Synth\u00e8se</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#7ec850;font-size:24px;font-weight:bold;">${summary.ok}</div>
+              <div style="color:#ffffff40;font-size:9px;">OK</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#f59e0b;font-size:24px;font-weight:bold;">${summary.warn}</div>
+              <div style="color:#ffffff40;font-size:9px;">Warnings</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#ef4444;font-size:24px;font-weight:bold;">${summary.ko}</div>
+              <div style="color:#ffffff40;font-size:9px;">Erreurs</div>
+            </div>
+          </td>
+          <td style="width:25%;padding:4px;text-align:center;">
+            <div style="background:#0d0b1a;border-radius:10px;padding:10px 4px;">
+              <div style="color:#8b5cf6;font-size:24px;font-weight:bold;">${summary.total}</div>
+              <div style="color:#ffffff40;font-size:9px;">Tests</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Quotas Supabase</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+        <tr>
+          <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:50px;">BDD</td>
+          <td style="padding:3px 0;">${bar(parseFloat(dbPct), parseFloat(dbPct) < 50 ? '#7ec850' : parseFloat(dbPct) < 80 ? '#f59e0b' : '#ef4444')}</td>
+          <td style="padding:3px 0;color:#ffffff80;font-size:11px;width:120px;text-align:right;">${formatMB(dbSizeBytes)} / 500 MB</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#ffffffcc;font-size:12px;">Storage</td>
+          <td style="padding:3px 0;">${bar(parseFloat(storagePct), parseFloat(storagePct) < 50 ? '#3b82f6' : parseFloat(storagePct) < 80 ? '#f59e0b' : '#ef4444')}</td>
+          <td style="padding:3px 0;color:#ffffff80;font-size:11px;text-align:right;">${formatMB(totalStorageBytes)} / 1 GB</td>
+        </tr>
+      </table>
+      ${buckets.map(b => `
+      <div style="padding:2px 0;font-size:11px;color:#ffffff60;">
+        ${escapeHtml(b.id)} : ${b.files} fichiers \u2014 ${formatMB(b.bytes)} MB
+      </div>`).join('')}
+    </div>
+
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Audience</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:6px 0;color:#ffffffcc;">Push total</td>
+          <td style="text-align:right;color:#e91e8c;font-weight:bold;">${totalPush}</td>
+        </tr>
+        ${Object.entries(pushByRole).map(([role, count]) => `
+        <tr style="border-bottom:1px solid #2a2545;">
+          <td style="padding:4px 0 4px 16px;color:#ffffff80;font-size:11px;">${escapeHtml(role)}</td>
+          <td style="text-align:right;color:#ffffff60;font-size:11px;">${count}</td>
+        </tr>`).join('')}
+        <tr>
+          <td style="padding:6px 0;color:#ffffffcc;">Email actifs</td>
+          <td style="text-align:right;color:#ec4899;font-weight:bold;">${emailCount}</td>
+        </tr>
+      </table>
+    </div>
+
+    ${categoryRows}
+
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#ffffff;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Tables principales</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        ${tables.map(t => `
+        <tr style="border-bottom:1px solid #1e1744;">
+          <td style="padding:3px 0;color:#ffffff80;font-family:monospace;">${escapeHtml(t.name)}</td>
+          <td style="padding:3px 0;color:#ffffff60;text-align:right;font-family:monospace;">${t.rows.toLocaleString('fr-FR')}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+
+    <div style="text-align:center;margin:20px 0 16px 0;">
+      <a href="${adminUrl}" style="display:inline-block;padding:14px 40px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+        Ouvrir l'infra
+      </a>
+    </div>
+
+    <p style="color:#ffffff25;font-size:10px;text-align:center;line-height:1.5;margin:0;">
+      ChanteEnSc\u00e8ne \u2014 Checkup automatique<br/>
+      G\u00e9n\u00e9r\u00e9 le ${today}
+    </p>
+  </div>
+</body>
+</html>`
+
+  return { subject, html }
+}

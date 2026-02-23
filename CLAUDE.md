@@ -44,9 +44,12 @@
 - VAPID keys configurées (même clés pour les 2 bases)
 - Badge personnalisé : lettre **C** dans carré arrondi (style LinkedIn) → `public/images/pwa-badge-96.png`
 - Service Worker : `public/sw.js` (push, offline, cache)
-- Lib serveur : `src/lib/push.ts` (web-push, nettoyage auto des 410 expirées)
+- Lib serveur : `src/lib/push.ts` (web-push, nettoyage auto des 410 expirées, **segmentation par fingerprint candidat**)
 - Subscribe : `src/app/api/push/subscribe/route.ts` (pattern delete+insert, pas d'upsert)
-- Send : `src/app/api/push/send/route.ts` (protégé admin)
+- Send : `src/app/api/push/send/route.ts` (protégé admin, log dans `push_log`, **supporte segment + candidateId**)
+- **Segmentation** : ciblage par rôle (public/jury/admin) + par statut candidat (inscrits/approuvés/demi-finalistes/finalistes/individuel) via fingerprint matching
+- Bouton "Tester sur mon appareil" dans l'admin notifications (envoie au endpoint du navigateur courant)
+- Page dédiée : `/admin/notifications` (séparée de la page social)
 
 ### Fichiers utilitaires (gitignored)
 - `.env.keys` — Toutes les clés centralisées (Supabase, Vercel, Resend, VAPID, Meta, IONOS)
@@ -92,6 +95,8 @@
 - **email_campaigns** : Newsletters envoyées (subject, body, status, target)
 - **sponsors** : Sponsors du concours
 - **shares** : Tracking partages réseaux sociaux
+- **social_posts_log** : Historique publications sociales (manuelles + cron), avec source, image, lien FB/IG
+- **push_log** : Historique notifications push envoyées (titre, body, url, image, role, is_test, sent/failed/expired, sent_by)
 
 ### Session active
 - **ChanteEnScène Aubagne 2026** — ID: `682bef39-e7ec-4943-9e62-96bfb91bfcac` — status: `draft`
@@ -107,6 +112,7 @@
 - `/:slug/galerie` — Galerie photos
 - `/palmares` — Palmarès
 - `/editions` — Galerie des éditions (photos + vidéos YouTube par année)
+- `/presse` — Espace presse (dossier PDF, photos HD, formulaire contact)
 - `/mentions-legales`, `/reglement`, `/confidentialite` — Pages légales
 
 ## Routes admin
@@ -123,8 +129,10 @@
 - `/admin/suivi-mp3` — Suivi fichiers MP3
 - `/admin/export-mp3` — Export ZIP par catégorie
 - `/admin/photos` — Gestion galerie
+- `/admin/notifications` — Notifications push (segmentation candidats, historique, push par étape)
 - `/admin/chatbot` — Gestion FAQ
 - `/admin/editions` — Galerie éditions (photos publish/unpublish, vidéos YouTube)
+- `/admin/infra` — Infrastructure Supabase (jauges BDD/Storage, tables, buckets, santé)
 - `/admin/seed` — Données de test
 
 ## Routes jury
@@ -140,6 +148,11 @@
 - `/api/cron/social-post` (GET) — Publication réseaux sociaux
 - `/api/cron/jury-recap` (GET) — Récap jury
 - `/api/cron/backup` (GET) — Backup BDD automatique
+- `/api/cron/inscription-reminder` (GET) — Rappel inscriptions J-5 + Jour J
+- `/api/admin/upload-image` (GET/POST) — Liste images bucket Storage (GET) + Upload image (POST), protégé admin
+- `/api/admin/social-publish` (POST) — Publication manuelle FB/IG, log dans social_posts_log
+- `/api/admin/social-preview` (GET) — Prévisualisation publications auto
+- `/api/contact-presse` (POST) — Formulaire contact presse → email via Resend
 
 ## Hooks Realtime (src/hooks/)
 - `useRealtimeEvent` — Écoute live_events (status, candidat courant, voting)
@@ -152,7 +165,7 @@
 
 ## Composants clés (50+)
 ### Navigation & Layout
-- `PublicNav.tsx`, `AdminSidebar.tsx` (13 sections), `MobileMenu.tsx`, `ToastProvider.tsx`
+- `PublicNav.tsx`, `PublicFooter.tsx` (4 colonnes), `AdminSidebar.tsx` (13 sections), `MobileMenu.tsx`, `ToastProvider.tsx`
 
 ### Galerie candidats
 - `CandidateGallery.tsx` (routeur mobile/desktop)
@@ -176,6 +189,8 @@
 - `PwaFunnel.tsx` — Dashboard adoption PWA (Android/iOS/Desktop)
 - `InstallPrompt.tsx` — Bandeau installation PWA + notifications + email fallback
 - `EmailSubscribeForm.tsx` — Formulaire abonnement email
+- `ChangelogCard.tsx` — Commits GitHub récents (server component, cache 1h)
+- `PresseContactForm.tsx` — Formulaire contact presse (client component)
 
 ### Stats & Résultats
 - `FinaleStats.tsx`, `StatsEnLigne.tsx`, `StatsDemiFinale.tsx`
@@ -203,6 +218,165 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-22 — Newsletter #1 + Dossier de presse + Page Presse + Footer + Email admin analytique
+
+#### Newsletter #1 — Envoi campagne email
+- **Template HTML** : `newsletter-chantenscene-2.html` (style "Quotidien Matin")
+  - Header logo Georgia serif, 3 sections avec fonds colorés vifs (#f472b6, #1a1232, #a78bfa), CTA plein écran rose, footer Quotidien-style
+  - 3 images ChatGPT uploadées dans Storage `photos/newsletter/` : hero, appli, flashback
+  - Unsubscribe personnalisé par token via `/api/unsubscribe`
+- **Script d'envoi** : `send-newsletter1.js` (Downloads, gitignored)
+  - Ajout subscribers manuels (13jisse@gmail.com, reybaud.olivier@neuf.fr, julienlamand.music@gmail.com, c.martinezpnrj@gmail.com)
+  - Envoi via Resend à 83/83 abonnés actifs, 0 erreurs
+  - Campaign loggée dans `email_campaigns`
+- **Fix constraint source** : `email_subscribers_source_check` mis à jour via Supabase Management API
+  - Ajout : `'manual'`, `'countdown'`, `'inscription'` aux sources autorisées
+  - Script : `fix-source-constraint.js` (Downloads)
+
+#### Opt-in newsletter à l'inscription
+- **`InscriptionForm.tsx`** : Checkbox pré-cochée "Recevoir les actualités ChanteEnScène par email"
+  - Ajouté en étape 3 (recap/consentement), appel `subscribeEmail()` après inscription réussie (non-bloquant)
+- **`subscribe-email.ts`** : Ajout `'inscription'` au type `SubscribeSource`
+- **`EmailSubscribeForm.tsx`** : Ajout `'inscription'` au type source prop
+- **Commit** : `fa9beea` — pushé sur master
+
+#### Dossier de presse
+- **Fichier HTML** : `c:\Users\ecole\Downloads\dossier-presse-chantenscene.html` (7 pages A4, print-ready)
+- **Fichier PDF** : `public/documents/dossier-presse-chantenscene.pdf` (~9.6 MB, converti via Chrome headless)
+- **Structure** :
+  1. Couverture — Image ChatGPT (`cover-dossier-presse.png`) + logo + badge "4e édition"
+  2. Le concept — Citation fondateur + photo concert
+  3. Chiffres clés — 6 stats + graphique évolution 2023→2026
+  4. Édition 2026 — Features + mockup appli ChatGPT
+  5. Galerie photos — Mosaïque 9 photos réelles Storage (2024+2025), crédit Playymo
+  6. Palmarès — 3 ans de gagnants (données BDD corrigées), photos 2025
+  7. Contact — Jean-Christophe Martinez, inscriptions@chantenscene.fr
+- **Données palmarès** : 2023 (Estelle/Giulia/Paloma), 2024 (Yassine/Valentine/Paloma), 2025 (Stéphanaïka/Eva/Giulia)
+
+#### Page Presse (`/presse`)
+- **Nouvelle page** : `src/app/presse/page.tsx` — server-rendered, accessible depuis le footer uniquement
+- **Dossier de presse** : Carte téléchargement PDF avec bouton rose
+- **Photos HD** : Grille 6 photos du concours 2025 (Supabase Storage), clic = ouvre en plein écran
+- **Formulaire contact presse** : `PresseContactForm.tsx` (client component)
+  - Champs : nom, organisation (optionnel), email, message
+  - POST vers `/api/contact-presse` → email envoyé à inscriptions@chantenscene.fr via Resend
+  - Remplace le mailto exposé (anti-bot)
+- **API** : `src/app/api/contact-presse/route.ts` (même pattern que `partner-inquiry`, escapeHtml, replyTo)
+
+#### Footer structuré 4 colonnes (`PublicFooter.tsx`)
+- **Refonte complète** du footer (était : logo + 3 liens légaux)
+- **4 colonnes responsive** (lg:grid-cols-4, mobile grid-cols-2) :
+  - Logo + tagline + "Aubagne, France"
+  - Le concours : Editions, Palmarès, Presse
+  - Légal : Mentions légales, Règlement, Confidentialité
+  - Contact : email inscriptions@chantenscene.fr + icônes Facebook/Instagram
+- Copyright centré en dessous
+- Masqué sur /admin, /jury, etc. (logique existante conservée)
+
+#### Dashboard admin — Changelog
+- **`ChangelogCard.tsx`** : Composant server async, fetch GitHub API (10 derniers commits, cache 1h)
+  - Groupés par date, affichés avec heure + message
+- Ajouté dans `src/app/admin/page.tsx` — section "Mises à jour du site"
+
+#### Section Dotations/Prix (`AdminConfig.tsx`)
+- Ajout `prizes` et `prizes_visible` à l'interface SessionConfig
+- Helpers : `updatePrize`, `addPrize`, `removePrize`
+- UI : champs dynamiques rang + description, toggle visibilité (masqué par défaut)
+- Public display prévu sur page session + inscription (quand commune donne aval)
+
+#### Email admin — Dashboard analytique complet
+- **Cron** (`admin-report/route.ts`) : 17 requêtes Supabase en parallèle (Promise.all)
+  - Nouvelles données : total pages vues, top 5 pages, breakdown statut candidats, plateforme PWA, rôle push
+  - GitHub API : commits des dernières 24h
+- **Template** (`emails.ts` → `adminReportEmail`) : 7 sections
+  1. **Header** : Briefing quotidien + date + badge statut session (couleur dynamique)
+  2. **Hier en un coup d'oeil** : 4 métriques J-1 (visiteurs, inscriptions, votes, nouveaux abos) + total pages vues + taux conversion
+  3. **Tableau de bord** : 5 lignes totaux avec deltas verts (+N) + audience totale agrégée
+  4. **Analyse d'audience** : Barres de progression plateforme PWA (Android/iOS/Desktop) + rôle push (public/jury/admin)
+  5. **Candidats** : Breakdown par statut (barres colorées) + nouvelles inscriptions
+  6. **Pages populaires** : Top 5 pages visitées hier (monospace)
+  7. **Prochaines actions** : Todo dynamique basée sur config (dotations, dates, statut session)
+  + Section déploiements (commits GitHub)
+- **Push quotidien** : Format compact J-1 (visiteurs, inscriptions, votes, installs, abos) + résumé déploiements
+
+#### Ancienne base MySQL parsée
+- **`dbs10591269.sql`** (Downloads) : Dump phpMyAdmin de l'ancienne BDD 2025
+  - Tables : `Artistes` (73), `JuryVotes` (124), `votes_publics` (1863), `votes_jury` (finale), `Jurys` (5)
+  - Script `parse-old-db.js` créé pour extraction données → stats utilisées dans le dossier de presse
+  - Stats clés : 73 inscrits, 34 sélectionnés, 24 demi-finalistes, 14 finalistes, 1863 votes, 5 jurés finale
+
+### 2026-02-21 — Page Notifications dédiée + Segmentation push + Fix iOS PWA
+
+#### Page Notifications dédiée (`/admin/notifications`)
+- **Nouvelle page server-rendered** + composant client `NotificationsAdmin.tsx` (~550 lignes)
+- Push notifications **séparées** de la page social → page dédiée avec sidebar "🔔 Notifications"
+- **Segments progressifs** selon la phase du concours (via `isStatusAtOrPast()`) :
+  - Toujours : Tous, Public, Jury, Admin
+  - `registration_open` : + Candidats inscrits, Un candidat (autocomplete)
+  - `registration_closed` : + Approuvés
+  - `semifinal` : + Demi-finalistes
+  - `final` : + Finalistes
+- **Ciblage candidats par fingerprint** : match `candidates.fingerprint` ↔ `push_subscriptions.fingerprint`
+- Stats push : "26 abonnés (18 public, 5 jury, 3 admin) | 8/15 candidats joignables"
+- Indicateur de portée : "12 appareils recevront cette notification"
+- Autocomplete candidat avec badge status + icône push/email
+- Formulaire : titre, body, URL + boutons Envoyer / Tester sur mon appareil
+- Notifications par étape (déplacé depuis social) + historique push avec colonne Segment
+- Migration `027_candidate_fingerprint.sql` : `fingerprint` sur candidates, `segment` sur push_log
+
+#### Capture fingerprint à l'inscription
+- `InscriptionForm.tsx` : capture silencieuse du fingerprint avant insert candidat (silent fail)
+- Zero impact UI, transparent pour l'utilisateur
+
+#### Extension lib push avec segments
+- `src/lib/push.ts` : nouveau type `PushSegment` (all_candidates, approved, semifinalist, finalist, specific_candidate)
+- Deux paths de ciblage : role-based (existant) et segment-based (nouveau via fingerprint matching)
+- `src/app/api/push/send/route.ts` : accepte `segment` + `candidateId`, log segment dans push_log
+
+#### Nettoyage page social
+- `admin/social/page.tsx` réduit de ~1030 à ~380 lignes (tout le code push supprimé)
+- Bandeau de redirection vers `/admin/notifications`
+- Reste : publications sociales FB/IG, historique social, previews auto
+
+#### Fix détection iOS PWA
+- **Problème** : la détection `standalone` était bloquée par des `return` anticipés (email-subscribed, desktop)
+- **Solution** : `useEffect` dédié indépendant du flow UI dans `InstallPrompt.tsx`
+- Ajout `navigator.standalone` (propriété spécifique iOS Safari) en plus de `matchMedia`
+- Filtrage anti-bots dans `/api/pwa/install` (regex UA : bot, crawler, headless, puppeteer, etc.)
+- Les utilisateurs iPhone apparaissent désormais dans les installations PWA dès qu'ils ouvrent l'appli
+
+### 2026-02-20/21 — Page Infra + Historiques + Sélecteur images push
+
+#### Page Infrastructure (`/admin/infra`)
+- **Nouvelle page server-rendered** : État des lieux Supabase en temps réel
+  - Jauges BDD (ex: 13 MB / 500 MB) et Storage (ex: 31 MB / 1 GB) avec couleur vert/orange/rouge
+  - Storage par bucket : barres de remplissage vs limite 1 GB (pas proportion entre buckets)
+  - Liste de toutes les tables avec nombre de lignes (point coloré selon volume)
+  - Santé : dernier backup, dernière pub sociale, push actifs, email actifs
+  - Rappel limites free tier Supabase
+- Utilise **Supabase Management API** (`SUPABASE_ACCESS_TOKEN`) avec requêtes SQL directes
+- `SUPABASE_ACCESS_TOKEN` ajouté dans `.env.local` et Vercel
+- Lien "Infrastructure" ajouté dans `AdminSidebar.tsx` section Dev
+
+#### Publications sociales — Upload image + Historique
+- **Fix RLS upload** : Création `/api/admin/upload-image` (POST) avec `createAdminClient()` pour bypass RLS Storage
+- **Historique publications** : Tableau en haut de la page social avec badge Manuel/Auto, statut FB/IG, lien cliquable
+- **Colonnes ajoutées** à `social_posts_log` : `source`, `image_url`, `link` (via Management API)
+- **Logging** : Les publications manuelles (`social-publish`) et cron sont loggées dans `social_posts_log`
+- **Fix RLS lecture** : Policy `FOR SELECT USING (true)` ajoutée pour permettre lecture côté client (anon)
+
+#### Push Notifications — Test, images, historique, sélecteur
+- **Bouton "Tester sur mon appareil"** : Utilise `navigator.serviceWorker.ready` → `pushManager.getSubscription()` pour cibler le endpoint du navigateur courant
+- **Support image** : Champ `image` ajouté dans `PushPayload`, `sw.js`, formulaire admin (Android/Chrome, ignoré iOS)
+- **Sélecteur d'images** : Bouton "Parcourir" ouvre une galerie modale avec toutes les images du bucket Storage (GET `/api/admin/upload-image`)
+- **Historique push** (`push_log`) : Nouvelle table, chaque envoi (test ou broadcast) est loggé avec titre, body, url, image, role, résultat (sent/failed/expired), sent_by
+- **Tableau historique** : Affiché sous le formulaire push, badges Test (bleu) / Tous/Public/Jury (rose)
+- Migration : `026_push_log.sql`
+
+#### Fix page Infra — Barres storage
+- Les barres de storage par bucket montraient la proportion entre buckets (photos = 94%) au lieu du remplissage vs 1 GB
+- Corrigé : `b.total_bytes / STORAGE_LIMIT_BYTES * 100` + couleur conditionnelle + pourcentage affiché
 
 ### 2026-02-20 — Push auto par étape + Carte installations + Cron inscriptions
 

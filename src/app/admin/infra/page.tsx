@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic'
 
+import HealthCheckButton from './HealthCheckButton'
+
 const SUPABASE_PROJECT_REF = 'xarrchsokuhobwqvcnkg'
 const DB_LIMIT_BYTES = 500 * 1024 * 1024 // 500 MB
 const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024 // 1 GB
@@ -267,6 +269,11 @@ export default async function InfraPage() {
           ))}
         </div>
       </div>
+
+      {/* Checkup */}
+      <HealthCheckButton />
+
+      <div className="mt-8" />
 
       {/* Limites free tier */}
       <div className="bg-white/[0.02] rounded-2xl p-5 border border-[#2a2545]/50">
