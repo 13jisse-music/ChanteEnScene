@@ -55,7 +55,8 @@
 - **Statement descriptor** : CHANTENSCENE / CES
 - **Virements** : automatiques, hebdomadaires le lundi
 - **Clés** : dans `.env.keys` et `.env.local` (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-- **Webhook** : `/api/stripe/webhook` — email + push admin à chaque paiement
+- **Webhook** : `/api/stripe/webhook` — email + push admin + insert `donations` à chaque paiement
+- **Dashboard** : Carte "Dons & Partenariats" sur `/admin` (total €, nombre, dernier don)
 - 5 liens de paiement actifs (Supporter 50€, Bronze 100€, Argent 250€, Or 500€, Don libre)
 - Après paiement, redirection vers `/aubagne-2026/partenaires?merci=1` (ou `?merci=don`)
 - Détails complets (compte, liens, IDs) dans `.env.keys`
@@ -106,6 +107,7 @@
 - **shares** : Tracking partages réseaux sociaux
 - **social_posts_log** : Historique publications sociales (manuelles + cron), avec source, image, lien FB/IG
 - **push_log** : Historique notifications push envoyées (titre, body, url, image, role, is_test, sent/failed/expired, sent_by)
+- **donations** : Paiements Stripe reçus (montant, tier Don/Supporter/Bronze/Argent/Or, donateur, stripe_session_id)
 
 ### Session active
 - **ChanteEnScène Aubagne 2026** — ID: `682bef39-e7ec-4943-9e62-96bfb91bfcac` — status: `draft`

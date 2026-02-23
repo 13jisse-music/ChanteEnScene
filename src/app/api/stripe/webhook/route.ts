@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { sendPushNotifications } from '@/lib/push'
+import { createAdminClient } from '@/lib/supabase/admin'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -107,6 +108,21 @@ export async function POST(req: NextRequest) {
       })
     } catch (err) {
       console.error('[Stripe webhook] Push error:', err)
+    }
+
+    // Log donation in database
+    try {
+      const supabase = createAdminClient()
+      await supabase.from('donations').insert({
+        session_id: SESSION_ID,
+        amount_cents: amountCents,
+        tier,
+        donor_name: name,
+        donor_email: email !== 'inconnu' ? email : null,
+        stripe_session_id: session.id,
+      })
+    } catch (err) {
+      console.error('[Stripe webhook] DB insert error:', err)
     }
   }
 

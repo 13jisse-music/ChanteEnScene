@@ -18,7 +18,7 @@ async function getStats() {
     .select('id, name, slug, status, city, year, config')
     .order('year', { ascending: false })
 
-  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null } }
+  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null }, donations: { totalEuros: 0, count: 0, lastDonation: null } }
 
   const activeSession = sessions[0]
 
@@ -182,6 +182,19 @@ async function getStats() {
     }
   }
 
+  // Donations for this session
+  const { data: donationsData } = await supabase
+    .from('donations')
+    .select('amount_cents, donor_name, tier, created_at')
+    .eq('session_id', activeSession.id)
+    .order('created_at', { ascending: false })
+
+  const totalDonationsEuros = donationsData
+    ? donationsData.reduce((sum, d) => sum + d.amount_cents, 0) / 100
+    : 0
+  const donationsCount = donationsData?.length || 0
+  const lastDonation = donationsData?.[0] || null
+
   // Total page views for this session
   const { count: totalPageViews } = await supabase
     .from('page_views')
@@ -251,6 +264,11 @@ async function getStats() {
       semifinal_location: (config.semifinal_location as string) || null,
       selection_notifications_sent_at: (config.selection_notifications_sent_at as string) || null,
     },
+    donations: {
+      totalEuros: totalDonationsEuros,
+      count: donationsCount,
+      lastDonation,
+    },
   }
 }
 
@@ -298,7 +316,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default async function AdminDashboard() {
-  const { activeSession, stats, dailyStats = [], recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config } = await getStats()
+  const { activeSession, stats, dailyStats = [], recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config, donations } = await getStats()
 
   const semifinalistCount = semifinalists.length
   const mp3Count = semifinalists.filter((c) => c.mp3_url).length
@@ -371,6 +389,39 @@ export default async function AdminDashboard() {
         <StatCard icon="👀" label="Visiteurs" value={stats.uniqueVisitors ?? 0} color="#8b5cf6" />
         <StatCard icon="📄" label="Pages vues" value={stats.totalPageViews ?? 0} color="#6366f1" />
         <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" />
+      </div>
+
+      {/* Donations / Partenariats */}
+      <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 sm:p-5 mb-6 sm:mb-10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base flex items-center gap-2">
+            <span>💰</span> Dons & Partenariats
+          </h2>
+          {donations.count > 0 && (
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: '#7ec85015', color: '#7ec850' }}>
+              {donations.count} don{donations.count > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {donations.count > 0 ? (
+          <div className="flex items-end gap-6">
+            <div>
+              <p className="font-[family-name:var(--font-montserrat)] font-black text-3xl sm:text-4xl text-[#7ec850]">
+                {donations.totalEuros.toLocaleString('fr-FR')} €
+              </p>
+              <p className="text-white/30 text-xs mt-1">Total reçu via Stripe</p>
+            </div>
+            {donations.lastDonation && (
+              <div className="text-xs text-white/40 pb-1">
+                Dernier : <span className="text-white/60">{donations.lastDonation.donor_name}</span> — {(donations.lastDonation.amount_cents / 100).toLocaleString('fr-FR')} € ({donations.lastDonation.tier})
+                <br />
+                {new Date(donations.lastDonation.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-white/30 text-sm">Aucun don reçu pour le moment.</p>
+        )}
       </div>
 
       {/* Daily Traffic Chart */}
