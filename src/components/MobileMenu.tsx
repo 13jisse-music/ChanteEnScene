@@ -89,6 +89,31 @@ export default function MobileMenu({ sessionSlug = 'aubagne-2026' }: Props) {
           </nav>
         </div>
 
+        {/* Soutenir / Partenaires */}
+        <div className="mt-8 px-6">
+          <div className="border-t border-gray-100 pt-5">
+            <p className="font-[family-name:var(--font-montserrat)] font-bold text-xs uppercase tracking-[0.3em] text-gray-400 mb-3">
+              Nous soutenir
+            </p>
+            <nav className="space-y-1">
+              <Link
+                href="/soutenir"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm text-[#b8860b] hover:bg-[#f5a623]/10 transition-colors"
+              >
+                Faire un don
+              </Link>
+              <Link
+                href="/aubagne-2026/partenaires"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Devenir partenaire
+              </Link>
+            </nav>
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="absolute bottom-8 left-6 right-6">
           <div className="border-t border-gray-100 pt-4">
