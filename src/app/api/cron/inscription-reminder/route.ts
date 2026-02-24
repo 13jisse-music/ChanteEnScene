@@ -111,7 +111,7 @@ export async function GET(request: Request) {
   // --- Send emails to subscribers ---
   const { data: subscribers } = await supabase
     .from('email_subscribers')
-    .select('id, email')
+    .select('id, email, unsubscribe_token')
     .eq('session_id', session.id)
     .eq('is_active', true)
 
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
     const resend = getResend()
 
     for (const sub of subscribers) {
-      const unsubscribeUrl = `${siteUrl}/api/unsubscribe?id=${sub.id}`
+      const unsubscribeUrl = `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`
       const { subject, html } = inscriptionReminderEmail({
         sessionName: session.name,
         daysLeft,
