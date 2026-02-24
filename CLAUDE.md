@@ -114,7 +114,7 @@
 - Sessions palmarès (2023, 2024, 2025) : archivées, IDs fixes `a0000000-...-2023/2024/2025`
 
 ## Routes publiques (dynamiques par session slug)
-- `/:slug/` — Page d'accueil session
+- `/:slug/` — Redirige vers `/` (évite page vide)
 - `/:slug/candidats` — Galerie candidats (mobile: swipe TikTok, desktop: feed social)
 - `/:slug/candidats/:candidateSlug` — Profil candidat
 - `/:slug/live` — Streaming live + vote en direct
@@ -127,6 +127,7 @@
 - `/proposer-un-lieu` — Formulaire proposition de lieu pour accueillir une édition
 - `/soutenir` — Page don libre Stripe (chiffres impact, postes numériques)
 - `/comment-ca-marche` — Explication du fonctionnement du concours
+- `/go` — Page trampoline email→PWA (mobile: propose ouvrir/installer l'appli, desktop: redirige immédiat)
 - `/mentions-legales`, `/reglement`, `/confidentialite` — Pages légales
 
 ## Routes admin
@@ -237,6 +238,56 @@
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
 ## Historique des interventions
+
+### 2026-02-24 — Fix crons + Page /go trampoline + Audit URLs
+
+#### Fix cron admin-report — timing trop serré
+- **Problème** : Le seuil de 23h en millisecondes faisait rater l'envoi quand Vercel décalait le cron de quelques minutes (22h35m < 23h)
+- **Fix** : Remplacement par comparaison de date calendaire timezone Paris (`alreadySentThisPeriod()`) pour le mode daily
+- **Fichier** : `src/app/api/cron/admin-report/route.ts`
+
+#### Fix push J-5 → page vide + redirect [slug]
+- **Problème** : Push J-5 pointait vers `/:slug/` qui n'avait pas de page.tsx → page vide
+- **Fix** : Push pointe vers `/` (homepage), création `src/app/[slug]/page.tsx` (redirect → `/`)
+- **SW amélioré** : `notificationclick` utilise URLs absolues pour mieux ouvrir la PWA installée
+
+#### Fix lien désinscription inscription-reminder
+- **Problème** : Utilisait `?id=` au lieu de `?token=` → lien cassé pour les 84 emails J-5 envoyés
+- **Fix** : `unsubscribe_token` ajouté au select + URL corrigée
+
+#### Audit complet des 32 URLs push/email/social
+- Vérification de toutes les URLs dans : push notifications (7), email templates (8), publications sociales (9)
+- Seul bug trouvé : le lien désinscription (corrigé ci-dessus)
+
+#### Page `/go` — Trampoline email → PWA
+- **`src/app/go/page.tsx`** (CRÉÉ) : Page client ~130 lignes, Suspense wrapper
+  - Mobile (navigateur) : carte avec message contextuel + bouton "Ouvrir l'application" + instructions d'installation iOS/Android
+  - Desktop ou PWA standalone : redirection immédiate (transparent)
+  - URL format : `/go?to=/inscription&ctx=inscription-j5`
+  - Validation sécurité : `to` doit être chemin relatif, pas de `//` ni protocole
+  - 6 contextes : inscription-j5, inscription-j0, newsletter, approved, profile, défaut
+- **`src/lib/email-utils.ts`** (CRÉÉ) : Helper `goUrl(siteUrl, path, ctx?)` pour wrapper les URLs
+- **Emails modifiés** (URLs wrappées avec `/go`) :
+  - `inscription-reminder/route.ts` : URLs J-5 et Jour J
+  - `admin/candidats/actions.ts` : profileUrl, galleryUrl, referralUrl (email approuvé)
+  - `admin/newsletter/actions.ts` : CTA newsletter
+  - `emails.ts` : Ajout param `ctaUrl` à `newsletterEmail()`, suppression URLs hardcodées
+- **Non modifié** : Push notifications (le SW gère déjà la PWA), emails admin/jury
+
+### 2026-02-23 — Page Soutenir + Menu mobile + Footer
+
+#### Page "Soutenir" (`/soutenir`)
+- **`src/app/soutenir/page.tsx`** (CRÉÉ) : Page don libre Stripe
+  - Chiffres impact (4 éditions, 73 candidats, 1800+ votes) avec couleurs vives et glow
+  - Bouton "Faire un don" → lien Stripe externe (montant libre)
+  - 4 postes 100% numériques : dev/hébergement appli, domaines/serveurs, newsletters/push/communication, outils marketing
+  - Lien vers page partenaires en bas
+- **STRIPE_DON_LIBRE** : `https://buy.stripe.com/fZucMX8pe9NAeRecyM14405`
+
+#### Menu mobile — Section "Nous soutenir"
+- **`PublicNav.tsx`** (MODIFIÉ) : Ajout section "Nous soutenir" (Faire un don + Devenir partenaire), suppression "Partenaires" du nav principal
+- **`MobileMenu.tsx`** (MODIFIÉ) : Même section ajoutée (menu secondaire)
+- **`PublicFooter.tsx`** (MODIFIÉ) : Lien "Soutenir le projet" en doré (#ffc44d) pour contraste sur fond rose
 
 ### 2026-02-23 — Google Analytics + Proposer un lieu + Top 10 + Badge profil + Parrainage
 
