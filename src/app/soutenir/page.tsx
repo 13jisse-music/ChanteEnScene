@@ -85,6 +85,14 @@ export default function SoutenirPage() {
         </div>
       </div>
 
+      {/* Générique de fin */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-8 text-center">
+        <p className="text-white/60 text-sm leading-relaxed">
+          &#127916; Votre nom appara&icirc;tra dans le <strong className="text-white">g&eacute;n&eacute;rique de fin</strong> du concours,
+          visible par tout le public lors de la finale.
+        </p>
+      </div>
+
       {/* Lien vers partenaires */}
       <div className="text-center">
         <Link

@@ -88,6 +88,7 @@ export default function SponsorShowcase({ sponsors, sessionName, slug }: Props) 
         </h1>
         <p className="text-white/40 text-sm max-w-lg mx-auto">
           Merci à nos partenaires qui rendent {sessionName} possible !
+          Leur logo sera mis en avant dans le générique de fin, visible par tout le public.
         </p>
       </div>
 
@@ -112,7 +113,8 @@ export default function SponsorShowcase({ sponsors, sessionName, slug }: Props) 
 
       {/* CTA */}
       <div className="text-center pt-8 border-t border-white/5">
-        <p className="text-white/30 text-sm mb-4">Vous souhaitez soutenir le concours ?</p>
+        <p className="text-white/30 text-sm mb-1">Vous souhaitez soutenir le concours ?</p>
+        <p className="text-white/20 text-xs mb-4">Votre logo dans le g&eacute;n&eacute;rique de fin, vu par tout le public.</p>
         <Link
           href={`/${slug}/partenaires/dossier`}
           className="inline-block px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#f5a623] to-[#e08e0b] hover:shadow-lg hover:shadow-[#f5a623]/30 transition-all text-white"

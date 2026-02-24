@@ -255,7 +255,7 @@
   6. **Noms des donateurs** (opt-in : checkbox "afficher mon nom" au moment du don Stripe)
   7. Histoire courte de ChanteEnScène (2023 → 2026)
   8. Crédits (photos Playymo, etc.)
-- **Motivation dons** : mentionner sur `/soutenir` + email confirmation Stripe que le nom apparaît dans le générique
+- **Motivation dons** : ✅ FAIT — mention sur `/soutenir` + email confirmation Stripe + page sponsors que le nom/logo apparaît dans le générique
 - **Mobile first** : animation verticale type TikTok/cinéma, optimisée téléphone
 - **Timing** : à développer avant la finale (juillet), pas urgent pour le 1er mars
 - **Impact** : argument fort pour convaincre donateurs ET sponsors (visibilité garantie devant le public)
@@ -266,7 +266,23 @@
 
 ## Historique des interventions
 
-### 2026-02-24 — Fix crons + Page /go trampoline + Audit URLs
+### 2026-02-24 — Fix crons + Page /go + Audit URLs + DevTimeCard + Guide en ligne + Générique
+
+#### Mention générique de fin sur tout le site
+- **`/soutenir`** : ajout bandeau "Votre nom apparaîtra dans le générique de fin du concours"
+- **Webhook Stripe** : email de remerciement auto au donateur avec mention du générique
+- **SponsorShowcase** : mention "logo dans le générique de fin" dans description + CTA
+- **Guide concours** : ajout générique dans étape 5 (Finale)
+
+#### Carte Temps de travail (dashboard admin)
+- `DevTimeCard.tsx` : estimation auto basée sur commits GitHub (7.3h/commit)
+- Heures réelles en discret (jours uniques × 4h)
+- Intégrée dans la grille de stats, cache 1h
+
+#### Guide concours en ligne
+- `public/guide-concours.html` : version scrollable avec accordéons (plus de slides)
+- Lien "🌐 Guide en ligne" dans la sidebar admin (nouvel onglet)
+- Bouton "← Admin" pour revenir au dashboard
 
 #### Fix cron admin-report — timing trop serré
 - **Problème** : Le seuil de 23h en millisecondes faisait rater l'envoi quand Vercel décalait le cron de quelques minutes (22h35m < 23h)

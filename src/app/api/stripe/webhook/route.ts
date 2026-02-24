@@ -95,6 +95,35 @@ export async function POST(req: NextRequest) {
       console.error('[Stripe webhook] Email error:', err)
     }
 
+    // Send thank-you email to donor
+    if (email !== 'inconnu') {
+      try {
+        await getResend().emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject: `Merci pour votre soutien à ChanteEnScène !`,
+          html: `
+            <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
+              <h2 style="color:#e91e8c">Merci ${name.split(' ')[0]}&nbsp;! ❤️</h2>
+              <p style="color:#333;line-height:1.6">
+                Votre don de <strong>${amount}&nbsp;€</strong> nous aide à offrir une scène aux talents de demain.
+              </p>
+              <p style="color:#333;line-height:1.6">
+                🎬 <strong>Votre nom apparaîtra dans le générique de fin</strong> du concours,
+                visible par tout le public lors de la finale.
+              </p>
+              <p style="color:#999;font-size:13px;margin-top:24px">
+                L'équipe ChanteEnScène<br>
+                <a href="https://www.chantenscene.fr" style="color:#e91e8c">www.chantenscene.fr</a>
+              </p>
+            </div>
+          `,
+        })
+      } catch (err) {
+        console.error('[Stripe webhook] Donor thank-you email error:', err)
+      }
+    }
+
     // Send push notification to admin
     try {
       await sendPushNotifications({
