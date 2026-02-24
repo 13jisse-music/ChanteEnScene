@@ -13,16 +13,34 @@ function isAuthorized(request: Request): boolean {
   return authHeader === `Bearer ${cronSecret}`
 }
 
-const FREQUENCY_MS: Record<string, number> = {
-  daily: 23 * 60 * 60 * 1000,     // 23h to allow some margin
-  weekly: 6.5 * 24 * 60 * 60 * 1000, // 6.5 days
-  monthly: 29 * 24 * 60 * 60 * 1000, // 29 days
-}
-
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: 'quotidien',
   weekly: 'hebdomadaire',
   monthly: 'mensuel',
+}
+
+// How far back to look for "new" data depending on frequency
+const LOOKBACK_MS: Record<string, number> = {
+  daily: 24 * 60 * 60 * 1000,
+  weekly: 7 * 24 * 60 * 60 * 1000,
+  monthly: 30 * 24 * 60 * 60 * 1000,
+}
+
+function alreadySentThisPeriod(lastSent: string | undefined, frequency: string): boolean {
+  if (!lastSent) return false
+  const lastDate = new Date(lastSent)
+  const now = new Date()
+  // Paris timezone date strings for comparison
+  const lastDateStr = lastDate.toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' })
+  const nowDateStr = now.toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' })
+  if (frequency === 'daily') {
+    return lastDateStr === nowDateStr // Already sent today
+  }
+  // For weekly/monthly, use elapsed time with generous margins
+  const elapsed = now.getTime() - lastDate.getTime()
+  if (frequency === 'weekly') return elapsed < 6 * 24 * 60 * 60 * 1000
+  if (frequency === 'monthly') return elapsed < 27 * 24 * 60 * 60 * 1000
+  return false
 }
 
 export async function GET(request: Request) {
@@ -62,18 +80,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Reports disabled or no email configured', sent: false })
   }
 
-  // Check if it's time to send
+  // Check if already sent this period (date-based for daily, generous margins for weekly/monthly)
   const lastSent = config.last_report_sent_at as string | undefined
-  if (lastSent) {
-    const elapsed = Date.now() - new Date(lastSent).getTime()
-    const minInterval = FREQUENCY_MS[frequency]
-    if (minInterval && elapsed < minInterval) {
-      return NextResponse.json({ message: 'Too soon for next report', sent: false })
-    }
+  if (alreadySentThisPeriod(lastSent, frequency)) {
+    return NextResponse.json({ message: 'Already sent this period', sent: false })
   }
 
   // Determine the "since" date based on frequency
-  const sinceMs = FREQUENCY_MS[frequency] || 24 * 60 * 60 * 1000
+  const sinceMs = LOOKBACK_MS[frequency] || 24 * 60 * 60 * 1000
   const sinceDate = new Date(Date.now() - sinceMs).toISOString()
 
   // ── Collect all stats in parallel ──
