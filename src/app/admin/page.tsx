@@ -7,6 +7,7 @@ import PwaFunnel from '@/components/PwaFunnel'
 import InstallsMap from '@/components/InstallsMap'
 import DailyStats from '@/components/DailyStats'
 import ChangelogCard from '@/components/ChangelogCard'
+import DevTimeCard from '@/components/DevTimeCard'
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -501,6 +502,11 @@ export default async function AdminDashboard() {
           />
         </div>
       )}
+
+      {/* Dev Time Estimate */}
+      <div className="mb-6 sm:mb-10">
+        <DevTimeCard />
+      </div>
 
       {/* Changelog — Dernières mises à jour du site */}
       <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-6 sm:mb-10">
