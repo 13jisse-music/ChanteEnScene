@@ -103,7 +103,7 @@ export async function GET(request: Request) {
     payload: {
       title: 'ChanteEnScène',
       body: pushBody,
-      url: daysLeft === 0 ? inscriptionUrl : `${siteUrl}/${session.slug}`,
+      url: daysLeft === 0 ? inscriptionUrl : siteUrl,
       tag: `inscription-reminder-j${daysLeft}`,
     },
   })

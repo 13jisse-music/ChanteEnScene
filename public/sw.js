@@ -59,17 +59,21 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
-  const url = event.notification.data?.url || '/'
+  const rawUrl = event.notification.data?.url || '/'
+  // Always use absolute URL so the browser recognizes it's in PWA scope
+  const url = rawUrl.startsWith('http') ? rawUrl : new URL(rawUrl, self.location.origin).href
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Try to find an existing PWA window and navigate it
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin)) {
+        if (client.url.startsWith(self.location.origin)) {
           client.focus()
           client.navigate(url)
           return
         }
       }
+      // No existing window — openWindow with absolute URL opens the PWA if installed
       return clients.openWindow(url)
     })
   )
