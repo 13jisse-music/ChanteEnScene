@@ -9,103 +9,38 @@
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
     background: #0f0a1e; color: #fff;
-    overflow: hidden; height: 100vh;
-    -webkit-user-select: none; user-select: none;
+    -webkit-font-smoothing: antialiased;
   }
   header {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    position: sticky; top: 0; z-index: 100;
     background: rgba(15,10,30,0.95); backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 14px 24px;
+    padding: 14px 20px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  header h1 { font-size: 16px; font-weight: 800; }
+  header h1 { font-size: 15px; font-weight: 800; }
   header h1 .w { color: #fff; } header h1 .g { color: #7ec850; } header h1 .p { color: #e91e8c; }
-  .nav-dots { display: flex; gap: 8px; }
-  .nav-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: rgba(255,255,255,0.15); cursor: pointer; transition: all 0.3s;
+  .header-year { font-size: 12px; color: rgba(255,255,255,0.3); }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 0 16px 60px; }
+
+  /* Intro */
+  .intro { text-align: center; padding: 32px 0 24px; }
+  .intro-logo { font-size: 36px; font-weight: 900; margin-bottom: 6px; }
+  .intro-sub { font-size: 15px; color: rgba(255,255,255,0.4); margin-bottom: 20px; line-height: 1.5; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px; }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px; font-size: 11px;
+    padding: 4px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
   }
-  .nav-dot.active { background: #e91e8c; transform: scale(1.4); }
-  .page-counter { font-size: 13px; color: rgba(255,255,255,0.3); min-width: 50px; text-align: right; }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-  .slides-wrapper {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
-  }
-  .slide {
-    min-width: 100vw; height: 100vh;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 72px 24px 90px; overflow-y: auto;
-  }
-  .slide-content { max-width: 1100px; width: 100%; padding-top: 8px; }
-
-  .slide-intro { align-items: center !important; }
-
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 16px; border-radius: 50px;
-    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
-    margin-bottom: 12px;
-  }
-  .badge-icon { font-size: 20px; }
-
-  .slide-title { font-size: 26px; font-weight: 900; margin-bottom: 4px; }
-  .slide-date { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
-
-  .section { margin-bottom: 16px; }
-  .section-title {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
-    padding: 5px 12px; border-radius: 8px; display: inline-block; margin-bottom: 8px;
-  }
-  .st-toi { background: rgba(233,30,140,0.12); color: #e91e8c; }
-  .st-site { background: rgba(126,200,80,0.12); color: #7ec850; }
-  .st-auto { background: rgba(139,92,246,0.12); color: #a78bfa; }
-  .st-idea { background: rgba(56,189,248,0.12); color: #38bdf8; }
-
-  .items { list-style: none; }
-  .items li {
-    font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.65;
-    padding: 3px 0 3px 18px; position: relative;
-  }
-  .items li::before {
-    content: ''; position: absolute; left: 0; top: 11px;
-    width: 6px; height: 6px; border-radius: 50%;
-  }
-  .items-toi li::before { background: #e91e8c; }
-  .items-site li::before { background: #7ec850; }
-  .items-auto li::before { background: #a78bfa; }
-  .items-idea li::before { background: #38bdf8; }
-
-  .items li strong { color: #fff; font-weight: 600; }
-
-  /* Grid: 2 cols on desktop */
-  @media (min-width: 900px) {
-    .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; }
-  }
-
-  /* Colors par phase */
-  .c-gray { color: #9ca3af; } .bg-gray { background: rgba(156,163,175,0.12); color: #9ca3af; }
-  .c-green { color: #7ec850; } .bg-green { background: rgba(126,200,80,0.12); color: #7ec850; }
-  .c-orange { color: #f59e0b; } .bg-orange { background: rgba(245,158,11,0.12); color: #f59e0b; }
-  .c-purple { color: #a78bfa; } .bg-purple { background: rgba(139,92,246,0.12); color: #a78bfa; }
-  .c-pink { color: #e91e8c; } .bg-pink { background: rgba(233,30,140,0.12); color: #e91e8c; }
-  .c-gold { color: #f5a623; } .bg-gold { background: rgba(245,166,35,0.12); color: #f5a623; }
-
-  /* Idea box */
-  .idea-box {
-    background: rgba(56,189,248,0.04);
-    border: 1px dashed rgba(56,189,248,0.25);
-    border-radius: 14px; padding: 14px 18px; margin-top: 4px;
-  }
-  .idea-box .section-title { margin-bottom: 8px; }
-
-  /* Recap box */
   .recap {
     background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; padding: 14px 18px; margin-bottom: 14px;
+    border-radius: 14px; padding: 12px 16px; margin-bottom: 14px;
   }
+  .recap-inline { max-width: 400px; margin-left: auto; margin-right: auto; text-align: left; }
   .recap-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -115,412 +50,490 @@
   .recap-row .label { color: rgba(255,255,255,0.4); }
   .recap-row .value { color: #fff; font-weight: 600; }
 
+  .timeline-bar { display: flex; gap: 3px; margin-top: 16px; }
+  .tb { flex: 1; height: 5px; border-radius: 3px; opacity: 0.5; }
+  .updated { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 10px; }
+
+  /* Phase sections */
+  .phase {
+    margin-top: 28px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .phase-header {
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .phase-header:active { opacity: 0.8; }
+  .phase-icon { font-size: 22px; }
+  .phase-info { flex: 1; }
+  .phase-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 3px 10px; border-radius: 6px; margin-bottom: 3px;
+  }
+  .phase-title { font-size: 18px; font-weight: 800; }
+  .phase-date { font-size: 12px; font-weight: 600; opacity: 0.6; }
+  .phase-toggle {
+    font-size: 18px; color: rgba(255,255,255,0.3);
+    transition: transform 0.3s;
+  }
+  .phase.open .phase-toggle { transform: rotate(180deg); }
+
+  .phase-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .phase.open .phase-body { max-height: 3000px; }
+  .phase-content { padding: 0 18px 18px; }
+
+  /* Section blocks */
+  .section { margin-bottom: 14px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 4px 10px; border-radius: 7px; display: inline-block; margin-bottom: 6px;
+  }
+  .st-toi { background: rgba(233,30,140,0.12); color: #e91e8c; }
+  .st-site { background: rgba(126,200,80,0.12); color: #7ec850; }
+  .st-auto { background: rgba(139,92,246,0.12); color: #a78bfa; }
+  .st-idea { background: rgba(56,189,248,0.12); color: #38bdf8; }
+
+  .items { list-style: none; }
+  .items li {
+    font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;
+    padding: 2px 0 2px 16px; position: relative;
+  }
+  .items li::before {
+    content: ''; position: absolute; left: 0; top: 10px;
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .items-toi li::before { background: #e91e8c; }
+  .items-site li::before { background: #7ec850; }
+  .items-auto li::before { background: #a78bfa; }
+  .items-idea li::before { background: #38bdf8; }
+  .items li strong { color: #fff; font-weight: 600; }
+
+  .idea-box {
+    background: rgba(56,189,248,0.04);
+    border: 1px dashed rgba(56,189,248,0.25);
+    border-radius: 12px; padding: 12px 14px; margin-top: 4px;
+  }
+
   .new-tag {
     display: inline-block; font-size: 9px; font-weight: 800;
-    background: #e91e8c; color: #fff; padding: 2px 6px;
-    border-radius: 4px; margin-left: 6px; vertical-align: middle;
+    background: #e91e8c; color: #fff; padding: 1px 5px;
+    border-radius: 3px; margin-left: 4px; vertical-align: middle;
   }
 
-  .nav-arrows {
-    position: fixed; bottom: 20px; left: 0; right: 0;
-    display: flex; justify-content: center; gap: 14px; z-index: 100;
-  }
-  .nav-btn {
-    width: 52px; height: 52px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.15);
-    background: rgba(15,10,30,0.8); backdrop-filter: blur(10px);
-    color: #fff; font-size: 20px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.3s;
-  }
-  .nav-btn:hover { border-color: #e91e8c; background: rgba(233,30,140,0.1); }
-  .nav-btn:disabled { opacity: 0.15; cursor: default; }
-  .nav-btn:disabled:hover { background: transparent; border-color: rgba(255,255,255,0.15); }
-  .key-hint {
-    position: fixed; bottom: 78px; left: 0; right: 0;
-    text-align: center; font-size: 11px; color: rgba(255,255,255,0.15); z-index: 100;
-  }
+  /* Colors par phase */
+  .c-gray { color: #9ca3af; } .bg-gray { background: rgba(156,163,175,0.08); }
+  .c-green { color: #7ec850; } .bg-green { background: rgba(126,200,80,0.08); }
+  .c-orange { color: #f59e0b; } .bg-orange { background: rgba(245,158,11,0.08); }
+  .c-purple { color: #a78bfa; } .bg-purple { background: rgba(139,92,246,0.08); }
+  .c-pink { color: #e91e8c; } .bg-pink { background: rgba(233,30,140,0.08); }
+  .c-gold { color: #f5a623; } .bg-gold { background: rgba(245,166,35,0.08); }
 
-  .intro-logo { font-size: 42px; font-weight: 900; margin-bottom: 8px; }
-  .intro-sub { font-size: 18px; color: rgba(255,255,255,0.4); margin-bottom: 28px; line-height: 1.5; }
-  .legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
-  .legend-item {
-    display: flex; align-items: center; gap: 6px; font-size: 12px;
-    padding: 5px 12px; border-radius: 8px;
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  /* Desktop 2 cols */
+  @media (min-width: 700px) {
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
   }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-  .timeline-bar { display: flex; gap: 3px; margin-top: 20px; }
-  .tb { flex: 1; height: 5px; border-radius: 3px; opacity: 0.5; }
-
-  .updated { font-size: 11px; color: rgba(255,255,255,0.15); margin-top: 10px; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1><span class="w">Chant</span><span class="g">En</span><span class="p">Scene</span> Aubagne 2026</h1>
-  <div class="nav-dots" id="navDots"></div>
-  <div class="page-counter" id="pageCounter">1/7</div>
+  <h1><span class="w">Chant</span><span class="g">En</span><span class="p">Scene</span></h1>
+  <a href="/admin" style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:none;padding:4px 10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px">&#8592; Admin</a>
 </header>
 
-<div class="slides-wrapper" id="slidesWrapper">
+<div class="container">
 
   <!-- INTRO -->
-  <div class="slide slide-intro">
-    <div class="slide-content" style="text-align:center">
-      <div class="intro-logo"><span class="w">Chant</span><span class="g">En</span><span class="p">Scene</span></div>
-      <p class="intro-sub">Aubagne 2026 — Ce qui va se passer + ce qu'on peut ameliorer.</p>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#e91e8c"></div> Ce que tu fais</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#7ec850"></div> Ce que le site affiche</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Ce qui se fait tout seul</div>
-        <div class="legend-item" style="border-color:rgba(56,189,248,0.25);border-style:dashed"><div class="legend-dot" style="background:#38bdf8"></div> Ameliorations possibles</div>
-      </div>
-      <div class="recap" style="max-width:420px;margin:0 auto;text-align:left">
-        <div class="recap-row"><span class="label">Inscriptions</span><span class="value">1er mars → 1er juin</span></div>
-        <div class="recap-row"><span class="label">Demi-finale</span><span class="value">17 juin — Espace Liberte</span></div>
-        <div class="recap-row"><span class="label">Finale</span><span class="value">16 juillet — Cours Foch</span></div>
-        <div class="recap-row"><span class="label">Categories</span><span class="value">Enfant · Ado · Adulte</span></div>
-        <div class="recap-row"><span class="label">Score</span><span class="value">Jury 60% + Public 40%</span></div>
-        <div class="recap-row"><span class="label">Finances</span><span class="value">Stripe — suivi auto sur dashboard</span></div>
-      </div>
-      <div class="timeline-bar">
-        <div class="tb" style="background:#9ca3af"></div>
-        <div class="tb" style="background:#7ec850"></div>
-        <div class="tb" style="background:#f59e0b"></div>
-        <div class="tb" style="background:#a78bfa"></div>
-        <div class="tb" style="background:#e91e8c"></div>
-        <div class="tb" style="background:#f5a623"></div>
-      </div>
-      <p style="margin-top:20px;font-size:13px;color:rgba(255,255,255,0.2)">← → pour naviguer</p>
-      <p class="updated">Mis a jour le 23 fevrier 2026</p>
+  <div class="intro">
+    <div class="intro-logo"><span class="w">Chant</span><span class="g">En</span><span class="p">Scene</span></div>
+    <p class="intro-sub">Aubagne 2026 — Ce qui va se passer + ce qu'on peut ameliorer.</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e91e8c"></div> Ce que tu fais</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7ec850"></div> Le site affiche</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Automatique</div>
+      <div class="legend-item" style="border-color:rgba(56,189,248,0.25);border-style:dashed"><div class="legend-dot" style="background:#38bdf8"></div> Idees</div>
     </div>
+    <div class="recap recap-inline">
+      <div class="recap-row"><span class="label">Inscriptions</span><span class="value">1er mars &rarr; 1er juin</span></div>
+      <div class="recap-row"><span class="label">Demi-finale</span><span class="value">17 juin &mdash; Espace Liberte</span></div>
+      <div class="recap-row"><span class="label">Finale</span><span class="value">16 juillet &mdash; Cours Foch</span></div>
+      <div class="recap-row"><span class="label">Categories</span><span class="value">Enfant &middot; Ado &middot; Adulte</span></div>
+      <div class="recap-row"><span class="label">Score</span><span class="value">Jury 60% + Public 40%</span></div>
+      <div class="recap-row"><span class="label">Finances</span><span class="value">Stripe &mdash; suivi auto</span></div>
+    </div>
+    <div class="timeline-bar">
+      <div class="tb" style="background:#9ca3af"></div>
+      <div class="tb" style="background:#7ec850"></div>
+      <div class="tb" style="background:#f59e0b"></div>
+      <div class="tb" style="background:#a78bfa"></div>
+      <div class="tb" style="background:#e91e8c"></div>
+      <div class="tb" style="background:#f5a623"></div>
+    </div>
+    <p class="updated">Mis a jour le 24 fevrier 2026</p>
   </div>
 
   <!-- 1. MAINTENANT → 1er MARS -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-gray"><span class="badge-icon">📝</span> Etape 1</div>
-      <h2 class="slide-title c-gray">Maintenant → 1er mars</h2>
-      <p class="slide-date c-gray">Preparation — statut : brouillon</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais</div>
-          <ul class="items items-toi">
-            <li><strong>Rien de technique</strong> — tout est configure</li>
-            <li>Demarche les sponsors avec le kit et le dossier en ligne</li>
-            <li>Publie sur LinkedIn / Facebook pour faire connaitre</li>
-            <li>Le 24 fevrier a J-5 : push + email envoyes auto</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le site affiche</div>
-          <ul class="items items-site">
-            <li>Homepage : <strong>countdown vers le 1er mars</strong></li>
-            <li>Bouton "S'inscrire" → countdown avec push/email subscribe</li>
-            <li>Timeline : "Inscriptions — Prochainement"</li>
-            <li>Page partenaires + dossier sponsoring + <strong>boutons Stripe</strong></li>
-            <li><strong>Page "Proposer un lieu"</strong> : formulaire pour accueillir une edition ailleurs <span class="new-tag">NEW</span></li>
-            <li><strong>Google Analytics</strong> : suivi du trafic et comportement visiteurs <span class="new-tag">NEW</span></li>
-            <li><strong>Page "Soutenir"</strong> : don libre Stripe, chiffres impact, discret mais accessible <span class="new-tag">NEW</span></li>
-            <li><strong>Liens don</strong> : footer (dore) + menu hamburger "Nous soutenir" (don + partenaire) <span class="new-tag">NEW</span></li>
-            <li><strong>Page /go</strong> : trampoline email→PWA, propose d'ouvrir/installer l'appli sur mobile <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li><strong>J-5 (24 fev)</strong> : push + email "Ca ouvre bientot !" (via /go sur mobile)</li>
-            <li><strong>1er mars 10h</strong> : passage auto en inscriptions ouvertes</li>
-            <li>Push + email + post FB/IG au moment de l'ouverture</li>
-            <li>Rapport admin quotidien a 8h (fix timing date calendaire) <span class="new-tag">FIX</span></li>
-            <li>Dons Stripe enregistres auto en base <span class="new-tag">NEW</span></li>
-            <li>Emails publics passent par /go (propose install PWA sur mobile) <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>Teaser video</strong> : clip promo 30s sur la homepage (compteur + musique)</li>
-            <li><strong>Visuels partageables</strong> : templates Canva pour les reseaux sociaux</li>
-            <li><strong>Automatiser LinkedIn</strong> : posts pro programmes (quand l'API sera approuvee)</li>
-          </ul>
-        </div>
+  <div class="phase open bg-gray">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F4DD;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(156,163,175,0.15);color:#9ca3af">Etape 1</div>
+        <div class="phase-title c-gray">Maintenant &rarr; 1er mars</div>
+        <div class="phase-date c-gray">Preparation</div>
       </div>
-      <div class="recap">
-        <div class="recap-row"><span class="label">Config</span><span class="value" style="color:#7ec850">Tout est pret</span></div>
-        <div class="recap-row"><span class="label">Dates</span><span class="value">1 mars → 1 juin → 17 juin → 16 juillet</span></div>
-        <div class="recap-row"><span class="label">Criteres jury</span><span class="value">Justesse · Interpretation · Presence · Originalite</span></div>
-        <div class="recap-row"><span class="label">Rapport</span><span class="value">Quotidien → 13jisse@gmail.com</span></div>
-        <div class="recap-row"><span class="label">Finances</span><span class="value">Total dons visible sur /admin <span class="new-tag">NEW</span></span></div>
-        <div class="recap-row"><span class="label">Analytics</span><span class="value">Google Analytics + stats internes <span class="new-tag">NEW</span></span></div>
-        <div class="recap-row"><span class="label">Demarchage</span><span class="value">Page "Proposer un lieu" en ligne <span class="new-tag">NEW</span></span></div>
-      </div>
+      <span class="phase-toggle">&#9660;</span>
     </div>
-  </div>
-
-  <!-- 2. INSCRIPTIONS 1er MARS → 1er JUIN -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-green"><span class="badge-icon">📋</span> Etape 2</div>
-      <h2 class="slide-title c-green">1er mars → 1er juin</h2>
-      <p class="slide-date c-green">Inscriptions ouvertes — 3 mois</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais</div>
-          <ul class="items items-toi">
-            <li><strong>Approuver les candidats</strong> (pending → approved)</li>
-            <li><strong>Creer les jures en ligne</strong> dans /admin/jury</li>
-            <li>Suivre stats + <strong>dons</strong> sur le dashboard <span class="new-tag">NEW</span></li>
-            <li>Push cibles si besoin (/admin/notifications)</li>
-            <li>Le <strong>1er juin</strong> : cliquer "Cloturer les inscriptions"</li>
-            <li>Le <strong>parrainage</strong> se fait tout seul (lien auto dans profil + email) <span class="new-tag">NEW</span></li>
-          </ul>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais</div>
+            <ul class="items items-toi">
+              <li><strong>Rien de technique</strong> &mdash; tout est configure</li>
+              <li>Demarche les sponsors avec le kit et le dossier en ligne</li>
+              <li>Publie sur LinkedIn / Facebook pour faire connaitre</li>
+              <li>Le 24 fevrier a J-5 : push + email envoyes auto</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le site affiche</div>
+            <ul class="items items-site">
+              <li>Homepage : <strong>countdown vers le 1er mars</strong></li>
+              <li>Bouton "S'inscrire" &rarr; countdown avec push/email subscribe</li>
+              <li>Timeline : "Inscriptions &mdash; Prochainement"</li>
+              <li>Page partenaires + dossier sponsoring + <strong>boutons Stripe</strong></li>
+              <li><strong>Page "Proposer un lieu"</strong> <span class="new-tag">NEW</span></li>
+              <li><strong>Google Analytics</strong> <span class="new-tag">NEW</span></li>
+              <li><strong>Page "Soutenir"</strong> : don libre Stripe <span class="new-tag">NEW</span></li>
+              <li><strong>Liens don</strong> : footer + menu hamburger <span class="new-tag">NEW</span></li>
+              <li><strong>Page /go</strong> : trampoline email&rarr;PWA <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li><strong>J-5</strong> : push + email "Ca ouvre bientot !"</li>
+              <li><strong>1er mars 10h</strong> : passage auto en inscriptions ouvertes</li>
+              <li>Push + email + post FB/IG a l'ouverture</li>
+              <li>Rapport admin quotidien a 8h <span class="new-tag">FIX</span></li>
+              <li>Dons Stripe enregistres auto <span class="new-tag">NEW</span></li>
+              <li>Emails passent par /go sur mobile <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>Teaser video</strong> : clip promo 30s sur la homepage</li>
+              <li><strong>Visuels partageables</strong> : templates Canva</li>
+              <li><strong>LinkedIn auto</strong> : posts programmes</li>
+            </ul>
+          </div>
         </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le site affiche</div>
-          <ul class="items items-site">
-            <li><strong>Formulaire inscription</strong> 4 etapes</li>
-            <li>Galerie : <strong>swipe TikTok</strong> mobile / feed desktop</li>
-            <li><strong>Vote public</strong> : 1 vote/appareil/candidat</li>
-            <li>Jury en ligne : notation TikTok-style</li>
-            <li>Timeline : "Inscriptions" en cours</li>
-            <li><strong>Classement Top 10</strong> : podium des candidats les plus votes (desktop) <span class="new-tag">NEW</span></li>
-            <li><strong>Badge "Profil complet"</strong> : checkmark vert si photo + bio + chanson <span class="new-tag">NEW</span></li>
-            <li><strong>Parrainage</strong> : lien unique par candidat, compteur filleuls <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li><strong>10h</strong> : post FB/IG bienvenue nouveaux candidats</li>
-            <li>Countdown cloture inscriptions (J-30, J-14, J-7, J-3, J-1)</li>
-            <li>Rapport admin quotidien a 8h</li>
-            <li>Recap jury chaque <strong>lundi 11h</strong></li>
-            <li>Don Stripe → email + push + log <span class="new-tag">NEW</span></li>
-            <li><strong>Email bienvenue</strong> auto a chaque candidat approuve (avec lien parrainage) <span class="new-tag">NEW</span></li>
-            <li><strong>Post parrainage</strong> sur FB/IG chaque mercredi <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>Stories IG auto</strong> : image generee pour chaque nouveau candidat</li>
-          </ul>
+        <div class="recap">
+          <div class="recap-row"><span class="label">Config</span><span class="value" style="color:#7ec850">Tout est pret</span></div>
+          <div class="recap-row"><span class="label">Dates</span><span class="value">1 mars &rarr; 1 juin &rarr; 17 juin &rarr; 16 juillet</span></div>
+          <div class="recap-row"><span class="label">Criteres jury</span><span class="value">Justesse &middot; Interpretation &middot; Presence &middot; Originalite</span></div>
+          <div class="recap-row"><span class="label">Rapport</span><span class="value">Quotidien &rarr; 13jisse@gmail.com</span></div>
+          <div class="recap-row"><span class="label">Finances</span><span class="value">Dons sur /admin <span class="new-tag">NEW</span></span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 3. SELECTIONS 1er JUIN → 17 JUIN -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-orange"><span class="badge-icon">🔒</span> Etape 3</div>
-      <h2 class="slide-title c-orange">1er juin → 17 juin</h2>
-      <p class="slide-date c-orange">Selections — 16 jours pour choisir les demi-finalistes</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais</div>
-          <ul class="items items-toi">
-            <li>Verifier que <strong>tous les jures ont note</strong></li>
-            <li><strong>Selectionner 10 demi-finalistes</strong> par categorie</li>
-            <li>Creer l'evenement demi-finale</li>
-            <li>Organiser le <strong>lineup</strong> (drag-and-drop)</li>
-            <li>Cliquer "Passer en demi-finale"</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le site affiche</div>
-          <ul class="items items-site">
-            <li>"Les inscriptions sont closes"</li>
-            <li>Homepage : "Decouvrir les candidats"</li>
-            <li><strong>Votes publics restent actifs</strong></li>
-            <li>Timeline : "Selections" en cours</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li>Countdown demi-finale FB/IG (J-7 a J-1)</li>
-            <li>Recap jury hebdomadaire continue</li>
-            <li>Rapport admin quotidien continue</li>
-            <li>Push auto quand tu avances la phase</li>
-            <li><strong>Email aux demi-finalistes</strong> : felicitations + infos pratiques <span class="new-tag">NEW</span></li>
-            <li><strong>Email aux non-retenus</strong> : remerciement + invitation spectateur <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-site">Page Resultats</div>
-          <ul class="items items-site">
-            <li><strong>Page resultats animee</strong> : reveal des selectionnes avec animation <span class="new-tag">NEW</span></li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>Export PDF jury</strong> : fiche recapitulative de notation pour chaque candidat</li>
-            <li><strong>Rappel SMS</strong> aux demi-finalistes la veille (Twilio)</li>
-          </ul>
-        </div>
+  <!-- 2. INSCRIPTIONS -->
+  <div class="phase bg-green">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F4CB;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(126,200,80,0.15);color:#7ec850">Etape 2</div>
+        <div class="phase-title c-green">1er mars &rarr; 1er juin</div>
+        <div class="phase-date c-green">Inscriptions ouvertes &mdash; 3 mois</div>
       </div>
-      <div class="recap">
-        <div class="recap-row"><span class="label">Demi-finalistes</span><span class="value">10 par categorie = 30 max</span></div>
-        <div class="recap-row"><span class="label">Lieu</span><span class="value">Espace Liberte, Aubagne</span></div>
+      <span class="phase-toggle">&#9660;</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais</div>
+            <ul class="items items-toi">
+              <li><strong>Approuver les candidats</strong> (pending &rarr; approved)</li>
+              <li><strong>Creer les jures en ligne</strong> dans /admin/jury</li>
+              <li>Suivre stats + <strong>dons</strong> sur le dashboard <span class="new-tag">NEW</span></li>
+              <li>Push cibles si besoin (/admin/notifications)</li>
+              <li>Le <strong>1er juin</strong> : cliquer "Cloturer les inscriptions"</li>
+              <li><strong>Parrainage</strong> se fait tout seul <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le site affiche</div>
+            <ul class="items items-site">
+              <li><strong>Formulaire inscription</strong> 4 etapes</li>
+              <li>Galerie : <strong>swipe TikTok</strong> mobile / feed desktop</li>
+              <li><strong>Vote public</strong> : 1 vote/appareil/candidat</li>
+              <li>Jury en ligne : notation TikTok-style</li>
+              <li><strong>Top 10</strong> : podium des plus votes <span class="new-tag">NEW</span></li>
+              <li><strong>Badge "Profil complet"</strong> <span class="new-tag">NEW</span></li>
+              <li><strong>Parrainage</strong> : lien unique, compteur filleuls <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li><strong>10h</strong> : post FB/IG bienvenue candidats</li>
+              <li>Countdown cloture inscriptions</li>
+              <li>Rapport admin quotidien a 8h</li>
+              <li>Recap jury chaque <strong>lundi 11h</strong></li>
+              <li>Don Stripe &rarr; email + push + log <span class="new-tag">NEW</span></li>
+              <li><strong>Email bienvenue</strong> auto + lien parrainage <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>Stories IG auto</strong> : image generee par candidat</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 4. DEMI-FINALE 17 JUIN -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-purple"><span class="badge-icon">🎤</span> Etape 4</div>
-      <h2 class="slide-title c-purple">17 juin — Espace Liberte</h2>
-      <p class="slide-date c-purple">Demi-finale en direct</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais le jour J</div>
-          <ul class="items items-toi">
-            <li><strong>Check-in</strong> des candidats a leur arrivee</li>
-            <li><strong>Lancer l'evenement</strong> live</li>
-            <li>Gerer le passage : suivant / pause / reprendre</li>
-            <li>Le jury note en direct (4 criteres /10)</li>
-            <li><strong>Selectionner 5 finalistes</strong> par categorie</li>
-            <li>Cliquer "Passer a la finale"</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le public voit</div>
-          <ul class="items items-site">
-            <li><strong>Bandeau LIVE rose</strong> sur la homepage</li>
-            <li>Page /live : stream + <strong>vote en temps reel</strong></li>
-            <li>Nom du candidat en cours + compteur votes</li>
-            <li>Timeline : "Demi-finale" en cours</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li>Push "La demi-finale commence !" aux abonnes</li>
-            <li>Countdown finale sur FB/IG apres (J-7 a J-1)</li>
-            <li>Rapport admin continue</li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>QR code sur scene</strong> : affiche geante → le public sur place vote en scannant</li>
-            <li><strong>Chronometre visible</strong> sur /live (temps de passage par candidat)</li>
-            <li><strong>Chat en direct</strong> sur la page /live (reactions du public)</li>
-            <li><strong>Replay timestamps</strong> : marquer le debut de chaque passage pour revoir apres</li>
-            <li><strong>Post FB/IG en direct</strong> : photo auto de chaque candidat sur scene</li>
-          </ul>
-        </div>
+  <!-- 3. SELECTIONS -->
+  <div class="phase bg-orange">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F512;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Etape 3</div>
+        <div class="phase-title c-orange">1er juin &rarr; 17 juin</div>
+        <div class="phase-date c-orange">Selections &mdash; 16 jours</div>
       </div>
-      <div class="recap">
-        <div class="recap-row"><span class="label">Finalistes</span><span class="value">5 par categorie = 15 max</span></div>
-        <div class="recap-row"><span class="label">Score</span><span class="value">Jury 60% + Public 40%</span></div>
+      <span class="phase-toggle">&#9660;</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais</div>
+            <ul class="items items-toi">
+              <li>Verifier que <strong>tous les jures ont note</strong></li>
+              <li><strong>Selectionner 10 demi-finalistes</strong> par categorie</li>
+              <li>Creer l'evenement demi-finale</li>
+              <li>Organiser le <strong>lineup</strong> (drag-and-drop)</li>
+              <li>Cliquer "Passer en demi-finale"</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le site affiche</div>
+            <ul class="items items-site">
+              <li>"Les inscriptions sont closes"</li>
+              <li>Homepage : "Decouvrir les candidats"</li>
+              <li><strong>Votes publics restent actifs</strong></li>
+              <li><strong>Page resultats animee</strong> <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li>Countdown demi-finale FB/IG (J-7 a J-1)</li>
+              <li>Recap jury hebdomadaire</li>
+              <li>Push auto quand tu avances la phase</li>
+              <li><strong>Email aux demi-finalistes</strong> <span class="new-tag">NEW</span></li>
+              <li><strong>Email aux non-retenus</strong> <span class="new-tag">NEW</span></li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>Export PDF jury</strong> : fiche recapitulative par candidat</li>
+              <li><strong>Rappel SMS</strong> aux demi-finalistes la veille</li>
+            </ul>
+          </div>
+        </div>
+        <div class="recap">
+          <div class="recap-row"><span class="label">Demi-finalistes</span><span class="value">10 par categorie = 30 max</span></div>
+          <div class="recap-row"><span class="label">Lieu</span><span class="value">Espace Liberte, Aubagne</span></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 5. FINALE 16 JUILLET -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-pink"><span class="badge-icon">🏆</span> Etape 5</div>
-      <h2 class="slide-title c-pink">16 juillet — Cours Foch</h2>
-      <p class="slide-date c-pink">Grande Finale en direct</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais le jour J</div>
-          <ul class="items items-toi">
-            <li><strong>Lancer l'evenement</strong> finale</li>
-            <li>Gerer le passage des finalistes</li>
-            <li>Jury note en direct (<strong>60%</strong>)</li>
-            <li>Public vote en direct (<strong>40%</strong>)</li>
-            <li><strong>Annoncer le gagnant</strong> → confetti partout</li>
-            <li>Cliquer "Archiver la session"</li>
-          </ul>
+  <!-- 4. DEMI-FINALE -->
+  <div class="phase bg-purple">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F3A4;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa">Etape 4</div>
+        <div class="phase-title c-purple">17 juin &mdash; Espace Liberte</div>
+        <div class="phase-date c-purple">Demi-finale en direct</div>
+      </div>
+      <span class="phase-toggle">&#9660;</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais le jour J</div>
+            <ul class="items items-toi">
+              <li><strong>Check-in</strong> des candidats</li>
+              <li><strong>Lancer l'evenement</strong> live</li>
+              <li>Gerer le passage : suivant / pause / reprendre</li>
+              <li>Le jury note en direct (4 criteres /10)</li>
+              <li><strong>Selectionner 5 finalistes</strong> par categorie</li>
+              <li>Cliquer "Passer a la finale"</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le public voit</div>
+            <ul class="items items-site">
+              <li><strong>Bandeau LIVE rose</strong> sur la homepage</li>
+              <li>Page /live : stream + <strong>vote en temps reel</strong></li>
+              <li>Nom du candidat en cours + compteur votes</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li>Push "La demi-finale commence !"</li>
+              <li>Countdown finale sur FB/IG apres</li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>QR code sur scene</strong> : le public vote en scannant</li>
+              <li><strong>Chronometre</strong> sur /live</li>
+              <li><strong>Chat en direct</strong> sur /live</li>
+              <li><strong>Replay timestamps</strong></li>
+            </ul>
+          </div>
         </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le public voit</div>
-          <ul class="items items-site">
-            <li>"La Grande Finale est en direct !"</li>
-            <li>Bouton <strong>"Voter"</strong> pulsant sur homepage</li>
-            <li>Page /live : scores combines jury/public</li>
-            <li><strong>Reveal gagnant + confetti</strong></li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li>Push "C'est la finale !" aux abonnes</li>
-            <li>Rapport admin continue</li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>Scoreboard grand ecran</strong> : page dediee pour projecteur (classement anime en direct)</li>
-            <li><strong>Podium anime</strong> : or/argent/bronze avec confetti differencies par couleur</li>
-            <li><strong>Certificat PDF auto</strong> : diplome genere pour chaque finaliste avec son classement</li>
-            <li><strong>Post FB/IG auto du gagnant</strong> : publication immediate avec photo et resultat</li>
-            <li><strong>Vote par SMS</strong> : numeros courts pour le public sans smartphone</li>
-          </ul>
+        <div class="recap">
+          <div class="recap-row"><span class="label">Finalistes</span><span class="value">5 par categorie = 15 max</span></div>
+          <div class="recap-row"><span class="label">Score</span><span class="value">Jury 60% + Public 40%</span></div>
         </div>
       </div>
-      <div class="recap">
-        <div class="recap-row"><span class="label">Lieu</span><span class="value">Cours Foch, Aubagne</span></div>
-        <div class="recap-row"><span class="label">Criteres</span><span class="value">Justesse · Interpretation · Presence · Originalite</span></div>
-        <div class="recap-row"><span class="label">Score final</span><span class="value">Jury 60% + Public 40%</span></div>
+    </div>
+  </div>
+
+  <!-- 5. FINALE -->
+  <div class="phase bg-pink">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F3C6;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(233,30,140,0.15);color:#e91e8c">Etape 5</div>
+        <div class="phase-title c-pink">16 juillet &mdash; Cours Foch</div>
+        <div class="phase-date c-pink">Grande Finale en direct</div>
+      </div>
+      <span class="phase-toggle">&#9660;</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais le jour J</div>
+            <ul class="items items-toi">
+              <li><strong>Lancer l'evenement</strong> finale</li>
+              <li>Gerer le passage des finalistes</li>
+              <li>Jury note en direct (<strong>60%</strong>)</li>
+              <li>Public vote en direct (<strong>40%</strong>)</li>
+              <li><strong>Annoncer le gagnant</strong> &rarr; confetti</li>
+              <li>Cliquer "Archiver la session"</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le public voit</div>
+            <ul class="items items-site">
+              <li>"La Grande Finale est en direct !"</li>
+              <li>Bouton <strong>"Voter"</strong> pulsant sur homepage</li>
+              <li>Page /live : scores combines jury/public</li>
+              <li><strong>Reveal gagnant + confetti</strong></li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li>Push "C'est la finale !"</li>
+              <li>Rapport admin continue</li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>Scoreboard grand ecran</strong> : page projecteur</li>
+              <li><strong>Podium anime</strong> : or/argent/bronze + confetti</li>
+              <li><strong>Certificat PDF auto</strong> par finaliste</li>
+              <li><strong>Post FB/IG auto du gagnant</strong></li>
+            </ul>
+          </div>
+        </div>
+        <div class="recap">
+          <div class="recap-row"><span class="label">Lieu</span><span class="value">Cours Foch, Aubagne</span></div>
+          <div class="recap-row"><span class="label">Criteres</span><span class="value">Justesse &middot; Interpretation &middot; Presence &middot; Originalite</span></div>
+          <div class="recap-row"><span class="label">Score final</span><span class="value">Jury 60% + Public 40%</span></div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- 6. APRES -->
-  <div class="slide">
-    <div class="slide-content">
-      <div class="badge bg-gold"><span class="badge-icon">📦</span> Etape 6</div>
-      <h2 class="slide-title c-gold">Apres la finale</h2>
-      <p class="slide-date c-gold">Archives et bilan</p>
-      <div class="grid-4">
-        <div class="section">
-          <div class="section-title st-toi">Ce que tu fais</div>
-          <ul class="items items-toi">
-            <li><strong>Importer les photos</strong> dans /admin/editions</li>
-            <li><strong>Ajouter les videos YouTube</strong></li>
-            <li>Publier/depublier les photos (bulk)</li>
-            <li><strong>Bilan financier</strong> : dons sur /admin <span class="new-tag">NEW</span></li>
-            <li>Creer la session 2027 quand pret</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-site">Ce que le site affiche</div>
-          <ul class="items items-site">
-            <li><strong>Palmares</strong> : gagnants 2026 + annees precedentes</li>
-            <li><strong>Editions</strong> : galerie photos + videos YouTube</li>
-            <li>Profils candidats restent visibles</li>
-            <li>Dossier partenaires + page presse en ligne</li>
-          </ul>
-        </div>
-        <div class="section">
-          <div class="section-title st-auto">Ce qui se fait tout seul</div>
-          <ul class="items items-auto">
-            <li><strong>Backup BDD</strong> chaque dimanche (8 semaines)</li>
-            <li>Le site reste en ligne, tout fonctionne</li>
-          </ul>
-        </div>
-        <div class="idea-box">
-          <div class="section-title st-idea">Ameliorations possibles</div>
-          <ul class="items items-idea">
-            <li><strong>Email bilan aux candidats</strong> : stats perso (votes recus, classement) + remerciement</li>
-            <li><strong>Video recap auto</strong> : montage photos du concours en slideshow avec musique</li>
-            <li><strong>Page "Bilan 2026"</strong> : infographie publique (stats, gagnants, photos, sponsors)</li>
-            <li><strong>Formulaire feedback</strong> : retour d'experience candidats + public + jury</li>
-            <li><strong>Export comptable PDF</strong> : recapitulatif des dons pour la compta de l'asso</li>
-            <li><strong>Newsletter "Merci"</strong> : email a tous les abonnes avec highlights + save the date 2027</li>
-          </ul>
+  <div class="phase bg-gold">
+    <div class="phase-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="phase-icon">&#x1F4E6;</span>
+      <div class="phase-info">
+        <div class="phase-badge" style="background:rgba(245,166,35,0.15);color:#f5a623">Etape 6</div>
+        <div class="phase-title c-gold">Apres la finale</div>
+        <div class="phase-date c-gold">Archives et bilan</div>
+      </div>
+      <span class="phase-toggle">&#9660;</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-content">
+        <div class="grid-2">
+          <div class="section">
+            <div class="section-title st-toi">Ce que tu fais</div>
+            <ul class="items items-toi">
+              <li><strong>Importer les photos</strong> dans /admin/editions</li>
+              <li><strong>Ajouter les videos YouTube</strong></li>
+              <li>Publier/depublier les photos (bulk)</li>
+              <li><strong>Bilan financier</strong> : dons sur /admin <span class="new-tag">NEW</span></li>
+              <li>Creer la session 2027 quand pret</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-site">Ce que le site affiche</div>
+            <ul class="items items-site">
+              <li><strong>Palmares</strong> : gagnants 2026 + precedents</li>
+              <li><strong>Editions</strong> : galerie photos + videos</li>
+              <li>Profils candidats restent visibles</li>
+              <li>Dossier partenaires + page presse</li>
+            </ul>
+          </div>
+          <div class="section">
+            <div class="section-title st-auto">Automatique</div>
+            <ul class="items items-auto">
+              <li><strong>Backup BDD</strong> chaque dimanche (8 semaines)</li>
+              <li>Le site reste en ligne</li>
+            </ul>
+          </div>
+          <div class="idea-box">
+            <div class="section-title st-idea">Idees</div>
+            <ul class="items items-idea">
+              <li><strong>Email bilan</strong> aux candidats : stats perso + remerciement</li>
+              <li><strong>Video recap auto</strong> : slideshow photos + musique</li>
+              <li><strong>Page "Bilan 2026"</strong> : infographie publique</li>
+              <li><strong>Formulaire feedback</strong></li>
+              <li><strong>Export comptable PDF</strong> pour l'asso</li>
+              <li><strong>Newsletter "Merci"</strong> + save the date 2027</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -528,54 +541,5 @@
 
 </div>
 
-<div class="key-hint">← → pour naviguer</div>
-<div class="nav-arrows">
-  <button class="nav-btn" id="prevBtn" disabled>&#8592;</button>
-  <button class="nav-btn" id="nextBtn">&#8594;</button>
-</div>
-
-<script>
-  const wrapper = document.getElementById('slidesWrapper');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const counter = document.getElementById('pageCounter');
-  const dotsContainer = document.getElementById('navDots');
-  const totalSlides = document.querySelectorAll('.slide').length;
-  let current = 0;
-
-  for (let i = 0; i < totalSlides; i++) {
-    const d = document.createElement('div');
-    d.className = 'nav-dot' + (i === 0 ? ' active' : '');
-    d.addEventListener('click', () => goTo(i));
-    dotsContainer.appendChild(d);
-  }
-
-  function goTo(idx) {
-    if (idx < 0 || idx >= totalSlides) return;
-    current = idx;
-    wrapper.style.transform = 'translateX(-' + (current * 100) + 'vw)';
-    prevBtn.disabled = current === 0;
-    nextBtn.disabled = current === totalSlides - 1;
-    counter.textContent = (current + 1) + '/' + totalSlides;
-    document.querySelectorAll('.nav-dot').forEach(function(d, i) {
-      d.classList.toggle('active', i === current);
-    });
-    document.querySelectorAll('.slide')[current].scrollTop = 0;
-  }
-
-  prevBtn.addEventListener('click', function() { goTo(current - 1); });
-  nextBtn.addEventListener('click', function() { goTo(current + 1); });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowRight') goTo(current + 1);
-    if (e.key === 'ArrowLeft') goTo(current - 1);
-  });
-
-  var touchStartX = 0;
-  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
-  document.addEventListener('touchend', function(e) {
-    var diff = touchStartX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) { diff > 0 ? goTo(current + 1) : goTo(current - 1); }
-  });
-</script>
 </body>
 </html>
