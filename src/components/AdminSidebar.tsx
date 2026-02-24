@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const NAV_ITEMS: { href: string; label: string; icon: string; section?: string }[] = [
+const NAV_ITEMS: { href: string; label: string; icon: string; section?: string; external?: boolean }[] = [
   // Préparation
   { href: '/admin', label: 'Dashboard', icon: '📊', section: 'Préparation' },
   { href: '/admin/config', label: 'Configuration', icon: '⚙️' },
@@ -42,6 +42,7 @@ const NAV_ITEMS: { href: string; label: string; icon: string; section?: string }
   { href: '/admin/infra', label: 'Infrastructure', icon: '🔧' },
   // Aide
   { href: '/admin/guide', label: "Mode d'emploi", icon: '📖', section: 'Aide' },
+  { href: '/guide-concours.html', label: 'Guide en ligne', icon: '🌐', external: true },
 ]
 
 export default function AdminSidebar() {
@@ -125,18 +126,31 @@ export default function AdminSidebar() {
                     {item.section}
                   </p>
                 )}
-                <Link
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-[#e91e8c]/10 text-[#e91e8c]'
-                      : 'text-white/40 hover:text-white/70 hover:bg-white/5'
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </Link>
+                {item.external ? (
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors text-white/40 hover:text-white/70 hover:bg-white/5"
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-[#e91e8c]/10 text-[#e91e8c]'
+                        : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                )}
               </div>
             )
           })}
