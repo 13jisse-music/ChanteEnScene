@@ -6,6 +6,7 @@ import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { candidateApprovedEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
 import { requireAdmin, escapeHtml } from '@/lib/security'
+import { goUrl } from '@/lib/email-utils'
 
 export async function updateCandidateStatus(candidateId: string, status: string) {
   await requireAdmin()
@@ -38,10 +39,10 @@ export async function updateCandidateStatus(candidateId: string, status: string)
 
         const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
-        const profileUrl = `${siteUrl}/${session?.slug || ''}/candidats/${candidate.slug}`
-        const galleryUrl = `${siteUrl}/${session?.slug || ''}/candidats`
-
-        const referralUrl = `${siteUrl}/${session?.slug || ''}/inscription?ref=${candidate.slug}`
+        const sessionSlug = session?.slug || ''
+        const profileUrl = goUrl(siteUrl, `/${sessionSlug}/candidats/${candidate.slug}`, 'profile')
+        const galleryUrl = goUrl(siteUrl, `/${sessionSlug}/candidats`, 'approved')
+        const referralUrl = goUrl(siteUrl, `/${sessionSlug}/inscription?ref=${candidate.slug}`, 'approved')
 
         const { subject, html } = candidateApprovedEmail({
           candidateName: escapeHtml(displayName),

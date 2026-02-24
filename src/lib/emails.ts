@@ -677,12 +677,15 @@ export function newsletterEmail({
   body,
   imageUrl,
   unsubscribeUrl,
+  ctaUrl,
 }: {
   subject: string
   body: string
   imageUrl?: string
   unsubscribeUrl: string
+  ctaUrl?: string
 }) {
+  const linkUrl = ctaUrl || 'https://chantenscene.fr'
   const safeSubject = escapeHtml(subject)
   // Convert line breaks to paragraphs
   const bodyParagraphs = body
@@ -709,7 +712,7 @@ export function newsletterEmail({
     ${imageUrl ? `
     <!-- Image -->
     <div style="text-align:center;margin-bottom:32px;">
-      <a href="https://chantenscene.fr">
+      <a href="${escapeHtml(linkUrl)}">
         <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" style="max-width:100%;border-radius:16px;" />
       </a>
     </div>
@@ -725,7 +728,7 @@ export function newsletterEmail({
 
       <!-- CTA -->
       <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="https://chantenscene.fr" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+        <a href="${escapeHtml(linkUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
           Visiter le site
         </a>
       </div>

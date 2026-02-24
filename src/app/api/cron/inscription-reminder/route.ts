@@ -6,6 +6,7 @@ import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { inscriptionReminderEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
 import { publishEverywhere } from '@/lib/social'
+import { goUrl } from '@/lib/email-utils'
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -121,14 +122,18 @@ export async function GET(request: Request) {
   if (subscribers && subscribers.length > 0) {
     const resend = getResend()
 
+    const emailCtx = daysLeft === 0 ? 'inscription-j0' : 'inscription-j5'
+    const emailInscriptionUrl = goUrl(siteUrl, `/${session.slug}/inscription`, emailCtx)
+    const emailSiteUrl = goUrl(siteUrl, '/', emailCtx)
+
     for (const sub of subscribers) {
       const unsubscribeUrl = `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`
       const { subject, html } = inscriptionReminderEmail({
         sessionName: session.name,
         daysLeft,
         formattedDate,
-        inscriptionUrl,
-        siteUrl,
+        inscriptionUrl: emailInscriptionUrl,
+        siteUrl: emailSiteUrl,
         unsubscribeUrl,
       })
 

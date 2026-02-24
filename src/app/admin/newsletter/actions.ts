@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/security'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
 import { newsletterEmail } from '@/lib/emails'
+import { goUrl } from '@/lib/email-utils'
 import { revalidatePath } from 'next/cache'
 
 type CampaignTarget = 'all' | 'voluntary' | 'legacy'
@@ -66,11 +67,13 @@ export async function sendTestCampaign(campaignId: string) {
   if (error || !campaign) return { error: 'Campagne introuvable' }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
+  const ctaUrl = goUrl(siteUrl, '/', 'newsletter')
   const { html } = newsletterEmail({
     subject: campaign.subject,
     body: campaign.body,
     imageUrl: campaign.image_url || undefined,
     unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=test-preview`,
+    ctaUrl,
   })
 
   const { error: sendError } = await getResend().emails.send({
@@ -123,6 +126,7 @@ export async function sendCampaign(campaignId: string) {
     .eq('id', campaignId)
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
+  const campaignCtaUrl = goUrl(siteUrl, '/', 'newsletter')
   const resend = getResend()
   let sent = 0
   let errors = 0
@@ -134,6 +138,7 @@ export async function sendCampaign(campaignId: string) {
         body: campaign.body,
         imageUrl: campaign.image_url || undefined,
         unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`,
+        ctaUrl: campaignCtaUrl,
       })
 
       const { error: sendErr } = await resend.emails.send({
