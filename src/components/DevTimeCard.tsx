@@ -57,7 +57,7 @@ export default async function DevTimeCard() {
         {estimatedHours.toLocaleString('fr-FR')} h
       </p>
       <p className="text-white/20 text-[11px] mt-1">
-        ({actualHours}h r&eacute;elles avec Claude)
+        ({actualHours}h r&eacute;elles)
       </p>
     </div>
   )
