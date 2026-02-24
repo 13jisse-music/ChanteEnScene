@@ -237,6 +237,29 @@
 4. **Finale** : Performances séquentielles, scoring jury+public (60/40 par défaut), reveal winner avec confetti
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
+## Roadmap — Fonctionnalités à développer
+
+### CAPITAL — Page Générique de fin (`/generique`)
+- **Concept** : Générique cinématographique défilant (style crédits de film), affiché sur les téléphones du public après l'annonce du gagnant en finale
+- **PAS d'écran géant** — tout passe par les téléphones et desktop uniquement (c'est la raison d'être de l'appli)
+- **Contenu dynamique** (données en BDD) :
+  1. Logo ChanteEnScène + édition
+  2. Gagnant (doré, mise en avant)
+  3. Finalistes + demi-finalistes
+  4. Jury
+  5. **Logos sponsors** (placement premium, bien visibles)
+  6. **Noms des donateurs** (opt-in : checkbox "afficher mon nom" au moment du don Stripe)
+  7. Histoire courte de ChanteEnScène (2023 → 2026)
+  8. Crédits (photos Playymo, etc.)
+- **Motivation dons** : mentionner sur `/soutenir` + email confirmation Stripe que le nom apparaît dans le générique
+- **Mobile first** : animation verticale type TikTok/cinéma, optimisée téléphone
+- **Timing** : à développer avant la finale (juillet), pas urgent pour le 1er mars
+- **Impact** : argument fort pour convaincre donateurs ET sponsors (visibilité garantie devant le public)
+
+### Autres fonctionnalités prévues
+- **Google Analytics** : créer propriété GA4, obtenir ID G-XXXXXXXXXX, ajouter sur Vercel + redeploy
+- **Revoir les fonctionnalités live** : vote en direct, déclaration participants, annonce vainqueur — tout sur téléphone du public (pas d'écran géant)
+
 ## Historique des interventions
 
 ### 2026-02-24 — Fix crons + Page /go trampoline + Audit URLs
