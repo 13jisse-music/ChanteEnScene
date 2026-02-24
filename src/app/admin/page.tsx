@@ -390,6 +390,7 @@ export default async function AdminDashboard() {
         <StatCard icon="👀" label="Visiteurs" value={stats.uniqueVisitors ?? 0} color="#8b5cf6" />
         <StatCard icon="📄" label="Pages vues" value={stats.totalPageViews ?? 0} color="#6366f1" />
         <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" />
+        <DevTimeCard />
       </div>
 
       {/* Donations / Partenariats */}
@@ -502,11 +503,6 @@ export default async function AdminDashboard() {
           />
         </div>
       )}
-
-      {/* Dev Time Estimate */}
-      <div className="mb-6 sm:mb-10">
-        <DevTimeCard />
-      </div>
 
       {/* Changelog — Dernières mises à jour du site */}
       <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden mb-6 sm:mb-10">

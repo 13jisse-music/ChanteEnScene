@@ -22,7 +22,7 @@ export default async function DevTimeCard() {
     )
     allCommits = results.flat().filter((c: GitHubCommit) => c?.sha)
   } catch {
-    // GitHub API unavailable — silently fail
+    // GitHub API unavailable
   }
 
   if (allCommits.length === 0) return null
@@ -36,33 +36,28 @@ export default async function DevTimeCard() {
 
   const totalCommits = allCommits.length
 
-  // Solo intermediate dev: 6.5-8.2h per commit-equivalent (research, design, code, debug, test)
-  const estimatedLow = Math.round((totalCommits * 6.5) / 50) * 50
-  const estimatedHigh = Math.round((totalCommits * 8.2) / 50) * 50
-
-  // Months equivalent (8h/day, 22 working days/month)
-  const monthsLow = Math.round(estimatedLow / 176)
-  const monthsHigh = Math.round(estimatedHigh / 176)
+  // Solo intermediate dev: ~7.3h per commit-equivalent (research, design, code, debug, test)
+  const estimatedHours = Math.round((totalCommits * 7.3) / 10) * 10
 
   // Actual hours with Claude (~4h per active session day)
   const actualHours = uniqueDays * 4
 
   return (
-    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg sm:text-xl">&#9889;</span>
-        <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base">
-          Temps de d&eacute;veloppement estim&eacute;
-        </h2>
+    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <span className="text-lg sm:text-2xl">&#9889;</span>
+        <span
+          className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full"
+          style={{ background: '#f59e0b15', color: '#f59e0b' }}
+        >
+          Temps de travail
+        </span>
       </div>
-      <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl text-[#e91e8c]">
-        {estimatedLow.toLocaleString('fr-FR')}&nbsp;&mdash;&nbsp;{estimatedHigh.toLocaleString('fr-FR')}&nbsp;h
+      <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl" style={{ color: '#f59e0b' }}>
+        {estimatedHours.toLocaleString('fr-FR')} h
       </p>
-      <p className="text-white/40 text-xs mt-1">
-        dev interm&eacute;diaire solo &bull; {monthsLow} &agrave; {monthsHigh} mois &agrave; temps plein
-      </p>
-      <p className="text-white/20 text-[11px] mt-2.5">
-        (~{actualHours}h r&eacute;elles avec Claude &bull; {uniqueDays} jours &bull; {totalCommits} commits)
+      <p className="text-white/20 text-[11px] mt-1">
+        ({actualHours}h r&eacute;elles avec Claude)
       </p>
     </div>
   )
