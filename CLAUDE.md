@@ -237,11 +237,15 @@
 4. **Finale** : Performances séquentielles, scoring jury+public (60/40 par défaut), reveal winner avec confetti
 5. **Post-event** : Export MP3, galerie photos, palmarès, analytics
 
+## Contrainte majeure 2026
+- **PAS D'ÉCRAN GÉANT cette année** — TOUT passe par les téléphones du public et desktop uniquement
+- C'est la raison d'être de l'appli : votes, résultats, générique, tout doit être pensé mobile first
+- Chaque fonctionnalité live (vote, annonce gagnant, générique) doit fonctionner sur le téléphone des spectateurs dans la salle
+
 ## Roadmap — Fonctionnalités à développer
 
 ### CAPITAL — Page Générique de fin (`/generique`)
 - **Concept** : Générique cinématographique défilant (style crédits de film), affiché sur les téléphones du public après l'annonce du gagnant en finale
-- **PAS d'écran géant** — tout passe par les téléphones et desktop uniquement (c'est la raison d'être de l'appli)
 - **Contenu dynamique** (données en BDD) :
   1. Logo ChanteEnScène + édition
   2. Gagnant (doré, mise en avant)
