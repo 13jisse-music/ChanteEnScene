@@ -64,6 +64,10 @@ export async function POST(req: NextRequest) {
     const amountCents = session.amount_total || 0
     const email = session.customer_details?.email || 'inconnu'
     const name = session.customer_details?.name || 'Anonyme'
+    // Custom field "prenom" from payment link (for générique display)
+    const prenomField = (session.custom_fields || []).find((f: { key: string }) => f.key === 'prenom')
+    const prenom = prenomField?.text?.value || ''
+    const displayName = prenom || name
     const tier = getTierFromAmount(amountCents)
 
     console.log(`[Stripe] Payment received: ${amount}€ from ${name} (${email}) — ${tier}`)
@@ -104,7 +108,7 @@ export async function POST(req: NextRequest) {
           subject: `Merci pour votre soutien à ChanteEnScène !`,
           html: `
             <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
-              <h2 style="color:#e91e8c">Merci ${name.split(' ')[0]}&nbsp;! ❤️</h2>
+              <h2 style="color:#e91e8c">Merci ${displayName}&nbsp;! ❤️</h2>
               <p style="color:#333;line-height:1.6">
                 Votre don de <strong>${amount}&nbsp;€</strong> nous aide à offrir une scène aux talents de demain.
               </p>
@@ -149,6 +153,7 @@ export async function POST(req: NextRequest) {
         donor_name: name,
         donor_email: email !== 'inconnu' ? email : null,
         stripe_session_id: session.id,
+        notes: prenom ? `Prénom: ${prenom}` : null,
       })
     } catch (err) {
       console.error('[Stripe webhook] DB insert error:', err)

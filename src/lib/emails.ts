@@ -341,6 +341,11 @@ export function adminReportEmail({
   recentCommits,
   config,
   adminUrl,
+  totalDonationsEuros,
+  totalDonationsCount,
+  newDonationsEuros,
+  newDonationsCount,
+  newDonationsList,
 }: {
   sessionName: string
   sessionStatus: string
@@ -365,6 +370,11 @@ export function adminReportEmail({
   recentCommits: string[]
   config: Record<string, unknown>
   adminUrl: string
+  totalDonationsEuros?: string
+  totalDonationsCount?: number
+  newDonationsEuros?: string
+  newDonationsCount?: number
+  newDonationsList?: { name: string; amount: string; tier: string }[]
 }) {
   const subject = `Briefing ${period} — ${sessionName}`
   const safeSessionName = escapeHtml(sessionName)
@@ -504,6 +514,12 @@ export function adminReportEmail({
       <p style="color:#ffffff50;font-size:11px;margin:10px 0 0 0;text-align:center;">
         Taux de conversion visiteur → install : <strong style="color:#7ec850;">${conversionRate}%</strong>
       </p>` : ''}
+
+      ${(newDonationsCount || 0) > 0 ? `
+      <div style="background:#fbbf2415;border:1px solid #fbbf2430;border-radius:10px;padding:10px 12px;margin-top:12px;">
+        <p style="color:#fbbf24;font-size:11px;font-weight:bold;margin:0 0 6px 0;">💰 ${newDonationsCount} don${(newDonationsCount || 0) > 1 ? 's' : ''} reçu${(newDonationsCount || 0) > 1 ? 's' : ''} — ${newDonationsEuros}€</p>
+        ${(newDonationsList || []).map(d => `<p style="color:#ffffffcc;font-size:11px;margin:2px 0;">${escapeHtml(d.name)} — ${d.amount}€ (${d.tier})</p>`).join('')}
+      </div>` : ''}
     </div>
 
     <!-- ===== SECTION 2: Totaux & Progression ===== -->
@@ -531,6 +547,10 @@ export function adminReportEmail({
           <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Abonnés email</td>
           <td style="padding:8px 0;text-align:right;color:#ec4899;font-size:16px;font-weight:bold;">${emailSubscribers}${delta(newEmailSubs)}</td>
         </tr>
+        ${(totalDonationsCount || 0) > 0 ? `<tr style="border-top:1px solid #2a2545;">
+          <td style="padding:8px 0;color:#ffffff70;font-size:12px;">Dons reçus</td>
+          <td style="padding:8px 0;text-align:right;color:#fbbf24;font-size:16px;font-weight:bold;">${totalDonationsEuros}€ <span style="color:#ffffff50;font-size:11px;">(${totalDonationsCount})</span>${delta(newDonationsCount || 0)}</td>
+        </tr>` : ''}
       </table>
 
       <div style="border-top:1px solid #2a2545;margin-top:12px;padding-top:12px;">

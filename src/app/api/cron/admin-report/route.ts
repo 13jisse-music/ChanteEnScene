@@ -109,6 +109,8 @@ export async function GET(request: Request) {
     { data: allCandidates },
     { data: pwaByPlatform },
     { data: pushByRole },
+    { data: allDonations },
+    { data: newDonations },
   ] = await Promise.all([
     // Totals
     supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', session.id),
@@ -136,6 +138,10 @@ export async function GET(request: Request) {
     supabase.from('pwa_installs').select('platform').eq('session_id', session.id),
     // Push subscriptions by role (all roles)
     supabase.from('push_subscriptions').select('role').eq('session_id', session.id),
+    // Donations — all
+    supabase.from('donations').select('amount_cents, donor_name, tier').eq('session_id', session.id),
+    // Donations — new since last report
+    supabase.from('donations').select('amount_cents, donor_name, tier').eq('session_id', session.id).gte('created_at', sinceDate),
   ])
 
   const newVisitors = visitorsData
@@ -171,6 +177,12 @@ export async function GET(request: Request) {
   for (const p of pushByRole || []) {
     pushRoleBreakdown[p.role] = (pushRoleBreakdown[p.role] || 0) + 1
   }
+
+  // Donations stats
+  const totalDonationsCents = (allDonations || []).reduce((sum, d) => sum + (d.amount_cents || 0), 0)
+  const totalDonationsCount = (allDonations || []).length
+  const newDonationsCents = (newDonations || []).reduce((sum, d) => sum + (d.amount_cents || 0), 0)
+  const newDonationsCount = (newDonations || []).length
 
   const period = FREQUENCY_LABELS[frequency] || frequency
   const adminUrl = `${siteUrl}/admin`
@@ -219,6 +231,11 @@ export async function GET(request: Request) {
     recentCommits,
     config,
     adminUrl,
+    totalDonationsEuros: (totalDonationsCents / 100).toFixed(0),
+    totalDonationsCount,
+    newDonationsEuros: (newDonationsCents / 100).toFixed(0),
+    newDonationsCount,
+    newDonationsList: (newDonations || []).map(d => ({ name: d.donor_name, amount: (d.amount_cents / 100).toFixed(0), tier: d.tier })),
   })
 
   // Build push body — only show what's new in last 24h
@@ -229,6 +246,7 @@ export async function GET(request: Request) {
   if ((newPwaInstalls || 0) > 0) pushParts.push(`📲 ${newPwaInstalls} install${(newPwaInstalls || 0) > 1 ? 's' : ''}`)
   if ((newPushSubs || 0) > 0) pushParts.push(`🔔 ${newPushSubs} abo push`)
   if ((newEmailSubs || 0) > 0) pushParts.push(`📧 ${newEmailSubs} abo email`)
+  if (newDonationsCount > 0) pushParts.push(`💰 ${newDonationsCount} don${newDonationsCount > 1 ? 's' : ''} (${(newDonationsCents / 100).toFixed(0)}€)`)
 
   const activityLine = pushParts.length > 0
     ? `Hier : ${pushParts.join(', ')}`
