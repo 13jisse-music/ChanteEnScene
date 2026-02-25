@@ -10,13 +10,19 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-type Phase = 'install' | 'notify' | 'email'
+type Phase = 'install' | 'notify' | 'email' | 'open-browser'
 
 function detectPlatform(): string {
   const ua = navigator.userAgent
   if (/Android/i.test(ua)) return 'android'
   if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios'
   return 'desktop'
+}
+
+function isInAppBrowser(): boolean {
+  const ua = navigator.userAgent || ''
+  // Facebook, Instagram, LinkedIn, Twitter, Snapchat, etc.
+  return /FBAN|FBAV|Instagram|LinkedInApp|Twitter|Snapchat|Line\//i.test(ua)
 }
 
 async function trackInstall(sessionId: string | null, platform: string, installSource: string) {
@@ -112,6 +118,14 @@ export default function InstallPrompt() {
     }
 
     // Mobile flow below
+
+    // In-app browser (Facebook, Instagram, etc.) — prompt to open in real browser
+    if (isInAppBrowser()) {
+      const inAppDismissed = localStorage.getItem('pwa-inapp-dismissed')
+      if (inAppDismissed && Date.now() - parseInt(inAppDismissed) < 24 * 60 * 60 * 1000) return
+      setPhase('open-browser')
+      return
+    }
 
     // Already tracked as installed (Android or standalone detected)
     if (localStorage.getItem('pwa-install-tracked')) return
@@ -241,7 +255,9 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setDismissed(true)
-    if (phase === 'install') {
+    if (phase === 'open-browser') {
+      localStorage.setItem('pwa-inapp-dismissed', Date.now().toString())
+    } else if (phase === 'install') {
       localStorage.setItem('pwa-install-dismissed', Date.now().toString())
       if (isIOS && sessionStatus) {
         // iOS: dismiss until session phase changes — tutorial reappears at each new phase
@@ -256,6 +272,39 @@ export default function InstallPrompt() {
 
   if (dismissed) return null
   if (phase === 'install' && !deferredPrompt && !isIOS) return null
+  if (phase === 'open-browser') {
+    // In-app browser detected — show prompt to open in real browser
+    const platform = detectPlatform()
+    return (
+      <div className="fixed z-[60] bottom-0 left-0 right-0 animate-in slide-in-from-bottom">
+        <div className="bg-[#1a1232] border-t border-[#e91e8c]/30 rounded-t-2xl p-5 pb-8 shadow-lg shadow-[#e91e8c]/10">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-bold text-white">Ouvrir dans votre navigateur</p>
+            <button onClick={handleDismiss} className="text-white/20 hover:text-white/50 text-lg">&times;</button>
+          </div>
+          <p className="text-xs text-white/60 mb-4">
+            Vous êtes dans le navigateur intégré de Facebook. Pour profiter de toutes les fonctionnalités (installation, notifications), ouvrez cette page dans {platform === 'ios' ? 'Safari' : 'Chrome'}.
+          </p>
+          <div className="bg-white/5 rounded-xl p-3">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e91e8c] text-white text-xs font-bold shrink-0">1</span>
+              <p className="text-xs text-white/70">
+                Appuyez sur <strong className="text-white">&#x22EE;</strong> ou <strong className="text-white">&#x2026;</strong> en haut à droite
+              </p>
+            </div>
+          </div>
+          <div className="bg-white/5 rounded-xl p-3 mt-2">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e91e8c] text-white text-xs font-bold shrink-0">2</span>
+              <p className="text-xs text-white/70">
+                Choisissez <strong className="text-white">&quot;Ouvrir dans {platform === 'ios' ? 'Safari' : 'Chrome'}&quot;</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   if (phase === 'notify' && (!('Notification' in window) || !('PushManager' in window))) {
     // Push not supported → will switch to email on next render
     return null
