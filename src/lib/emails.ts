@@ -692,28 +692,98 @@ export function adminReportEmail({
 
 // ─── Newsletter email ───
 
+type NewsletterSection = {
+  label?: string
+  title?: string
+  body: string
+  imageUrl?: string | null
+  color?: string
+  ctaText?: string | null
+  ctaUrl?: string | null
+}
+
 export function newsletterEmail({
   subject,
   body,
   imageUrl,
+  sections,
   unsubscribeUrl,
   ctaUrl,
 }: {
   subject: string
-  body: string
+  body?: string
   imageUrl?: string
+  sections?: NewsletterSection[]
   unsubscribeUrl: string
   ctaUrl?: string
 }) {
   const linkUrl = ctaUrl || 'https://chantenscene.fr'
   const safeSubject = escapeHtml(subject)
-  // Convert line breaks to paragraphs
-  const bodyParagraphs = body
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-    .join('')
+
+  // Helper: convert text to HTML paragraphs
+  function textToHtml(text: string): string {
+    return text
+      .split(/\n\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => `<p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+      .join('')
+  }
+
+  // Build sections HTML
+  let contentHtml = ''
+
+  if (sections && sections.length > 0) {
+    // Multi-section mode (MailForge)
+    contentHtml = sections.map((s, i) => {
+      const sColor = s.color || '#e91e8c'
+      const sectionImage = s.imageUrl
+        ? `<div style="margin-bottom:20px;border-radius:12px;overflow:hidden;">
+            <a href="${escapeHtml(s.ctaUrl || linkUrl)}">
+              <img src="${escapeHtml(s.imageUrl)}" alt="${escapeHtml(s.title || s.label || '')}" style="max-width:100%;display:block;" />
+            </a>
+          </div>`
+        : ''
+
+      const sectionCta = s.ctaText && s.ctaUrl
+        ? `<div style="text-align:center;margin:20px 0 0 0;">
+            <a href="${escapeHtml(s.ctaUrl)}" style="display:inline-block;padding:12px 28px;background:${sColor};color:#ffffff;text-decoration:none;border-radius:10px;font-size:13px;font-weight:bold;">
+              ${escapeHtml(s.ctaText)}
+            </a>
+          </div>`
+        : ''
+
+      const sectionLabel = s.label
+        ? `<p style="color:${sColor};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px 0;">
+            ${escapeHtml(s.label)}
+          </p>`
+        : ''
+
+      const sectionTitle = s.title
+        ? `<h2 style="color:#ffffff;font-size:18px;font-weight:bold;margin:0 0 16px 0;">
+            ${escapeHtml(s.title)}
+          </h2>`
+        : ''
+
+      const borderTop = i > 0
+        ? `<div style="border-top:1px solid #2a2545;margin:32px 0;"></div>`
+        : ''
+
+      return `${borderTop}${sectionImage}${sectionLabel}${sectionTitle}${textToHtml(s.body)}${sectionCta}`
+    }).join('')
+  } else if (body) {
+    // Legacy mode (simple body text)
+    contentHtml = `
+      <h1 style="color:#e91e8c;font-size:20px;margin:0 0 20px 0;text-align:center;">
+        ${safeSubject}
+      </h1>
+      ${textToHtml(body)}
+      <div style="text-align:center;margin:24px 0 0 0;">
+        <a href="${escapeHtml(linkUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+          Visiter le site
+        </a>
+      </div>`
+  }
 
   const html = `
 <!DOCTYPE html>
@@ -727,10 +797,11 @@ export function newsletterEmail({
       <span style="font-size:22px;font-weight:bold;">
         <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
       </span>
+      <p style="color:#ffffff40;font-size:11px;margin:4px 0 0 0;letter-spacing:1px;">LA NEWSLETTER</p>
     </div>
 
     ${imageUrl ? `
-    <!-- Image -->
+    <!-- Header image -->
     <div style="text-align:center;margin-bottom:32px;">
       <a href="${escapeHtml(linkUrl)}">
         <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" style="max-width:100%;border-radius:16px;" />
@@ -738,20 +809,9 @@ export function newsletterEmail({
     </div>
     ` : ''}
 
-    <!-- Card -->
+    <!-- Content card -->
     <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
-      <h1 style="color:#e91e8c;font-size:20px;margin:0 0 20px 0;text-align:center;">
-        ${safeSubject}
-      </h1>
-
-      ${bodyParagraphs}
-
-      <!-- CTA -->
-      <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="${escapeHtml(linkUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
-          Visiter le site
-        </a>
-      </div>
+      ${contentHtml}
     </div>
 
     <!-- Footer -->

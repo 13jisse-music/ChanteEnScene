@@ -9,6 +9,9 @@ import { revalidatePath } from 'next/cache'
 
 type CampaignTarget = 'all' | 'voluntary' | 'legacy'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SectionData = any
+
 export async function createCampaign(
   sessionId: string,
   subject: string,
@@ -28,6 +31,41 @@ export async function createCampaign(
       image_url: imageUrl.trim() || null,
       target,
       status: 'draft',
+    })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/newsletter')
+  return { success: true, campaignId: data.id }
+}
+
+export async function createCampaignWithSections(
+  sessionId: string,
+  subject: string,
+  body: string,
+  imageUrl: string | null,
+  target: CampaignTarget,
+  sections: SectionData[],
+  tone: string,
+  themes: string[]
+) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('email_campaigns')
+    .insert({
+      session_id: sessionId,
+      subject: subject.trim(),
+      body: body.trim(),
+      image_url: imageUrl || null,
+      target,
+      status: 'draft',
+      sections,
+      tone,
+      themes,
     })
     .select('id')
     .single()
@@ -72,6 +110,7 @@ export async function sendTestCampaign(campaignId: string) {
     subject: campaign.subject,
     body: campaign.body,
     imageUrl: campaign.image_url || undefined,
+    sections: campaign.sections || undefined,
     unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=test-preview`,
     ctaUrl,
   })
@@ -137,6 +176,7 @@ export async function sendCampaign(campaignId: string) {
         subject: campaign.subject,
         body: campaign.body,
         imageUrl: campaign.image_url || undefined,
+        sections: campaign.sections || undefined,
         unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`,
         ctaUrl: campaignCtaUrl,
       })
