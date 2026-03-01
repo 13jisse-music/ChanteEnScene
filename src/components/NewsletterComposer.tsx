@@ -137,6 +137,27 @@ export default function NewsletterComposer({
     img.src = headerPhoto
   }, [headerPhoto, headerLine1, headerLine2, headerEmoji, headerBanner])
 
+  // ─── Upload base64 image to Supabase Storage ───
+
+  async function uploadBase64ToStorage(dataUrl: string): Promise<string> {
+    // Already a public URL? Return as-is
+    if (dataUrl.startsWith('http')) return dataUrl
+
+    // Convert base64 data URL to Blob
+    const res = await fetch(dataUrl)
+    const blob = await res.blob()
+    const ext = blob.type === 'image/png' ? 'png' : 'jpg'
+    const file = new File([blob], `newsletter-${Date.now()}.${ext}`, { type: blob.type })
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const uploadRes = await fetch('/api/admin/upload-image', { method: 'POST', body: formData })
+    const data = await uploadRes.json()
+    if (data.error) throw new Error(data.error)
+    return data.url
+  }
+
   // ─── Handlers ───
 
   const handleSuggestThemes = useCallback(async (useOpenAI = false) => {
@@ -353,35 +374,54 @@ export default function NewsletterComposer({
     setLoading('save')
     setMessage(null)
 
-    const bodyFallback = sections.map((s) => `${s.label}\n${s.title}\n\n${s.body}`).join('\n\n---\n\n')
+    try {
+      // Upload all base64 images to Supabase Storage → public URLs
+      let finalHeaderUrl = headerImageUrl || null
+      if (finalHeaderUrl && finalHeaderUrl.startsWith('data:')) {
+        finalHeaderUrl = await uploadBase64ToStorage(finalHeaderUrl)
+      }
 
-    const result = await createCampaignWithSections(
-      sessionId,
-      subject,
-      bodyFallback,
-      headerImageUrl || null,
-      target,
-      sections,
-      tone,
-      selectedThemes
-    )
+      const uploadedSections = await Promise.all(
+        sections.map(async (s) => {
+          if (s.imageUrl && s.imageUrl.startsWith('data:')) {
+            return { ...s, imageUrl: await uploadBase64ToStorage(s.imageUrl) }
+          }
+          return s
+        })
+      )
 
-    if (result.error) {
-      setMessage({ type: 'error', text: result.error })
-    } else {
-      setMessage({ type: 'success', text: 'Brouillon sauvegardé !' })
-      setStep('themes')
-      setSubject('')
-      setSections([])
-      setSelectedThemes([])
-      setSuggestedThemes([])
-      setHeaderImageUrl('')
-      setHeaderPhoto(null)
-      setHeaderLine1('')
-      setHeaderLine2('')
-      setHeaderEmoji('')
-      setHeaderBanner('')
-      window.location.reload()
+      const bodyFallback = uploadedSections.map((s) => `${s.label}\n${s.title}\n\n${s.body}`).join('\n\n---\n\n')
+
+      const result = await createCampaignWithSections(
+        sessionId,
+        subject,
+        bodyFallback,
+        finalHeaderUrl,
+        target,
+        uploadedSections,
+        tone,
+        selectedThemes
+      )
+
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error })
+      } else {
+        setMessage({ type: 'success', text: 'Brouillon sauvegardé !' })
+        setStep('themes')
+        setSubject('')
+        setSections([])
+        setSelectedThemes([])
+        setSuggestedThemes([])
+        setHeaderImageUrl('')
+        setHeaderPhoto(null)
+        setHeaderLine1('')
+        setHeaderLine2('')
+        setHeaderEmoji('')
+        setHeaderBanner('')
+        window.location.reload()
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: `Erreur upload images : ${err instanceof Error ? err.message : 'inconnue'}` })
     }
     setLoading('')
   }
