@@ -235,20 +235,35 @@ export default function NewsletterComposer({
     setLoading('')
   }, [sections])
 
-  const handleImageUpload = (index: number, file: File) => {
+  const handleImageUpload = (index: number, file: File, raw = false) => {
     const section = sections[index]
     const reader = new FileReader()
     reader.onload = () => {
-      const img = new Image()
-      img.onload = () => {
-        const processed = processImageForNewsletter(img, section.title, section.label, section.color, tone)
-        setSections((prev) => {
-          const next = [...prev]
-          next[index] = { ...next[index], imageUrl: processed }
-          return next
-        })
+      if (raw) {
+        // Import brut : juste resize pour l'email (600px max), pas d'overlay
+        const img = new Image()
+        img.onload = () => {
+          const processed = processImageForNewsletter(img, '', '', '', tone)
+          setSections((prev) => {
+            const next = [...prev]
+            next[index] = { ...next[index], imageUrl: processed }
+            return next
+          })
+        }
+        img.src = reader.result as string
+      } else {
+        // Import avec overlay titre
+        const img = new Image()
+        img.onload = () => {
+          const processed = processImageForNewsletter(img, section.title, section.label, section.color, tone)
+          setSections((prev) => {
+            const next = [...prev]
+            next[index] = { ...next[index], imageUrl: processed }
+            return next
+          })
+        }
+        img.src = reader.result as string
       }
-      img.src = reader.result as string
     }
     reader.readAsDataURL(file)
   }
@@ -676,7 +691,7 @@ export default function NewsletterComposer({
                 ) : (
                   <div className="flex gap-2">
                     <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-[#2a2545] text-xs text-white/30 hover:border-[#e91e8c]/30 hover:text-white/50 cursor-pointer transition-colors" title="La photo sera optimisée avec le titre superposé">
-                      📎 Importer + titre
+                      📎 + titre
                       <input
                         type="file"
                         accept="image/*"
@@ -684,6 +699,18 @@ export default function NewsletterComposer({
                         onChange={(e) => {
                           const file = e.target.files?.[0]
                           if (file) handleImageUpload(i, file)
+                        }}
+                      />
+                    </label>
+                    <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-[#2a2545] text-xs text-white/30 hover:border-[#7ec850]/30 hover:text-white/50 cursor-pointer transition-colors" title="Photo déjà titrée ou créative — juste resize pour l'email">
+                      📎 Brute
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleImageUpload(i, file, true)
                         }}
                       />
                     </label>
