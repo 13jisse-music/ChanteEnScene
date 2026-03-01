@@ -625,6 +625,10 @@ export default function InscriptionForm({ session }: { session: Session }) {
       {/* ─── STEP 1: Chanson ─── */}
       {currentStep === 1 && (
         <div className="space-y-4">
+          <p className="text-[#f5a623] text-xs bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-xl p-3 flex items-start gap-2">
+            <span>⚠️</span>
+            <span>Indiquez la chanson que vous chantez <strong>dans votre vidéo</strong>. La vidéo doit correspondre à la chanson choisie.</span>
+          </p>
           <div>
             <label className={LABEL}>Titre de la chanson <span className="text-[#e91e8c]">*</span></label>
             <input type="text" required value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Ex: Je vole" className={INPUT} />
