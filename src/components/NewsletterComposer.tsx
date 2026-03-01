@@ -236,13 +236,19 @@ export default function NewsletterComposer({
   }, [sections])
 
   const handleImageUpload = (index: number, file: File) => {
+    const section = sections[index]
     const reader = new FileReader()
     reader.onload = () => {
-      setSections((prev) => {
-        const next = [...prev]
-        next[index] = { ...next[index], imageUrl: reader.result as string }
-        return next
-      })
+      const img = new Image()
+      img.onload = () => {
+        const processed = processImageForNewsletter(img, section.title, section.label, section.color, tone)
+        setSections((prev) => {
+          const next = [...prev]
+          next[index] = { ...next[index], imageUrl: processed }
+          return next
+        })
+      }
+      img.src = reader.result as string
     }
     reader.readAsDataURL(file)
   }
@@ -669,8 +675,8 @@ export default function NewsletterComposer({
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-[#2a2545] text-xs text-white/30 hover:border-[#e91e8c]/30 hover:text-white/50 cursor-pointer transition-colors">
-                      📎 Importer une image
+                    <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-[#2a2545] text-xs text-white/30 hover:border-[#e91e8c]/30 hover:text-white/50 cursor-pointer transition-colors" title="La photo sera optimisée avec le titre superposé">
+                      📎 Importer + titre
                       <input
                         type="file"
                         accept="image/*"
@@ -884,6 +890,123 @@ export default function NewsletterComposer({
       </div>
     </div>
   )
+}
+
+// ─── Image processing for newsletter (client-side Canvas) ───
+
+const TONE_STYLES: Record<string, { fontStyle: string; shadowColor: string; labelBg: string }> = {
+  decale: { fontStyle: 'bold italic', shadowColor: 'rgba(233,30,140,0.6)', labelBg: 'rgba(233,30,140,0.8)' },
+  pro: { fontStyle: 'bold', shadowColor: 'rgba(0,0,0,0.7)', labelBg: 'rgba(30,30,50,0.85)' },
+  chaleureux: { fontStyle: 'bold', shadowColor: 'rgba(201,168,76,0.5)', labelBg: 'rgba(201,168,76,0.8)' },
+  urgence: { fontStyle: 'bold', shadowColor: 'rgba(239,68,68,0.6)', labelBg: 'rgba(239,68,68,0.8)' },
+  inspirant: { fontStyle: 'italic', shadowColor: 'rgba(126,200,80,0.4)', labelBg: 'rgba(126,200,80,0.7)' },
+}
+
+function processImageForNewsletter(
+  img: HTMLImageElement,
+  title: string,
+  label: string,
+  sectionColor: string,
+  tone: string
+): string {
+  const MAX_WIDTH = 600
+  const QUALITY = 0.85
+
+  // Calculate dimensions (max 600px wide, keep aspect ratio)
+  const ratio = Math.min(MAX_WIDTH / img.width, 1)
+  const w = Math.round(img.width * ratio)
+  const h = Math.round(img.height * ratio)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+
+  // Draw original image (resized)
+  ctx.drawImage(img, 0, 0, w, h)
+
+  // Skip overlay if no title
+  if (!title?.trim()) {
+    return canvas.toDataURL('image/jpeg', QUALITY)
+  }
+
+  const style = TONE_STYLES[tone] || TONE_STYLES.decale
+
+  // Dark gradient overlay on bottom 45% of image
+  const gradientHeight = h * 0.45
+  const gradient = ctx.createLinearGradient(0, h - gradientHeight, 0, h)
+  gradient.addColorStop(0, 'rgba(13,11,26,0)')
+  gradient.addColorStop(0.4, 'rgba(13,11,26,0.5)')
+  gradient.addColorStop(1, 'rgba(13,11,26,0.9)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, h - gradientHeight, w, gradientHeight)
+
+  // Label badge (top-left of gradient area)
+  if (label?.trim()) {
+    ctx.font = `bold ${Math.max(11, w * 0.02)}px Arial, sans-serif`
+    const labelMetrics = ctx.measureText(label.toUpperCase())
+    const labelPadX = 10
+    const labelPadY = 5
+    const labelW = labelMetrics.width + labelPadX * 2
+    const labelH = 20
+    const labelX = 20
+    const labelY = h - gradientHeight * 0.75
+
+    // Badge background
+    ctx.fillStyle = style.labelBg
+    ctx.beginPath()
+    ctx.roundRect(labelX, labelY, labelW, labelH, 4)
+    ctx.fill()
+
+    // Badge text
+    ctx.fillStyle = '#ffffff'
+    ctx.font = `bold ${Math.max(10, w * 0.018)}px Arial, sans-serif`
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label.toUpperCase(), labelX + labelPadX, labelY + labelH / 2)
+  }
+
+  // Title text
+  const fontSize = Math.min(Math.max(18, w * 0.04), 32)
+  ctx.font = `${style.fontStyle} ${fontSize}px Arial, sans-serif`
+  ctx.fillStyle = '#ffffff'
+  ctx.textBaseline = 'bottom'
+  ctx.shadowColor = style.shadowColor
+  ctx.shadowBlur = 12
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 2
+
+  // Word-wrap title
+  const maxTextWidth = w - 40
+  const words = title.split(' ')
+  const lines: string[] = []
+  let currentLine = ''
+  for (const word of words) {
+    const test = currentLine ? `${currentLine} ${word}` : word
+    if (ctx.measureText(test).width > maxTextWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = test
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+
+  // Draw lines from bottom up
+  const lineHeight = fontSize * 1.3
+  const startY = h - 16
+  for (let i = lines.length - 1; i >= 0; i--) {
+    ctx.fillText(lines[i], 20, startY - (lines.length - 1 - i) * lineHeight)
+  }
+
+  // Reset shadow
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+
+  // Thin accent line at bottom
+  ctx.fillStyle = sectionColor || '#e91e8c'
+  ctx.fillRect(0, h - 3, w, 3)
+
+  return canvas.toDataURL('image/jpeg', QUALITY)
 }
 
 // ─── Preview HTML builder (client-side approximation) ───
