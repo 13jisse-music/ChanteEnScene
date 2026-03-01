@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Cascade: Gemini 2.5 Flash (gratuit) → Gemini 2.0 Flash (gratuit) → OpenAI (payant, avec confirmation)
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+];
 
 const TONE_PROMPTS: Record<string, string> = {
   decale:
@@ -32,24 +38,25 @@ type Section = {
  *
  * mode=suggest : suggère des thèmes basés sur le contexte
  * mode=compose : génère les sections de la newsletter
+ * mode=compose_openai : génère via OpenAI (après confirmation utilisateur)
  */
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
+  if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: "Clé API Gemini non configurée" },
+      { error: "Aucune clé API configurée (Gemini ni OpenAI)" },
       { status: 500 }
     );
   }
 
   const body = await req.json();
-  const { mode, themes, tone, context, customThemes, siteInfo } = body;
+  const { mode, themes, tone, context, customThemes, siteInfo, useOpenAI } = body;
 
   if (mode === "suggest") {
-    return handleSuggestThemes(context, siteInfo);
+    return handleSuggestThemes(context, siteInfo, useOpenAI);
   }
 
   if (mode === "compose") {
-    return handleCompose(themes, tone, context, customThemes, siteInfo);
+    return handleCompose(themes, tone, context, customThemes, siteInfo, useOpenAI);
   }
 
   return NextResponse.json({ error: "Mode invalide" }, { status: 400 });
@@ -57,7 +64,8 @@ export async function POST(req: NextRequest) {
 
 async function handleSuggestThemes(
   context: string | undefined,
-  siteInfo: Record<string, string> | undefined
+  siteInfo: Record<string, string> | undefined,
+  useOpenAI?: boolean
 ) {
   const prompt = `Tu es un expert en email marketing pour un concours de chant amateur appelé "ChanteEnScène" à Aubagne.
 
@@ -71,21 +79,29 @@ Suggère 6 thèmes de newsletter pertinents et accrocheurs. Chaque thème doit a
 Réponds UNIQUEMENT en JSON valide, format :
 [{"title": "...", "description": "..."}, ...]`;
 
-  const data = await callGemini(prompt);
-  if (!data) {
+  const result = await callWithCascade(prompt, useOpenAI);
+
+  if (result.needsOpenAI) {
     return NextResponse.json(
-      { error: "Erreur Gemini" },
+      { error: "quota_exhausted", message: "Quota Gemini épuisé", retryIn: result.retryIn },
+      { status: 429 }
+    );
+  }
+
+  if (!result.data) {
+    return NextResponse.json(
+      { error: result.error || "Erreur génération" },
       { status: 502 }
     );
   }
 
   try {
-    const text = extractText(data);
+    const text = extractText(result.data);
     const json = extractJSON(text);
-    return NextResponse.json({ themes: json });
+    return NextResponse.json({ themes: json, provider: result.provider });
   } catch {
     return NextResponse.json(
-      { error: "Réponse Gemini invalide" },
+      { error: "Réponse IA invalide" },
       { status: 502 }
     );
   }
@@ -96,7 +112,8 @@ async function handleCompose(
   tone: string,
   context: string | undefined,
   customThemes: string | undefined,
-  siteInfo: Record<string, string> | undefined
+  siteInfo: Record<string, string> | undefined,
+  useOpenAI?: boolean
 ) {
   const toneInstruction =
     TONE_PROMPTS[tone] || TONE_PROMPTS.decale;
@@ -140,16 +157,24 @@ Réponds UNIQUEMENT en JSON valide :
   ]
 }`;
 
-  const data = await callGemini(prompt);
-  if (!data) {
+  const result = await callWithCascade(prompt, useOpenAI);
+
+  if (result.needsOpenAI) {
     return NextResponse.json(
-      { error: "Erreur Gemini" },
+      { error: "quota_exhausted", message: "Quota Gemini épuisé", retryIn: result.retryIn },
+      { status: 429 }
+    );
+  }
+
+  if (!result.data) {
+    return NextResponse.json(
+      { error: result.error || "Erreur génération" },
       { status: 502 }
     );
   }
 
   try {
-    const text = extractText(data);
+    const text = extractText(result.data);
     const json = extractJSON(text) as {
       subject: string;
       sections: Section[];
@@ -159,20 +184,66 @@ Réponds UNIQUEMENT en JSON valide :
       subject: json.subject,
       sections: json.sections.map((s: Section) => ({
         ...s,
-        imageUrl: null, // Will be filled by image generation
+        imageUrl: null,
       })),
+      provider: result.provider,
     });
   } catch {
     return NextResponse.json(
-      { error: "Réponse Gemini invalide" },
+      { error: "Réponse IA invalide" },
       { status: 502 }
     );
   }
 }
 
-async function callGemini(prompt: string) {
+interface CascadeResult {
+  data: Record<string, unknown> | null;
+  provider?: string;
+  needsOpenAI?: boolean;
+  retryIn?: number;
+  error?: string;
+}
+
+async function callWithCascade(prompt: string, useOpenAI?: boolean): Promise<CascadeResult> {
+  // If user explicitly chose OpenAI
+  if (useOpenAI && OPENAI_API_KEY) {
+    const data = await callOpenAI(prompt);
+    if (data) return { data, provider: "openai" };
+    return { data: null, error: "Erreur OpenAI" };
+  }
+
+  // Try Gemini models in cascade
+  if (GEMINI_API_KEY) {
+    let lastRetryIn = 60;
+    for (const model of GEMINI_MODELS) {
+      const result = await callGemini(prompt, model);
+      if (result.data) {
+        return { data: result.data, provider: model };
+      }
+      if (result.quotaExhausted) {
+        if (result.retryIn) lastRetryIn = result.retryIn;
+        continue; // Try next model
+      }
+      // Other error, try next
+    }
+
+    // All Gemini models exhausted
+    return { data: null, needsOpenAI: !!OPENAI_API_KEY, retryIn: lastRetryIn };
+  }
+
+  // No Gemini key, try OpenAI directly
+  if (OPENAI_API_KEY) {
+    const data = await callOpenAI(prompt);
+    if (data) return { data, provider: "openai" };
+  }
+
+  return { data: null, error: "Aucun service IA disponible" };
+}
+
+async function callGemini(prompt: string, model: string): Promise<{ data: Record<string, unknown> | null; quotaExhausted?: boolean; retryIn?: number }> {
   try {
-    const res = await fetch(GEMINI_URL, {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -184,14 +255,56 @@ async function callGemini(prompt: string) {
       }),
     });
 
+    if (res.status === 429) {
+      const errorBody = await res.text();
+      // Extract retry time from error message
+      const retryMatch = errorBody.match(/retry in ([\d.]+)s/i);
+      const retryIn = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 60;
+      console.error(`Gemini ${model} quota exhausted, retry in ${retryIn}s`);
+      return { data: null, quotaExhausted: true, retryIn };
+    }
+
     if (!res.ok) {
-      console.error("Gemini API error:", await res.text());
+      console.error(`Gemini ${model} error:`, res.status);
+      return { data: null };
+    }
+
+    return { data: await res.json() };
+  } catch (err) {
+    console.error(`Gemini ${model} fetch error:`, err);
+    return { data: null };
+  }
+}
+
+async function callOpenAI(prompt: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("OpenAI error:", res.status);
       return null;
     }
 
-    return await res.json();
+    const data = await res.json();
+    // Convert OpenAI response format to match Gemini format
+    const text = data?.choices?.[0]?.message?.content || "";
+    return {
+      candidates: [{ content: { parts: [{ text }] } }],
+    };
   } catch (err) {
-    console.error("Gemini fetch error:", err);
+    console.error("OpenAI fetch error:", err);
     return null;
   }
 }

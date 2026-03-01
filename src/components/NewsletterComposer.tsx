@@ -102,14 +102,17 @@ export default function NewsletterComposer({
   const [confirmSendId, setConfirmSendId] = useState<string | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
+  const [quotaRetryIn, setQuotaRetryIn] = useState(0)
+  const [showOpenAIConfirm, setShowOpenAIConfirm] = useState<'suggest' | 'compose' | null>(null)
 
   const recipientCount = target === 'all' ? counts.total : target === 'voluntary' ? counts.voluntary : counts.legacy
 
   // ─── Handlers ───
 
-  const handleSuggestThemes = useCallback(async () => {
+  const handleSuggestThemes = useCallback(async (useOpenAI = false) => {
     setLoading('suggest')
     setMessage(null)
+    setShowOpenAIConfirm(null)
     try {
       const res = await fetch('/api/newsletter/generate', {
         method: 'POST',
@@ -118,11 +121,24 @@ export default function NewsletterComposer({
           mode: 'suggest',
           context: sessionContext,
           siteInfo: { url: 'https://chantenscene.fr', name: 'ChanteEnScène' },
+          useOpenAI,
         }),
       })
       const data = await res.json()
       if (data.themes) {
         setSuggestedThemes(data.themes)
+        if (data.provider) setMessage({ type: 'success', text: `Généré via ${data.provider}` })
+      } else if (data.error === 'quota_exhausted') {
+        setQuotaRetryIn(data.retryIn || 60)
+        setShowOpenAIConfirm('suggest')
+        // Start countdown
+        const start = data.retryIn || 60
+        let remaining = start
+        const timer = setInterval(() => {
+          remaining--
+          setQuotaRetryIn(remaining)
+          if (remaining <= 0) clearInterval(timer)
+        }, 1000)
       } else {
         setMessage({ type: 'error', text: data.error || 'Erreur' })
       }
@@ -145,13 +161,14 @@ export default function NewsletterComposer({
     }
   }
 
-  const handleCompose = useCallback(async () => {
+  const handleCompose = useCallback(async (useOpenAI = false) => {
     if (selectedThemes.length === 0) {
       setMessage({ type: 'error', text: 'Sélectionne au moins un thème' })
       return
     }
     setLoading('compose')
     setMessage(null)
+    setShowOpenAIConfirm(null)
     try {
       const res = await fetch('/api/newsletter/generate', {
         method: 'POST',
@@ -162,6 +179,7 @@ export default function NewsletterComposer({
           tone,
           context: sessionContext,
           siteInfo: { url: 'https://chantenscene.fr', name: 'ChanteEnScène' },
+          useOpenAI,
         }),
       })
       const data = await res.json()
@@ -169,6 +187,17 @@ export default function NewsletterComposer({
         setSubject(data.subject || '')
         setSections(data.sections)
         setStep('edit')
+        if (data.provider) setMessage({ type: 'success', text: `Généré via ${data.provider}` })
+      } else if (data.error === 'quota_exhausted') {
+        setQuotaRetryIn(data.retryIn || 60)
+        setShowOpenAIConfirm('compose')
+        const start = data.retryIn || 60
+        let remaining = start
+        const timer = setInterval(() => {
+          remaining--
+          setQuotaRetryIn(remaining)
+          if (remaining <= 0) clearInterval(timer)
+        }, 1000)
       } else {
         setMessage({ type: 'error', text: data.error || 'Erreur de génération' })
       }
@@ -341,6 +370,72 @@ export default function NewsletterComposer({
         </div>
       )}
 
+      {/* Quota exhausted banner */}
+      {showOpenAIConfirm && (
+        <div className="bg-[#161228] border border-[#f59e0b]/30 rounded-2xl p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0">⏳</span>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-[#f59e0b]">Quota Gemini épuisé</p>
+              <p className="text-xs text-white/40">
+                Les modèles gratuits sont temporairement indisponibles.
+              </p>
+            </div>
+          </div>
+
+          {/* Countdown progress bar */}
+          {quotaRetryIn > 0 && (
+            <div className="space-y-2">
+              <div className="h-2 bg-[#2a2545] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#f59e0b] to-[#7ec850] rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.max(0, 100 - (quotaRetryIn / 60) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-white/30 text-center">
+                Réessai automatique dans <span className="text-[#f59e0b] font-mono font-bold">{quotaRetryIn}s</span>
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            {/* Retry Gemini button (enabled when countdown reaches 0) */}
+            <button
+              onClick={() => {
+                setShowOpenAIConfirm(null)
+                if (showOpenAIConfirm === 'suggest') handleSuggestThemes()
+                else handleCompose()
+              }}
+              disabled={quotaRetryIn > 0 || !!loading}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-30
+                border-[#7ec850]/30 text-[#7ec850] hover:bg-[#7ec850]/10"
+            >
+              {quotaRetryIn > 0 ? `Gemini dans ${quotaRetryIn}s` : 'Réessayer Gemini (gratuit)'}
+            </button>
+
+            {/* OpenAI fallback button */}
+            <button
+              onClick={() => {
+                setShowOpenAIConfirm(null)
+                if (showOpenAIConfirm === 'suggest') handleSuggestThemes(true)
+                else handleCompose(true)
+              }}
+              disabled={!!loading}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/20 transition-all disabled:opacity-50"
+            >
+              Utiliser OpenAI (~0.01$)
+            </button>
+          </div>
+
+          <button
+            onClick={() => setShowOpenAIConfirm(null)}
+            className="w-full text-center text-xs text-white/20 hover:text-white/40 transition-colors"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+
       {/* Step indicator */}
       {step !== 'themes' && (
         <div className="flex items-center gap-2 text-xs">
@@ -389,7 +484,7 @@ export default function NewsletterComposer({
             <div className="flex items-center justify-between mb-2">
               <label className="text-white/50 text-xs">Thèmes</label>
               <button
-                onClick={handleSuggestThemes}
+                onClick={() => handleSuggestThemes()}
                 disabled={loading === 'suggest'}
                 className="text-xs text-[#e91e8c] hover:text-[#e91e8c]/80 disabled:opacity-50"
               >
@@ -474,7 +569,7 @@ export default function NewsletterComposer({
 
           {/* Generate button */}
           <button
-            onClick={handleCompose}
+            onClick={() => handleCompose()}
             disabled={loading === 'compose' || selectedThemes.length === 0}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-[#e91e8c] to-[#c4157a] text-white font-bold disabled:opacity-50"
           >
