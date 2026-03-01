@@ -380,9 +380,26 @@ export default async function AdminDashboard() {
 
       {/* Stats Grid — Concours */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
-        <StatCard icon="🎤" label="Candidats" value={stats.totalCandidates ?? 0} color="#e91e8c" />
-        <StatCard icon="⏳" label="En attente" value={stats.pending ?? 0} color="#f59e0b" />
-        <StatCard icon="✅" label="Approuvés" value={stats.approved ?? 0} color="#7ec850" />
+        {/* Candidats — carte fusionnée */}
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-lg sm:text-2xl">🎤</span>
+            <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full" style={{ background: '#e91e8c15', color: '#e91e8c' }}>
+              Candidats
+            </span>
+          </div>
+          <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl text-[#e91e8c]">
+            {stats.totalCandidates ?? 0}
+          </p>
+          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#2a2545]">
+            <span className="text-xs" style={{ color: '#7ec850' }}>
+              ✅ {stats.approved ?? 0} <span className="text-white/30">approuvé{(stats.approved ?? 0) > 1 ? 's' : ''}</span>
+            </span>
+            <span className="text-xs" style={{ color: '#f59e0b' }}>
+              ⏳ {stats.pending ?? 0} <span className="text-white/30">en attente</span>
+            </span>
+          </div>
+        </div>
         <StatCard icon="❤️" label="Votes" value={stats.totalVotes ?? 0} color="#3b82f6" />
         {semifinalistCount > 0 && (
           <StatCard icon="🌟" label="Demi-finalistes" value={semifinalistCount} color="#8b5cf6" />
