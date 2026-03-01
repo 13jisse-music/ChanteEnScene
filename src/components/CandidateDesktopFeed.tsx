@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
+  return m ? m[1] : null
+}
+
 interface Candidate {
   id: string
   first_name: string
@@ -232,27 +237,38 @@ function FeedPost({
       <div className="relative bg-black">
         {showVideo && candidate.video_url ? (
           <div className="relative aspect-video">
-            <video
-              ref={videoRef}
-              src={candidate.video_url}
-              muted={muted}
-              loop
-              playsInline
-              className="w-full h-full object-contain bg-black"
-              onClick={togglePlay}
-            />
-            {/* Play/pause overlay */}
-            {!isPlaying && (
-              <button
-                onClick={togglePlay}
-                className="absolute inset-0 flex items-center justify-center bg-black/20"
-              >
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white ml-1">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-              </button>
+            {getYouTubeId(candidate.video_url) ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${getYouTubeId(candidate.video_url)}?autoplay=1&rel=0&mute=${muted ? 1 : 0}`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            ) : (
+              <>
+                <video
+                  ref={videoRef}
+                  src={candidate.video_url}
+                  muted={muted}
+                  loop
+                  playsInline
+                  className="w-full h-full object-contain bg-black"
+                  onClick={togglePlay}
+                />
+                {/* Play/pause overlay */}
+                {!isPlaying && (
+                  <button
+                    onClick={togglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/20"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white ml-1">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </button>
+                )}
+              </>
             )}
             {/* Mute toggle */}
             <button

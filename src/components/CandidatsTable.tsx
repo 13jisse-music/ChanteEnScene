@@ -1,7 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updateCandidateStatus, deleteCandidate, toggleVideoPublic } from '@/app/admin/candidats/actions'
+
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
+  return m ? m[1] : null
+}
+
+function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const ytId = getYouTubeId(url)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose])
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+      </button>
+      {ytId ? (
+        <iframe src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`} allow="autoplay; encrypted-media" allowFullScreen className="w-full max-w-4xl aspect-video rounded-lg" onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+      ) : (
+        <video src={url} autoPlay controls playsInline className="max-w-full max-h-[85vh] rounded-lg" onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+      )}
+    </div>
+  )
+}
 
 interface Candidate {
   id: string
@@ -83,6 +109,7 @@ export default function CandidatsTable({
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
 
   const CATEGORY_ORDER = ['Enfant', 'Ado', 'Adulte']
 
@@ -434,14 +461,13 @@ export default function CandidatsTable({
                           )}
                           <div className="flex flex-wrap gap-2 mt-3">
                             {c.video_url && (
-                              <a
-                                href={c.video_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => setVideoModalUrl(c.video_url)}
                                 className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors"
                               >
                                 📹 Vidéo
-                              </a>
+                              </button>
                             )}
                             {c.mp3_url && (
                               <a
@@ -521,6 +547,7 @@ export default function CandidatsTable({
           </p>
         )}
       </div>
+      {videoModalUrl && <VideoModal url={videoModalUrl} onClose={() => setVideoModalUrl(null)} />}
     </div>
   )
 }

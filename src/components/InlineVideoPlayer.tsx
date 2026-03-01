@@ -6,8 +6,14 @@ interface Props {
   videoUrl: string
 }
 
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
+  return m ? m[1] : null
+}
+
 export default function InlineVideoPlayer({ videoUrl }: Props) {
   const [open, setOpen] = useState(false)
+  const ytId = getYouTubeId(videoUrl)
 
   useEffect(() => {
     if (open) {
@@ -56,14 +62,24 @@ export default function InlineVideoPlayer({ videoUrl }: Props) {
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
           </button>
-          <video
-            src={videoUrl}
-            autoPlay
-            controls
-            playsInline
-            className="max-w-full max-h-[85vh] rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {ytId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              className="w-full max-w-3xl aspect-video rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <video
+              src={videoUrl}
+              autoPlay
+              controls
+              playsInline
+              className="max-w-full max-h-[85vh] rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
         </div>
       )}
     </>

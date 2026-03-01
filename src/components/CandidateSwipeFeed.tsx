@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
+  return m ? m[1] : null
+}
+
 interface Candidate {
   id: string
   first_name: string
@@ -177,29 +182,38 @@ function SwipeSlide({
     <div className="h-full w-full snap-start relative flex-shrink-0 bg-black">
       {/* Media */}
       {showVideo ? (
-        <>
-          {/* Blurred background for landscape videos */}
-          {isLandscape && (
+        getYouTubeId(candidate.video_url!) ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${getYouTubeId(candidate.video_url!)}?autoplay=1&rel=0&mute=${globalMuted ? 1 : 0}&playsinline=1`}
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full"
+          />
+        ) : (
+          <>
+            {/* Blurred background for landscape videos */}
+            {isLandscape && (
+              <video
+                ref={bgVideoRef}
+                src={candidate.video_url!}
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl brightness-50"
+                aria-hidden="true"
+              />
+            )}
+            {/* Main video */}
             <video
-              ref={bgVideoRef}
+              ref={videoRef}
               src={candidate.video_url!}
-              muted
+              muted={globalMuted}
               loop
               playsInline
-              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl brightness-50"
-              aria-hidden="true"
+              className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
             />
-          )}
-          {/* Main video */}
-          <video
-            ref={videoRef}
-            src={candidate.video_url!}
-            muted={globalMuted}
-            loop
-            playsInline
-            className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
-          />
-        </>
+          </>
+        )
       ) : candidate.photo_url ? (
         <img
           src={candidate.photo_url}
