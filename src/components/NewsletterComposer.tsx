@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   createCampaignWithSections,
   deleteCampaign,
@@ -104,6 +104,7 @@ export default function NewsletterComposer({
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
   const [quotaRetryIn, setQuotaRetryIn] = useState(0)
   const [showOpenAIConfirm, setShowOpenAIConfirm] = useState<'suggest' | 'compose' | null>(null)
+  const pendingDalleRef = useRef<number | null>(null)
 
   const recipientCount = target === 'all' ? counts.total : target === 'voluntary' ? counts.voluntary : counts.legacy
 
@@ -207,16 +208,17 @@ export default function NewsletterComposer({
     setLoading('')
   }, [selectedThemes, tone, sessionContext])
 
-  const handleGenerateImage = useCallback(async (index: number) => {
+  const handleGenerateImage = useCallback(async (index: number, provider: 'gemini' | 'dalle' = 'gemini') => {
     const section = sections[index]
     if (!section.imagePrompt) return
 
     setLoading(`img-${index}`)
+    setMessage(null)
     try {
       const res = await fetch('/api/newsletter/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: section.imagePrompt, provider: 'gemini' }),
+        body: JSON.stringify({ prompt: section.imagePrompt, provider }),
       })
       const data = await res.json()
       if (data.imageUrl) {
@@ -225,7 +227,14 @@ export default function NewsletterComposer({
           next[index] = { ...next[index], imageUrl: data.imageUrl }
           return next
         })
-        setMessage({ type: 'success', text: `Image générée (${data.provider})` })
+        setMessage({ type: 'success', text: `Image générée via ${data.provider === 'dalle' ? 'DALL-E (~0.04$)' : 'Gemini (gratuit)'}` })
+      } else if (data.error === 'quota_exhausted') {
+        setMessage({
+          type: 'error',
+          text: `Quota Gemini Image épuisé (réessayer dans ${data.retryIn}s)${data.hasDalle ? ' — Cliquez à nouveau sur 🎨 pour utiliser DALL-E (~0.04$)' : ''}`,
+        })
+        // Store the index so next click uses DALL-E
+        pendingDalleRef.current = index
       } else {
         setMessage({ type: 'error', text: data.error || 'Impossible de générer l\'image' })
       }
@@ -715,11 +724,20 @@ export default function NewsletterComposer({
                       />
                     </label>
                     <button
-                      onClick={() => handleGenerateImage(i)}
+                      onClick={() => {
+                        // Si Gemini quota épuisé pour cette section, passer à DALL-E
+                        const useDalle = pendingDalleRef.current === i
+                        if (useDalle) pendingDalleRef.current = null
+                        handleGenerateImage(i, useDalle ? 'dalle' : 'gemini')
+                      }}
                       disabled={!section.imagePrompt || loading === `img-${i}`}
-                      className="px-3 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-xs text-purple-400 hover:bg-purple-500/20 disabled:opacity-30 transition-colors"
+                      className={`px-3 py-2.5 rounded-lg border text-xs transition-colors disabled:opacity-30 ${
+                        pendingDalleRef.current === i
+                          ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/20'
+                          : 'bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20'
+                      }`}
                     >
-                      {loading === `img-${i}` ? '⏳' : '🎨'} IA
+                      {loading === `img-${i}` ? '⏳' : '🎨'} {pendingDalleRef.current === i ? 'DALL-E' : 'IA'}
                     </button>
                   </div>
                 )}
@@ -1040,17 +1058,25 @@ function processImageForNewsletter(
 
 function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Section[]): string {
   const sectionsHtml = sections.map((s, i) => {
+    const sColor = s.color || '#e91e8c'
+    const sectionBg = `${sColor}22`
+
     const img = s.imageUrl
-      ? `<div style="margin-bottom:20px;border-radius:12px;overflow:hidden;"><img src="${s.imageUrl}" alt="" style="max-width:100%;display:block;" /></div>`
+      ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" style="max-width:100%;display:block;" /></div>`
       : ''
+
     const cta = s.ctaText && s.ctaUrl
-      ? `<div style="text-align:center;margin:20px 0 0 0;"><a href="${s.ctaUrl}" style="display:inline-block;padding:12px 28px;background:${s.color};color:#ffffff;text-decoration:none;border-radius:10px;font-size:13px;font-weight:bold;">${s.ctaText}</a></div>`
+      ? `<div style="text-align:center;margin:20px 0 0 0;"><a href="${s.ctaUrl}" style="display:inline-block;padding:14px 32px;background:${sColor};color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;letter-spacing:0.5px;">${s.ctaText}</a></div>`
       : ''
-    const border = i > 0 ? '<div style="border-top:1px solid #2a2545;margin:32px 0;"></div>' : ''
-    const label = s.label ? `<p style="color:${s.color};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px 0;">${s.label}</p>` : ''
-    const title = s.title ? `<h2 style="color:#ffffff;font-size:18px;font-weight:bold;margin:0 0 16px 0;">${s.title}</h2>` : ''
-    const body = s.body.split(/\n\n+/).map((p) => `<p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')
-    return `${border}${img}${label}${title}${body}${cta}`
+
+    const label = s.label ? `<p style="color:${sColor};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px 0;">${s.label}</p>` : ''
+    const title = s.title ? `<h2 style="color:#ffffff;font-size:20px;font-weight:bold;margin:0 0 16px 0;line-height:1.3;">${s.title}</h2>` : ''
+    const body = s.body.split(/\n\n+/).map((p) => `<p style="color:#1a1533;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')
+
+    const topRadius = s.imageUrl ? '0' : '16px'
+    const spacing = i > 0 ? '<div style="height:24px;"></div>' : ''
+
+    return `${spacing}${img}<div style="background:${sectionBg};border:1px solid ${sColor}33;border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">${label}${title}<div style="background:#ffffffdd;border-radius:12px;padding:20px;">${body}</div>${cta}</div>`
   }).join('')
 
   const headerImg = headerImageUrl
@@ -1065,7 +1091,7 @@ function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Sec
           <p style="color:#ffffff40;font-size:11px;margin:4px 0 0 0;letter-spacing:1px;">LA NEWSLETTER</p>
         </div>
         ${headerImg}
-        <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
+        <div style="padding:0;">
           ${sectionsHtml}
         </div>
         <div style="text-align:center;margin-top:32px;">
