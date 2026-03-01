@@ -266,12 +266,23 @@ export default function InscriptionForm({ session }: { session: Session }) {
         if (!urlRes.ok) throw new Error(urlData.error || 'Erreur préparation vidéo')
 
         // Upload directly to the signed URL (works in all browsers)
-        const uploadRes = await fetch(urlData.signedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': videoFile.type || 'video/mp4' },
-          body: videoFile,
-        })
-        if (!uploadRes.ok) throw new Error('Erreur upload vidéo')
+        let uploadRes: Response
+        try {
+          uploadRes = await fetch(urlData.signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': videoFile.type || 'video/mp4' },
+            body: videoFile,
+          })
+        } catch {
+          throw new Error(`La vidéo n'a pas pu être envoyée. Vérifiez votre connexion internet et réessayez. (${Math.round(videoFile.size / 1024 / 1024)} Mo)`)
+        }
+        if (!uploadRes.ok) {
+          const sizeMb = Math.round(videoFile.size / 1024 / 1024)
+          if (uploadRes.status === 413 || sizeMb > 500) {
+            throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). Essayez de filmer en qualité standard ou de raccourcir la vidéo.`)
+          }
+          throw new Error(`Erreur lors de l'envoi de la vidéo (${uploadRes.status}). Veuillez réessayer.`)
+        }
         resolvedVideoUrl = urlData.publicUrl
       } else if (videoMode === 'url' && videoUrl.trim()) {
         resolvedVideoUrl = videoUrl.trim()
