@@ -5,7 +5,7 @@ export const metadata = {
   description: 'ChanteEnScène est un projet associatif 100% bénévole. Chaque contribution nous aide à offrir une scène aux talents de demain.',
 }
 
-const STRIPE_DON_LIBRE = 'https://buy.stripe.com/aFacMX0WMf7UgZm56k14406'
+const STRIPE_DON_LIBRE = 'https://buy.stripe.com/00w9AL7lae3QdNafKY14407'
 
 export default function SoutenirPage() {
   return (

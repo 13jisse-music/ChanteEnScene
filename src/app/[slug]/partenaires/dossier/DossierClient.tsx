@@ -229,7 +229,7 @@ export default function DossierClient({ session, stats }: Props) {
             Vous souhaitez simplement soutenir le projet ?
           </p>
           <a
-            href="https://buy.stripe.com/fZucMX8pe9NAeRecyM14405"
+            href="https://buy.stripe.com/00w9AL7lae3QdNafKY14407"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-[#e91e8c] to-[#c4157a] hover:shadow-lg hover:shadow-[#e91e8c]/30 transition-all"
