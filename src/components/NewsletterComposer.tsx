@@ -122,6 +122,10 @@ export default function NewsletterComposer({
   const [headerBanner, setHeaderBanner] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
+  // State: intro + footer tagline
+  const [introText, setIntroText] = useState('')
+  const [footerTagline, setFooterTagline] = useState('')
+
   const pendingDalleRef = useRef<number | null>(null)
 
   const recipientCount = target === 'all' ? counts.total : target === 'voluntary' ? counts.voluntary : counts.legacy
@@ -400,7 +404,9 @@ export default function NewsletterComposer({
         target,
         uploadedSections,
         tone,
-        selectedThemes
+        selectedThemes,
+        introText || undefined,
+        footerTagline || undefined
       )
 
       if (result.error) {
@@ -418,6 +424,8 @@ export default function NewsletterComposer({
         setHeaderLine2('')
         setHeaderEmoji('')
         setHeaderBanner('')
+        setIntroText('')
+        setFooterTagline('')
         window.location.reload()
       }
     } catch (err) {
@@ -874,6 +882,78 @@ export default function NewsletterComposer({
             )}
           </div>
 
+          {/* Intro text (between header and first section) */}
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-white/50 text-xs">Intro (sous l&apos;image d&apos;en-t\u00eate)</label>
+              {!introText && subject && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading('intro')
+                    try {
+                      const res = await fetch('/api/newsletter/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'suggest-intro', subject, tone }),
+                      })
+                      const data = await res.json()
+                      if (data.introText) setIntroText(data.introText)
+                    } catch { /* ignore */ }
+                    setLoading('')
+                  }}
+                  disabled={loading === 'intro'}
+                  className="text-xs text-[#e91e8c] hover:text-[#e91e8c]/80 disabled:opacity-50"
+                >
+                  {loading === 'intro' ? 'G\u00e9n\u00e9ration...' : '\u2728 Sugg\u00e9rer par IA'}
+                </button>
+              )}
+            </div>
+            <textarea
+              value={introText}
+              onChange={(e) => setIntroText(e.target.value)}
+              placeholder="Court paragraphe d'accroche avant les sections..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white/90 focus:border-[#e91e8c]/50 focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Footer tagline (viral pink bar) */}
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-white/50 text-xs">Phrase virale (barre rose du bas)</label>
+              {!footerTagline && subject && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading('tagline')
+                    try {
+                      const res = await fetch('/api/newsletter/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'suggest-tagline', subject, tone }),
+                      })
+                      const data = await res.json()
+                      if (data.tagline) setFooterTagline(data.tagline)
+                    } catch { /* ignore */ }
+                    setLoading('')
+                  }}
+                  disabled={loading === 'tagline'}
+                  className="text-xs text-[#e91e8c] hover:text-[#e91e8c]/80 disabled:opacity-50"
+                >
+                  {loading === 'tagline' ? 'G\u00e9n\u00e9ration...' : '\u2728 Sugg\u00e9rer par IA'}
+                </button>
+              )}
+            </div>
+            <textarea
+              value={footerTagline}
+              onChange={(e) => setFooterTagline(e.target.value)}
+              placeholder="Ex: Vous aimez cette newsletter ? Transf\u00e9rez-la \u00e0 quelqu'un qui chante sous la douche..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white/90 focus:border-[#e91e8c]/50 focus:outline-none resize-none"
+            />
+          </div>
+
           {/* Sections */}
           {sections.map((section, i) => (
             <div key={i} className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-3">
@@ -1011,7 +1091,7 @@ export default function NewsletterComposer({
             <button
               onClick={() => {
                 // Build a lightweight preview
-                setPreviewHtml(buildPreviewHtml(subject, headerImageUrl, sections))
+                setPreviewHtml(buildPreviewHtml(subject, headerImageUrl, sections, introText, footerTagline))
                 setStep('preview')
               }}
               className="flex-1 py-3 rounded-xl bg-white/5 text-white/60 font-medium hover:bg-white/10 transition-colors"
@@ -1449,7 +1529,7 @@ function resizeImageToWidth(dataUrl: string, maxWidth: number): Promise<string> 
 // ─── Preview HTML builder (client-side approximation) ───
 
 function blendWithBg(hex: string, alpha: number): string {
-  const bgR = 13, bgG = 11, bgB = 26
+  const bgR = 245, bgG = 241, bgB = 235 // cream #f5f1eb
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
@@ -1459,14 +1539,14 @@ function blendWithBg(hex: string, alpha: number): string {
   return `#${blendR.toString(16).padStart(2, '0')}${blendG.toString(16).padStart(2, '0')}${blendB.toString(16).padStart(2, '0')}`
 }
 
-function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Section[]): string {
+function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Section[], introText?: string, footerTagline?: string): string {
   const sectionsHtml = sections.map((s, i) => {
     const sColor = s.color || '#e91e8c'
-    const sectionBg = blendWithBg(sColor, 0.18)
-    const borderColor = blendWithBg(sColor, 0.25)
+    const sectionBg = blendWithBg(sColor, 0.08)
+    const borderColor = blendWithBg(sColor, 0.18)
 
     const img = s.imageUrl
-      ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" width="600" style="width:100%;max-width:600px;display:block;" /></div>`
+      ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" width="552" style="width:100%;max-width:552px;display:block;" /></div>`
       : ''
 
     const cta = s.ctaText && s.ctaUrl
@@ -1474,32 +1554,53 @@ function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Sec
       : ''
 
     const label = s.label ? `<p style="color:${sColor};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px 0;">${s.label}</p>` : ''
-    const title = s.title ? `<h2 style="color:#ffffff;font-size:20px;font-weight:bold;margin:0 0 16px 0;line-height:1.3;">${s.title}</h2>` : ''
-    const body = s.body.split(/\n\n+/).map((p) => `<p style="color:#1a1533;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')
+    const title = s.title ? `<h2 style="color:#1a1533;font-size:20px;font-weight:bold;margin:0 0 16px 0;line-height:1.3;">${s.title}</h2>` : ''
+    const body = s.body.split(/\n\n+/).map((p) => `<p style="color:#3d3a45;font-size:15px;line-height:1.7;margin:0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`).join('')
 
     const topRadius = s.imageUrl ? '0' : '16px'
     const spacing = i > 0 ? '<div style="height:24px;"></div>' : ''
 
-    return `${spacing}${img}<div style="background:${sectionBg};border:1px solid ${borderColor};border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">${label}${title}<div style="background:#f0eff2;border-radius:12px;padding:20px;">${body}</div>${cta}</div>`
+    return `${spacing}${img}<div style="background:${sectionBg};border:1px solid ${borderColor};border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">${label}${title}<div style="background:#ffffff;border-radius:12px;padding:20px;">${body}</div>${cta}</div>`
   }).join('')
 
   const headerImg = headerImageUrl
-    ? `<div style="text-align:center;margin-bottom:32px;"><img src="${headerImageUrl}" alt="" width="600" style="width:100%;max-width:600px;border-radius:16px;" /></div>`
+    ? `<div style="text-align:center;margin-bottom:24px;padding:0 24px;"><img src="${headerImageUrl}" alt="" width="552" style="width:100%;max-width:552px;border-radius:16px;" /></div>`
     : ''
 
+  const introHtml = introText
+    ? `<div style="text-align:center;padding:0 40px 24px 40px;"><p style="color:#3d3a45;font-size:15px;line-height:1.7;margin:0;">${introText.replace(/\n/g, '<br/>')}</p></div>`
+    : ''
+
+  const tagline = footerTagline || ''
+  const taglineHtml = tagline
+    ? `<div style="margin:32px 24px 0 24px;background:#e91e8c;border-radius:12px;padding:20px 24px;"><p style="color:#ffffff;font-size:14px;font-weight:bold;line-height:1.6;margin:0;">${tagline}</p></div>`
+    : ''
+
+  const today = new Date()
+  const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
+
   return `
-    <div style="background:#0d0b1a;padding:40px 24px;font-family:Arial,sans-serif;">
+    <div style="background:#f5f1eb;font-family:Arial,sans-serif;">
       <div style="max-width:600px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:32px;">
-          <span style="font-size:22px;font-weight:bold;"><span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Scène</span></span>
-          <p style="color:#ffffff40;font-size:11px;margin:4px 0 0 0;letter-spacing:1px;">LA NEWSLETTER</p>
+        <div style="text-align:center;padding:24px 24px 16px 24px;">
+          <p style="color:#999;font-size:11px;letter-spacing:1px;margin:0;">${dateStr} &nbsp;\u2022&nbsp; VISUALISER SUR LE WEB &nbsp;\u2022&nbsp; S\u2019ABONNER</p>
+        </div>
+        <div style="text-align:center;margin-bottom:24px;">
+          <span style="font-size:28px;font-weight:bold;font-style:italic;"><span style="color:#1a1533;">Chante</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span><span style="color:#1a1533;">.</span></span>
+          <p style="color:#999;font-size:12px;margin:4px 0 0 0;letter-spacing:2px;">LA NEWSLETTER</p>
         </div>
         ${headerImg}
-        <div style="padding:0;">
+        ${introHtml}
+        <div style="padding:0 24px;">
           ${sectionsHtml}
         </div>
-        <div style="text-align:center;margin-top:32px;">
-          <p style="color:#ffffff33;font-size:11px;">Se désinscrire</p>
+        ${taglineHtml}
+        <div style="padding:32px 24px;text-align:center;">
+          <p style="color:#3d3a45;font-size:13px;line-height:1.8;margin:0 0 16px 0;">Quelqu\u2019un vous a transf\u00e9r\u00e9 ce mail ? <strong>Inscrivez-vous \u00e0 notre newsletter ici</strong>.</p>
+          <p style="color:#3d3a45;font-size:13px;margin:0 0 24px 0;">Vous pouvez vous d\u00e9sabonner ici (et briser nos c\u0153urs).</p>
+          <p style="color:#1a1533;font-size:14px;font-weight:bold;margin:0 0 24px 0;">Facebook &nbsp;\u2022&nbsp; Instagram &nbsp;\u2022&nbsp; <span style="color:#e91e8c;">chantenscene.fr</span></p>
+          <div style="border-top:1px solid #d5d0c8;margin:0 40px 24px 40px;"></div>
+          <p style="color:#999;font-size:11px;line-height:1.6;margin:0;">Cette newsletter est \u00e9dit\u00e9e par chantenscene.fr<br/>\u00a9 2026 ChanteEnSc\u00e8ne. Tous droits r\u00e9serv\u00e9s.</p>
         </div>
       </div>
     </div>`

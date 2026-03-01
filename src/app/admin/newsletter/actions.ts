@@ -49,7 +49,9 @@ export async function createCampaignWithSections(
   target: CampaignTarget,
   sections: SectionData[],
   tone: string,
-  themes: string[]
+  themes: string[],
+  introText?: string,
+  footerTagline?: string
 ) {
   await requireAdmin()
   const supabase = createAdminClient()
@@ -66,6 +68,8 @@ export async function createCampaignWithSections(
       sections,
       tone,
       themes,
+      intro_text: introText?.trim() || null,
+      footer_tagline: footerTagline?.trim() || null,
     })
     .select('id')
     .single()
@@ -111,6 +115,8 @@ export async function sendTestCampaign(campaignId: string) {
     body: campaign.body,
     imageUrl: campaign.image_url || undefined,
     sections: campaign.sections || undefined,
+    introText: campaign.intro_text || undefined,
+    footerTagline: campaign.footer_tagline || undefined,
     unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=test-preview`,
     ctaUrl,
   })
@@ -177,6 +183,8 @@ export async function sendCampaign(campaignId: string) {
         body: campaign.body,
         imageUrl: campaign.image_url || undefined,
         sections: campaign.sections || undefined,
+        introText: campaign.intro_text || undefined,
+        footerTagline: campaign.footer_tagline || undefined,
         unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`,
         ctaUrl: campaignCtaUrl,
       })

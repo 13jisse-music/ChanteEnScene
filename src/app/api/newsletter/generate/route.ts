@@ -49,7 +49,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { mode, themes, tone, context, customThemes, siteInfo, useOpenAI } = body;
+  const { mode, action, themes, tone, subject, context, customThemes, siteInfo, useOpenAI } = body;
+
+  // Quick text suggestions (intro paragraph, footer tagline)
+  if (action === 'suggest-intro' || action === 'suggest-tagline') {
+    return handleQuickSuggest(action, subject, tone);
+  }
 
   if (mode === "suggest") {
     return handleSuggestThemes(context, siteInfo, useOpenAI);
@@ -60,6 +65,39 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: "Mode invalide" }, { status: 400 });
+}
+
+async function handleQuickSuggest(action: string, subject: string, tone: string) {
+  const toneLabel = TONE_PROMPTS[tone] || TONE_PROMPTS.decale;
+
+  const isIntro = action === 'suggest-intro';
+  const prompt = isIntro
+    ? `Tu es un r\u00e9dacteur de newsletters pour "ChanteEnSc\u00e8ne", un concours de chant amateur.
+Style : ${toneLabel}
+Sujet de la newsletter : "${subject}"
+
+\u00c9cris un court paragraphe d'introduction (2-3 phrases max) pour cette newsletter. Il doit \u00eatre accrocheur, donner envie de lire la suite.
+R\u00e9ponds UNIQUEMENT avec le texte du paragraphe, sans guillemets, sans pr\u00e9fixe.`
+    : `Tu es un r\u00e9dacteur de newsletters pour "ChanteEnSc\u00e8ne", un concours de chant amateur.
+Style : ${toneLabel}
+Sujet de la newsletter : "${subject}"
+
+\u00c9cris une phrase virale pour le bas de la newsletter (style "Transf\u00e9rez-la \u00e0 quelqu'un qui chante sous la douche").
+Elle doit inciter au partage, \u00eatre dr\u00f4le ou touchante selon le ton, et finir par un emoji.
+1 seule phrase. R\u00e9ponds UNIQUEMENT avec la phrase, sans guillemets.`;
+
+  const result = await callWithCascade(prompt);
+
+  if (!result.data) {
+    return NextResponse.json({ error: result.error || 'Erreur IA' }, { status: 502 });
+  }
+
+  const text = extractText(result.data).trim().replace(/^["']|["']$/g, '');
+
+  if (isIntro) {
+    return NextResponse.json({ introText: text });
+  }
+  return NextResponse.json({ tagline: text });
 }
 
 async function handleSuggestThemes(

@@ -707,23 +707,31 @@ export function newsletterEmail({
   body,
   imageUrl,
   sections,
+  introText,
+  footerTagline,
   unsubscribeUrl,
   ctaUrl,
+  campaignNumber,
 }: {
   subject: string
   body?: string
   imageUrl?: string
   sections?: NewsletterSection[]
+  introText?: string
+  footerTagline?: string
   unsubscribeUrl: string
   ctaUrl?: string
+  campaignNumber?: number
 }) {
-  const linkUrl = ctaUrl || 'https://chantenscene.fr'
+  const siteUrl = ctaUrl || 'https://chantenscene.fr'
   const safeSubject = escapeHtml(subject)
+  const today = new Date()
+  const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
+  const numStr = campaignNumber ? `NUM\u00c9RO ${campaignNumber}` : ''
 
-  // Helper: blend a hex color with the email dark background to produce a solid 6-digit hex
-  // (8-digit hex like #e91e8c22 is NOT supported by Gmail/Outlook — they ignore it → black)
+  // Helper: blend a hex color with cream background to produce a solid 6-digit hex
   function blendWithBg(hex: string, alpha: number): string {
-    const bgR = 13, bgG = 11, bgB = 26 // #0d0b1a background
+    const bgR = 245, bgG = 241, bgB = 235 // #f5f1eb cream background
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
     const b = parseInt(hex.slice(5, 7), 16)
@@ -734,13 +742,12 @@ export function newsletterEmail({
   }
 
   // Helper: convert text to HTML paragraphs
-  function textToHtml(text: string, darkText = false): string {
-    const color = darkText ? '#1a1533' : '#e0dfe3'
+  function textToHtml(text: string): string {
     return text
       .split(/\n\n+/)
       .map((p) => p.trim())
       .filter(Boolean)
-      .map((p) => `<p style="color:${color};font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+      .map((p) => `<p style="color:#3d3a45;font-size:15px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
       .join('')
   }
 
@@ -748,16 +755,14 @@ export function newsletterEmail({
   let contentHtml = ''
 
   if (sections && sections.length > 0) {
-    // Multi-section mode (MailForge) — style magazine avec blocs colorés
     contentHtml = sections.map((s, i) => {
       const sColor = s.color || '#e91e8c'
-      // Fond section = couleur blendée avec le bg sombre (solide, email-safe)
-      const sectionBg = blendWithBg(sColor, 0.18)
-      const borderColor = blendWithBg(sColor, 0.25)
+      const sectionBg = blendWithBg(sColor, 0.08)
+      const borderColor = blendWithBg(sColor, 0.18)
 
       const sectionImage = s.imageUrl
         ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;">
-            <a href="${escapeHtml(s.ctaUrl || linkUrl)}">
+            <a href="${escapeHtml(s.ctaUrl || siteUrl)}">
               <img src="${escapeHtml(s.imageUrl)}" alt="${escapeHtml(s.title || s.label || '')}" width="600" style="width:100%;max-width:600px;display:block;" />
             </a>
           </div>`
@@ -778,74 +783,120 @@ export function newsletterEmail({
         : ''
 
       const sectionTitle = s.title
-        ? `<h2 style="color:#ffffff;font-size:20px;font-weight:bold;margin:0 0 16px 0;line-height:1.3;">
+        ? `<h2 style="color:#1a1533;font-size:20px;font-weight:bold;margin:0 0 16px 0;line-height:1.3;">
             ${escapeHtml(s.title)}
           </h2>`
         : ''
 
-      // Chaque section = bloc avec fond coloré + cadre arrondi
       const topRadius = s.imageUrl ? '0' : '16px'
       const textBlock = `
         <div style="background:${sectionBg};border:1px solid ${borderColor};border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">
           ${sectionLabel}${sectionTitle}
-          <div style="background:#f0eff2;border-radius:12px;padding:20px;">
-            ${textToHtml(s.body, true)}
+          <div style="background:#ffffff;border-radius:12px;padding:20px;">
+            ${textToHtml(s.body)}
           </div>
           ${sectionCta}
         </div>`
 
       const spacing = i > 0 ? '<div style="height:24px;"></div>' : ''
-
       return `${spacing}${sectionImage}${textBlock}`
     }).join('')
   } else if (body) {
-    // Legacy mode (simple body text)
     contentHtml = `
       <h1 style="color:#e91e8c;font-size:20px;margin:0 0 20px 0;text-align:center;">
         ${safeSubject}
       </h1>
       ${textToHtml(body)}
       <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="${escapeHtml(linkUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+        <a href="${escapeHtml(siteUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
           Visiter le site
         </a>
       </div>`
   }
 
+  // Intro paragraph (between header image and first section)
+  const introHtml = introText
+    ? `<div style="text-align:center;padding:0 16px 24px 16px;">
+        <p style="color:#3d3a45;font-size:15px;line-height:1.7;margin:0;">${escapeHtml(introText).replace(/\n/g, '<br/>')}</p>
+      </div>`
+    : ''
+
+  // Footer tagline (viral pink bar)
+  const tagline = footerTagline || 'Vous aimez cette newsletter ? Transf\u00e9rez-la \u00e0 quelqu\u2019un qui chante sous la douche. On ne juge pas. On recrute. \ud83c\udfa4'
+  const safeTagline = escapeHtml(tagline)
+
   const html = `
 <!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+<body style="margin:0;padding:0;background:#f5f1eb;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;">
+
+    <!-- Top bar: date + links -->
+    <div style="text-align:center;padding:24px 24px 16px 24px;">
+      <p style="color:#999;font-size:11px;letter-spacing:1px;margin:0;">
+        ${dateStr}${numStr ? ` &nbsp;\u2022&nbsp; ${numStr}` : ''}
+        &nbsp;\u2022&nbsp; <a href="${escapeHtml(siteUrl)}" style="color:#999;text-decoration:none;">VISUALISER SUR LE WEB</a>
+        &nbsp;\u2022&nbsp; <a href="${escapeHtml(siteUrl)}" style="color:#999;text-decoration:none;">S\u2019ABONNER</a>
+      </p>
+    </div>
 
     <!-- Logo -->
-    <div style="text-align:center;margin-bottom:32px;">
-      <span style="font-size:22px;font-weight:bold;">
-        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span>
+    <div style="text-align:center;margin-bottom:24px;">
+      <span style="font-size:28px;font-weight:bold;font-style:italic;">
+        <span style="color:#1a1533;">Chante</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Sc\u00e8ne</span><span style="color:#1a1533;">.</span>
       </span>
-      <p style="color:#ffffff40;font-size:11px;margin:4px 0 0 0;letter-spacing:1px;">LA NEWSLETTER</p>
+      <p style="color:#999;font-size:12px;margin:4px 0 0 0;letter-spacing:2px;">LA NEWSLETTER</p>
     </div>
 
     ${imageUrl ? `
     <!-- Header image -->
-    <div style="text-align:center;margin-bottom:32px;">
-      <a href="${escapeHtml(linkUrl)}">
-        <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" width="600" style="width:100%;max-width:600px;border-radius:16px;" />
+    <div style="text-align:center;margin-bottom:24px;padding:0 24px;">
+      <a href="${escapeHtml(siteUrl)}">
+        <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" width="552" style="width:100%;max-width:552px;border-radius:16px;" />
       </a>
     </div>
     ` : ''}
 
+    ${introHtml}
+
     <!-- Content -->
-    <div style="padding:0;">
+    <div style="padding:0 24px;">
       ${contentHtml}
     </div>
 
-    <!-- Footer -->
-    <div style="text-align:center;margin-top:32px;">
-      <p style="color:#ffffff33;font-size:11px;line-height:1.6;">
-        Vous recevez cet email car vous \u00eates abonn\u00e9 aux actualit\u00e9s ChanteEnSc\u00e8ne.<br/>
-        <a href="${escapeHtml(unsubscribeUrl)}" style="color:#e91e8c;">Se d\u00e9sinscrire</a>
+    <!-- Viral tagline bar -->
+    <div style="margin:32px 24px 0 24px;background:#e91e8c;border-radius:12px;padding:20px 24px;">
+      <p style="color:#ffffff;font-size:14px;font-weight:bold;line-height:1.6;margin:0;">
+        ${safeTagline}
+      </p>
+    </div>
+
+    <!-- Functional footer -->
+    <div style="padding:32px 24px;text-align:center;">
+      <p style="color:#3d3a45;font-size:13px;line-height:1.8;margin:0 0 16px 0;">
+        Quelqu\u2019un vous a transf\u00e9r\u00e9 ce mail ? <a href="${escapeHtml(siteUrl)}" style="color:#1a1533;font-weight:bold;text-decoration:underline;">Inscrivez-vous \u00e0 notre newsletter ici</a>.
+      </p>
+      <p style="color:#3d3a45;font-size:13px;line-height:1.8;margin:0 0 24px 0;">
+        Vous pouvez vous <a href="${escapeHtml(unsubscribeUrl)}" style="color:#1a1533;text-decoration:underline;">d\u00e9sabonner ici</a> (et briser nos c\u0153urs).
+      </p>
+
+      <!-- Social links -->
+      <p style="color:#1a1533;font-size:14px;font-weight:bold;margin:0 0 24px 0;">
+        <a href="https://www.facebook.com/chantenscene" style="color:#1a1533;text-decoration:none;">Facebook</a>
+        &nbsp;&nbsp;\u2022&nbsp;&nbsp;
+        <a href="https://www.instagram.com/chantenscene" style="color:#1a1533;text-decoration:none;">Instagram</a>
+        &nbsp;&nbsp;\u2022&nbsp;&nbsp;
+        <a href="https://chantenscene.fr" style="color:#e91e8c;text-decoration:none;">chantenscene.fr</a>
+      </p>
+
+      <!-- Separator -->
+      <div style="border-top:1px solid #d5d0c8;margin:0 40px 24px 40px;"></div>
+
+      <!-- Copyright -->
+      <p style="color:#999;font-size:11px;line-height:1.6;margin:0;">
+        Cette newsletter est \u00e9dit\u00e9e par chantenscene.fr<br/>
+        \u00a9 2026 ChanteEnSc\u00e8ne. Tous droits r\u00e9serv\u00e9s.
       </p>
     </div>
 
