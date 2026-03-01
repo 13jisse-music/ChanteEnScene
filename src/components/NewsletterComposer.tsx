@@ -141,7 +141,8 @@ export default function NewsletterComposer({
           if (remaining <= 0) clearInterval(timer)
         }, 1000)
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erreur' })
+        const msg = data.error === 'quota_exhausted' ? 'Quota IA épuisé, réessayez plus tard' : (data.error || 'Erreur')
+        setMessage({ type: 'error', text: msg })
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau' })
@@ -200,7 +201,8 @@ export default function NewsletterComposer({
           if (remaining <= 0) clearInterval(timer)
         }, 1000)
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erreur de génération' })
+        const msg = data.error === 'quota_exhausted' ? 'Quota IA épuisé, réessayez plus tard' : (data.error || 'Erreur de génération')
+        setMessage({ type: 'error', text: msg })
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau' })
@@ -228,15 +230,26 @@ export default function NewsletterComposer({
           return next
         })
         setMessage({ type: 'success', text: `Image générée via ${data.provider === 'dalle' ? 'DALL-E (~0.04$)' : 'Gemini (gratuit)'}` })
-      } else if (data.error === 'quota_exhausted') {
+      } else if (data.error === 'quota_exhausted' || res.status === 429) {
+        // Gemini quota exhausted — auto-fallback to DALL-E if available
+        if (data.hasDalle && provider !== 'dalle') {
+          setMessage({ type: 'success', text: 'Quota Gemini épuisé — bascule auto vers DALL-E...' })
+          setLoading('')
+          // Auto-retry with DALL-E
+          return handleGenerateImage(index, 'dalle')
+        }
         setMessage({
           type: 'error',
-          text: `Quota Gemini Image épuisé (réessayer dans ${data.retryIn}s)${data.hasDalle ? ' — Cliquez à nouveau sur 🎨 pour utiliser DALL-E (~0.04$)' : ''}`,
+          text: `Quota Gemini Image épuisé (réessayer dans ${data.retryIn || 60}s). Aucun fallback DALL-E disponible.`,
         })
-        // Store the index so next click uses DALL-E
-        pendingDalleRef.current = index
       } else {
-        setMessage({ type: 'error', text: data.error || 'Impossible de générer l\'image' })
+        // Translate raw error codes to user-friendly messages
+        const errorMap: Record<string, string> = {
+          'quota_exhausted': 'Quota IA épuisé, réessayez plus tard',
+          'Erreur DALL-E': 'Erreur lors de la génération DALL-E',
+        }
+        const friendlyMsg = errorMap[data.error] || data.error || 'Impossible de générer l\'image'
+        setMessage({ type: 'error', text: friendlyMsg })
       }
     } catch {
       setMessage({ type: 'error', text: 'Erreur réseau' })
@@ -1056,10 +1069,22 @@ function processImageForNewsletter(
 
 // ─── Preview HTML builder (client-side approximation) ───
 
+function blendWithBg(hex: string, alpha: number): string {
+  const bgR = 13, bgG = 11, bgB = 26
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const blendR = Math.round(bgR * (1 - alpha) + r * alpha)
+  const blendG = Math.round(bgG * (1 - alpha) + g * alpha)
+  const blendB = Math.round(bgB * (1 - alpha) + b * alpha)
+  return `#${blendR.toString(16).padStart(2, '0')}${blendG.toString(16).padStart(2, '0')}${blendB.toString(16).padStart(2, '0')}`
+}
+
 function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Section[]): string {
   const sectionsHtml = sections.map((s, i) => {
     const sColor = s.color || '#e91e8c'
-    const sectionBg = `${sColor}22`
+    const sectionBg = blendWithBg(sColor, 0.18)
+    const borderColor = blendWithBg(sColor, 0.25)
 
     const img = s.imageUrl
       ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" style="max-width:100%;display:block;" /></div>`
@@ -1076,7 +1101,7 @@ function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Sec
     const topRadius = s.imageUrl ? '0' : '16px'
     const spacing = i > 0 ? '<div style="height:24px;"></div>' : ''
 
-    return `${spacing}${img}<div style="background:${sectionBg};border:1px solid ${sColor}33;border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">${label}${title}<div style="background:#ffffffdd;border-radius:12px;padding:20px;">${body}</div>${cta}</div>`
+    return `${spacing}${img}<div style="background:${sectionBg};border:1px solid ${borderColor};border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">${label}${title}<div style="background:#f0eff2;border-radius:12px;padding:20px;">${body}</div>${cta}</div>`
   }).join('')
 
   const headerImg = headerImageUrl

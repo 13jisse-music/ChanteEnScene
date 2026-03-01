@@ -720,13 +720,27 @@ export function newsletterEmail({
   const linkUrl = ctaUrl || 'https://chantenscene.fr'
   const safeSubject = escapeHtml(subject)
 
+  // Helper: blend a hex color with the email dark background to produce a solid 6-digit hex
+  // (8-digit hex like #e91e8c22 is NOT supported by Gmail/Outlook — they ignore it → black)
+  function blendWithBg(hex: string, alpha: number): string {
+    const bgR = 13, bgG = 11, bgB = 26 // #0d0b1a background
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const blendR = Math.round(bgR * (1 - alpha) + r * alpha)
+    const blendG = Math.round(bgG * (1 - alpha) + g * alpha)
+    const blendB = Math.round(bgB * (1 - alpha) + b * alpha)
+    return `#${blendR.toString(16).padStart(2, '0')}${blendG.toString(16).padStart(2, '0')}${blendB.toString(16).padStart(2, '0')}`
+  }
+
   // Helper: convert text to HTML paragraphs
-  function textToHtml(text: string): string {
+  function textToHtml(text: string, darkText = false): string {
+    const color = darkText ? '#1a1533' : '#e0dfe3'
     return text
       .split(/\n\n+/)
       .map((p) => p.trim())
       .filter(Boolean)
-      .map((p) => `<p style="color:#ffffffcc;font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+      .map((p) => `<p style="color:${color};font-size:14px;line-height:1.7;margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
       .join('')
   }
 
@@ -737,8 +751,9 @@ export function newsletterEmail({
     // Multi-section mode (MailForge) — style magazine avec blocs colorés
     contentHtml = sections.map((s, i) => {
       const sColor = s.color || '#e91e8c'
-      // Couleur de fond section = couleur de la section en très transparent
-      const sectionBg = `${sColor}22`
+      // Fond section = couleur blendée avec le bg sombre (solide, email-safe)
+      const sectionBg = blendWithBg(sColor, 0.18)
+      const borderColor = blendWithBg(sColor, 0.25)
 
       const sectionImage = s.imageUrl
         ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;">
@@ -771,10 +786,10 @@ export function newsletterEmail({
       // Chaque section = bloc avec fond coloré + cadre arrondi
       const topRadius = s.imageUrl ? '0' : '16px'
       const textBlock = `
-        <div style="background:${sectionBg};border:1px solid ${sColor}33;border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">
+        <div style="background:${sectionBg};border:1px solid ${borderColor};border-radius:${topRadius} ${topRadius} 16px 16px;padding:24px 24px 28px 24px;">
           ${sectionLabel}${sectionTitle}
-          <div style="background:#ffffffdd;border-radius:12px;padding:20px;">
-            ${textToHtml(s.body).replace(/#ffffffcc/g, '#1a1533')}
+          <div style="background:#f0eff2;border-radius:12px;padding:20px;">
+            ${textToHtml(s.body, true)}
           </div>
           ${sectionCta}
         </div>`
