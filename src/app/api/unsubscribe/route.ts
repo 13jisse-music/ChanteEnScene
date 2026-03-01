@@ -32,6 +32,14 @@ export async function GET(request: Request) {
   }
 
   const supabase = createAdminClient()
+
+  // Find subscriber email before deactivating
+  const { data: sub } = await supabase
+    .from('email_subscribers')
+    .select('email')
+    .eq('unsubscribe_token', token)
+    .single()
+
   const { error } = await supabase
     .from('email_subscribers')
     .update({ is_active: false })
@@ -42,6 +50,15 @@ export async function GET(request: Request) {
       status: 500,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     })
+  }
+
+  // Log unsubscribe event (fire-and-forget)
+  if (sub?.email) {
+    supabase.from('email_events').insert({
+      campaign_id: null as unknown as string, // no specific campaign
+      subscriber_email: sub.email,
+      event_type: 'unsubscribe',
+    }).then(() => {})
   }
 
   return new NextResponse(

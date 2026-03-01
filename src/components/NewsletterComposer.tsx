@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   sendTestCampaign,
   sendCampaign,
+  getCampaignStats,
 } from '@/app/admin/newsletter/actions'
 
 // ─── Types ───
@@ -126,6 +127,14 @@ export default function NewsletterComposer({
 
   // State: AI provider tracking
   const [providerLog, setProviderLog] = useState<{ provider: string; action: string; time: Date }[]>([])
+
+  // State: campaign stats
+  const [statsId, setStatsId] = useState<string | null>(null)
+  const [stats, setStats] = useState<{
+    opens: number; uniqueOpens: number; clicks: number; uniqueClicks: number; unsubscribes: number
+    clickUrls: { url: string; count: number }[]
+  } | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
 
   const pendingDalleRef = useRef<number | null>(null)
 
@@ -451,6 +460,25 @@ export default function NewsletterComposer({
       setCampaigns((prev) => prev.filter((c) => c.id !== campaignId))
     }
     setLoading('')
+  }
+
+  const handleLoadStats = async (campaignId: string) => {
+    if (statsId === campaignId) {
+      setStatsId(null)
+      setStats(null)
+      return
+    }
+    setStatsId(campaignId)
+    setStatsLoading(true)
+    setStats(null)
+    try {
+      const result = await getCampaignStats(campaignId)
+      setStats(result)
+    } catch {
+      setMessage({ type: 'error', text: 'Erreur chargement stats' })
+      setStatsId(null)
+    }
+    setStatsLoading(false)
   }
 
   // ─── Render ───
@@ -1217,8 +1245,71 @@ export default function NewsletterComposer({
                           </button>
                         </>
                       )}
+                      {c.status === 'sent' && (
+                        <button
+                          onClick={() => handleLoadStats(c.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            statsId === c.id
+                              ? 'bg-[#e91e8c]/20 text-[#e91e8c]'
+                              : 'bg-white/5 text-white/50 hover:bg-white/10'
+                          }`}
+                        >
+                          {statsLoading && statsId === c.id ? '...' : '📊 Stats'}
+                        </button>
+                      )}
                     </div>
                   </div>
+
+                  {/* Stats panel */}
+                  {statsId === c.id && stats && (
+                    <div className="mt-3 pt-3 border-t border-[#2a2545]">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                        <div className="bg-white/5 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-[#7ec850]">{stats.uniqueOpens}</p>
+                          <p className="text-[10px] text-white/40 mt-1">Ouvertures uniques</p>
+                          {c.total_sent > 0 && (
+                            <p className="text-xs text-white/30 mt-0.5">{Math.round((stats.uniqueOpens / c.total_sent) * 100)}%</p>
+                          )}
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-[#06b6d4]">{stats.uniqueClicks}</p>
+                          <p className="text-[10px] text-white/40 mt-1">Clics uniques</p>
+                          {c.total_sent > 0 && (
+                            <p className="text-xs text-white/30 mt-0.5">{Math.round((stats.uniqueClicks / c.total_sent) * 100)}%</p>
+                          )}
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-red-400">{stats.unsubscribes}</p>
+                          <p className="text-[10px] text-white/40 mt-1">Désabonnements</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-white/60">{stats.opens}</p>
+                          <p className="text-[10px] text-white/40 mt-1">Ouvertures totales</p>
+                        </div>
+                      </div>
+                      {stats.clickUrls.length > 0 && (
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-white/50 mb-2">Top liens cliqués</p>
+                          <div className="space-y-1.5">
+                            {stats.clickUrls.map((cu, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-xs font-mono text-[#e91e8c] shrink-0">{cu.count}×</span>
+                                <span className="text-xs text-white/40 truncate">{cu.url}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {stats.opens === 0 && stats.clicks === 0 && stats.unsubscribes === 0 && (
+                        <p className="text-xs text-white/30 text-center py-2">Pas encore de données de tracking</p>
+                      )}
+                    </div>
+                  )}
+                  {statsId === c.id && statsLoading && (
+                    <div className="mt-3 pt-3 border-t border-[#2a2545] text-center">
+                      <p className="text-xs text-white/30 animate-pulse">Chargement des statistiques...</p>
+                    </div>
+                  )}
                 </div>
               )
             })}

@@ -712,6 +712,8 @@ export function newsletterEmail({
   unsubscribeUrl,
   ctaUrl,
   campaignNumber,
+  campaignId,
+  subscriberEmail,
 }: {
   subject: string
   body?: string
@@ -722,8 +724,17 @@ export function newsletterEmail({
   unsubscribeUrl: string
   ctaUrl?: string
   campaignNumber?: number
+  campaignId?: string
+  subscriberEmail?: string
 }) {
   const siteUrl = ctaUrl || 'https://chantenscene.fr'
+  const trackingBase = 'https://chantenscene.fr/api/track'
+
+  // Wrap a URL through click tracking (if tracking params available)
+  function trackUrl(url: string): string {
+    if (!campaignId || !subscriberEmail) return url
+    return `${trackingBase}/click?cid=${encodeURIComponent(campaignId)}&e=${encodeURIComponent(subscriberEmail)}&url=${encodeURIComponent(url)}`
+  }
   const safeSubject = escapeHtml(subject)
   const today = new Date()
   const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
@@ -762,7 +773,7 @@ export function newsletterEmail({
 
       const sectionImage = s.imageUrl
         ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;">
-            <a href="${escapeHtml(s.ctaUrl || siteUrl)}">
+            <a href="${escapeHtml(trackUrl(s.ctaUrl || siteUrl))}">
               <img src="${escapeHtml(s.imageUrl)}" alt="${escapeHtml(s.title || s.label || '')}" width="600" style="width:100%;max-width:600px;display:block;" />
             </a>
           </div>`
@@ -770,7 +781,7 @@ export function newsletterEmail({
 
       const sectionCta = s.ctaText && s.ctaUrl
         ? `<div style="text-align:center;margin:20px 0 0 0;">
-            <a href="${escapeHtml(s.ctaUrl)}" style="display:inline-block;padding:14px 32px;background:${sColor};color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;letter-spacing:0.5px;">
+            <a href="${escapeHtml(trackUrl(s.ctaUrl))}" style="display:inline-block;padding:14px 32px;background:${sColor};color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;letter-spacing:0.5px;">
               ${escapeHtml(s.ctaText)}
             </a>
           </div>`
@@ -808,7 +819,7 @@ export function newsletterEmail({
       </h1>
       ${textToHtml(body)}
       <div style="text-align:center;margin:24px 0 0 0;">
-        <a href="${escapeHtml(siteUrl)}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
+        <a href="${escapeHtml(trackUrl(siteUrl))}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
           Visiter le site
         </a>
       </div>`
@@ -901,6 +912,7 @@ export function newsletterEmail({
     </div>
 
   </div>
+${campaignId && subscriberEmail ? `<img src="${trackingBase}/open?cid=${encodeURIComponent(campaignId)}&e=${encodeURIComponent(subscriberEmail)}" width="1" height="1" style="display:none;" alt="" />` : ''}
 </body>
 </html>`
 

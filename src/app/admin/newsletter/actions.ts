@@ -187,6 +187,8 @@ export async function sendCampaign(campaignId: string) {
         footerTagline: campaign.footer_tagline || undefined,
         unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`,
         ctaUrl: campaignCtaUrl,
+        campaignId,
+        subscriberEmail: sub.email,
       })
 
       // Envoi via IONOS SMTP (pas de quota journalier comme Resend)
@@ -225,4 +227,43 @@ export async function sendCampaign(campaignId: string) {
 
   revalidatePath('/admin/newsletter')
   return { success: true, sent, errors }
+}
+
+export async function getCampaignStats(campaignId: string) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  const { data: events } = await supabase
+    .from('email_events')
+    .select('event_type, subscriber_email, metadata, created_at')
+    .eq('campaign_id', campaignId)
+
+  if (!events) return { opens: 0, uniqueOpens: 0, clicks: 0, uniqueClicks: 0, unsubscribes: 0, clickUrls: [] as { url: string; count: number }[] }
+
+  const opens = events.filter((e) => e.event_type === 'open')
+  const clicks = events.filter((e) => e.event_type === 'click')
+  const unsubs = events.filter((e) => e.event_type === 'unsubscribe')
+
+  const uniqueOpenEmails = new Set(opens.map((e) => e.subscriber_email))
+  const uniqueClickEmails = new Set(clicks.map((e) => e.subscriber_email))
+
+  // Top clicked URLs
+  const urlCounts: Record<string, number> = {}
+  for (const c of clicks) {
+    const url = (c.metadata as { url?: string })?.url || 'unknown'
+    urlCounts[url] = (urlCounts[url] || 0) + 1
+  }
+  const clickUrls = Object.entries(urlCounts)
+    .map(([url, count]) => ({ url, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  return {
+    opens: opens.length,
+    uniqueOpens: uniqueOpenEmails.size,
+    clicks: clicks.length,
+    uniqueClicks: uniqueClickEmails.size,
+    unsubscribes: unsubs.length,
+    clickUrls,
+  }
 }
