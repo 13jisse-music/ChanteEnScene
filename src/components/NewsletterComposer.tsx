@@ -51,6 +51,15 @@ const TONES: { id: string; label: string; emoji: string }[] = [
   { id: 'inspirant', label: 'Inspirant', emoji: '✨' },
 ]
 
+const HEADER_EMOJIS = [
+  '🎤', '🎵', '🎶', '🎸', '🎹', '🎺', '🥁', '🎷',
+  '🎼', '🎧', '🔥', '⭐', '✨', '💫', '🌟', '❤️',
+  '💜', '💛', '🩷', '🧡', '💙', '🤩', '😍', '🥳',
+  '🎉', '🎊', '🏆', '👑', '🎬', '📣', '📢', '💪',
+  '👏', '🙌', '🤘', '✌️', '🎯', '💎', '🌹', '🦋',
+  '☀️', '🌈', '🍾', '🥂', '📸', '🎭', '💃', '🕺',
+]
+
 const TARGET_LABELS: Record<Target, string> = {
   all: 'Tous les abonnés',
   voluntary: 'Abonnés volontaires',
@@ -111,6 +120,7 @@ export default function NewsletterComposer({
   const [headerLine2, setHeaderLine2] = useState('')
   const [headerEmoji, setHeaderEmoji] = useState('')
   const [headerBanner, setHeaderBanner] = useState('')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const pendingDalleRef = useRef<number | null>(null)
 
@@ -772,13 +782,38 @@ export default function NewsletterComposer({
                     className="flex-1 px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm font-bold focus:border-[#e91e8c]/50 focus:outline-none"
                     style={{ color: '#e91e8c' }}
                   />
-                  <input
-                    type="text"
-                    value={headerEmoji}
-                    onChange={(e) => setHeaderEmoji(e.target.value)}
-                    placeholder="🎤"
-                    className="w-14 px-2 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-xl text-center focus:border-[#e91e8c]/50 focus:outline-none"
-                  />
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="w-14 h-10 rounded-lg bg-[#1a1533] border border-[#2a2545] text-xl text-center hover:border-[#e91e8c]/50 transition-colors"
+                      title="Choisir un emoji"
+                    >
+                      {headerEmoji || '😀'}
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="absolute right-0 top-12 z-50 bg-[#1a1533] border border-[#2a2545] rounded-xl p-3 shadow-xl w-72">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs text-gray-400">Choisis un emoji</span>
+                          {headerEmoji && (
+                            <button onClick={() => { setHeaderEmoji(''); setShowEmojiPicker(false) }} className="text-xs text-red-400 hover:text-red-300">Retirer</button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-8 gap-1">
+                          {HEADER_EMOJIS.map((em) => (
+                            <button
+                              key={em}
+                              type="button"
+                              onClick={() => { setHeaderEmoji(em); setShowEmojiPicker(false) }}
+                              className={`text-2xl w-8 h-8 flex items-center justify-center rounded hover:bg-[#2a2545] transition-colors ${headerEmoji === em ? 'bg-[#e91e8c]/30 ring-1 ring-[#e91e8c]' : ''}`}
+                            >
+                              {em}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <input
                   type="text"
