@@ -49,6 +49,9 @@ export default function PublicFooter() {
               <Link href="/palmares" className="text-white/40 text-xs hover:text-white/70 transition-colors">
                 Palmar&egrave;s
               </Link>
+              <Link href="/astuces" className="text-white/40 text-xs hover:text-white/70 transition-colors">
+                Astuces
+              </Link>
               <Link href="/presse" className="text-white/40 text-xs hover:text-white/70 transition-colors">
                 Presse
               </Link>
