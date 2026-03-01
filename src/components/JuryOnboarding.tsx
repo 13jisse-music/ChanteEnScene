@@ -35,6 +35,15 @@ export default function JuryOnboarding({ jurorName, onComplete }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-[#1a1533] to-[#0d0b1a] flex flex-col items-center justify-center px-6">
+      {/* Close button */}
+      <button
+        onClick={onComplete}
+        className="absolute top-6 left-6 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all"
+        aria-label="Fermer"
+      >
+        <span className="text-white/50 text-xl leading-none">&times;</span>
+      </button>
+
       {/* Progress dots */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 flex gap-2">
         {STEPS.map((_, i) => (

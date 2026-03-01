@@ -1052,6 +1052,16 @@ export function juryInvitationEmail({
         </a>
       </div>
 
+      <!-- Bookmark tip -->
+      <div style="background:#e91e8c15;border:1px solid #e91e8c30;border-radius:10px;padding:16px;margin:24px 0 0 0;">
+        <p style="color:#e91e8c;font-size:13px;font-weight:bold;margin:0 0 6px 0;">
+          Gardez cet email !
+        </p>
+        <p style="color:#ffffff80;font-size:12px;line-height:1.5;margin:0;">
+          Ce lien est votre accès permanent au vote. Pour revenir voter, il suffit de rouvrir cet email et de cliquer sur le bouton ci-dessus.
+        </p>
+      </div>
+
       <p style="color:#ffffff50;font-size:12px;line-height:1.6;margin:24px 0 0 0;">
         Vous pouvez aussi vous connecter avec votre email sur :<br/>
         <a href="${loginUrl}" style="color:#e91e8c;">${loginUrl}</a>

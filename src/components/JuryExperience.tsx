@@ -62,10 +62,8 @@ export default function JuryExperience({ juror, session, candidates, existingSco
   const jurorName = `${juror.first_name || ''} ${juror.last_name || ''}`.trim() || 'Juré'
   const deadline = session.config?.jury_voting_deadline || null
 
-  const [view, setView] = useState<View>(() => {
-    if (!juror.onboarding_done) return 'onboarding'
-    return 'dashboard'
-  })
+  // Always show onboarding splash on each visit (serves as reminder + easy close with ✕)
+  const [view, setView] = useState<View>('onboarding')
 
   // Track login on mount (fire-and-forget)
   useEffect(() => {
