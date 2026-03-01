@@ -16,6 +16,7 @@ interface PreviewPost {
   label: string
   message: string
   link?: string
+  imageUrl?: string
   suggested_image_prompt?: string
 }
 
@@ -120,7 +121,7 @@ export default function SocialAdminPage() {
     setSelectedPreview(post)
     setMessage(post.message)
     setLink(post.link || '')
-    setImageUrl('')
+    setImageUrl(post.imageUrl || '')
     setSocialResult(null)
     // Scroll vers le formulaire de publication
     document.getElementById('publish-section')?.scrollIntoView({ behavior: 'smooth' })
@@ -348,9 +349,15 @@ export default function SocialAdminPage() {
                     Utiliser ce post →
                   </button>
                 </div>
-                <p className="text-sm text-white/70 whitespace-pre-line line-clamp-3">
+                <p className="text-sm text-white/70 whitespace-pre-line line-clamp-4">
                   {post.message}
                 </p>
+                {post.imageUrl && (
+                  <div className="mt-3 rounded-xl overflow-hidden border border-[#2a2545] max-w-[200px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={post.imageUrl} alt="Apercu carte sociale" className="w-full h-auto" />
+                  </div>
+                )}
                 {post.suggested_image_prompt && (
                   <button
                     onClick={(e) => {

@@ -16,6 +16,7 @@ interface PreviewPost {
   label: string
   message: string
   link?: string
+  imageUrl?: string
   suggested_image_prompt?: string
   priority: number
 }
@@ -27,39 +28,55 @@ function daysUntil(dateStr: string): number {
 }
 
 function generateAllPossiblePosts(
-  session: { name: string; slug: string; config: SessionConfig; status: string },
+  session: { id: string; name: string; slug: string; config: SessionConfig; status: string },
   totalCandidates: number,
-  newCandidates: { stage_name: string; first_name: string; last_name: string; slug: string }[],
+  newCandidates: { stage_name: string; first_name: string; last_name: string; slug: string; song_title?: string; song_artist?: string }[],
   siteUrl: string
 ): PreviewPost[] {
   const posts: PreviewPost[] = []
   const config = session.config || {}
   const sessionUrl = `${siteUrl}/${session.slug}`
 
-  // ── 1. Nouveaux candidats ───────────────────────────────────
+  // ── 1. Nouveaux candidats — format liste consolidée ─────────
   if (newCandidates.length > 0) {
-    if (newCandidates.length === 1) {
-      const c = newCandidates[0]
-      const name = c.stage_name || `${c.first_name} ${c.last_name}`
-      posts.push({
-        type: 'new_candidate_welcome',
-        label: `Bienvenue : ${name}`,
-        priority: 1,
-        message: `🎤 Bienvenue à ${name} qui rejoint l'aventure ${session.name} ! Bonne chance ! 🍀\n\nDécouvrez son profil 👉 ${sessionUrl}/candidats/${c.slug}\n\n#ChanteEnScène #ConcoursDeChant`,
-        link: `${sessionUrl}/candidats/${c.slug}`,
-        suggested_image_prompt: `Affiche "BIENVENUE" pour un concours de chant, style moderne avec projecteur sur scène, micro doré, nom "${name}", confettis, couleurs rose vif #e91e8c et violet foncé #1a1232`,
-      })
+    const count = newCandidates.length
+    const displayCandidates = newCandidates.slice(0, 5)
+
+    // Build candidate lines
+    const candidateLines = displayCandidates.map(c => {
+      const name = c.stage_name || c.first_name
+      const song = c.song_title ? ` \u2014 \u00AB ${c.song_title} \u00BB` : ''
+      const artist = c.song_artist ? ` (${c.song_artist})` : ''
+      return `🎙️ ${name}${song}${artist}\n👉 ${sessionUrl}/candidats/${c.slug}`
+    }).join('\n\n')
+
+    // Footer message based on count
+    let footerMsg = ''
+    if (count <= 3) {
+      footerMsg = '💬 Il reste de la place, inscrivez-vous !\n👉 ' + sessionUrl + '/inscription'
+    } else if (count <= 5) {
+      footerMsg = '🔥 La compétition s\'intensifie, qui sera le prochain ?'
     } else {
-      const names = newCandidates.map(c => c.stage_name || c.first_name).join(', ')
-      posts.push({
-        type: 'new_candidates_welcome',
-        label: `${newCandidates.length} nouveaux candidats`,
-        priority: 1,
-        message: `🎤 ${newCandidates.length} nouveaux candidats rejoignent ${session.name} !\n\nBienvenue à ${names} ! Bonne chance à tous ! 🍀\n\nDécouvrez-les 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
-        link: `${sessionUrl}/candidats`,
-        suggested_image_prompt: `Affiche concours de chant avec "${newCandidates.length} nouveaux candidats", silhouettes sur scène, ambiance concert festive, couleurs rose #e91e8c et violet #1a1232`,
-      })
+      footerMsg = `🔥 ${count} nouveaux aujourd'hui ! La suite demain...`
     }
+
+    const title = count === 1
+      ? `🎤 Nouveau candidat ${session.name} !`
+      : `🎤 ${count} nouveaux candidats ${session.name} !`
+
+    // Image URL for social card
+    const slugs = displayCandidates.map(c => c.slug).join(',')
+    const imageUrl = `${siteUrl}/api/social-card?session_id=${session.id}&slugs=${slugs}`
+
+    posts.push({
+      type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
+      label: count === 1 ? `Bienvenue : ${displayCandidates[0].stage_name || displayCandidates[0].first_name}` : `${count} nouveaux candidats`,
+      priority: 1,
+      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n🗳️ Votez pour votre favori !\n\n#ChanteEnScène #ConcoursDeChant`,
+      link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
+      imageUrl,
+      suggested_image_prompt: `Affiche concours de chant "${count} nouveaux candidats", photos rondes sur fond sombre, ambiance concert, couleurs rose #e91e8c et violet #1a1232`,
+    })
   }
 
   // ── 2. Countdown fermeture inscriptions (J-30, J-14, J-7, J-3, J-1) ─
@@ -311,13 +328,13 @@ export async function GET() {
 
     const { data: newCandidates } = await admin
       .from('candidates')
-      .select('first_name, last_name, stage_name, slug')
+      .select('first_name, last_name, stage_name, slug, song_title, song_artist')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
       .gte('created_at', oneDayAgo)
 
     const posts = generateAllPossiblePosts(
-      { name: session.name, slug: session.slug, config, status: session.status },
+      { id: session.id, name: session.name, slug: session.slug, config, status: session.status },
       totalCandidates || 0,
       newCandidates || [],
       siteUrl

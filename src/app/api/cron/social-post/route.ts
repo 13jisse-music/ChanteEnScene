@@ -24,6 +24,7 @@ interface GeneratedPost {
   type: string
   message: string
   link?: string
+  imageUrl?: string
   priority: number // Plus bas = plus prioritaire
 }
 
@@ -34,9 +35,9 @@ function daysUntil(dateStr: string): number {
 }
 
 function generatePosts(
-  session: { name: string; slug: string; config: SessionConfig; status: string },
+  session: { id: string; name: string; slug: string; config: SessionConfig; status: string },
   totalCandidates: number,
-  newCandidatesSinceYesterday: { stage_name: string; first_name: string; last_name: string; slug: string }[],
+  newCandidatesSinceYesterday: { stage_name: string; first_name: string; last_name: string; slug: string; song_title?: string; song_artist?: string; photo_url?: string }[],
   siteUrl: string
 ): GeneratedPost[] {
   const posts: GeneratedPost[] = []
@@ -44,33 +45,44 @@ function generatePosts(
   const sessionUrl = `${siteUrl}/${session.slug}`
   const dayOfWeek = new Date().getDay() // 0=dimanche
 
-  // ── 1. Nouveaux candidats (priorité haute) ──────────────────
+  // ── 1. Nouveaux candidats — format liste consolidée ────────
   if (newCandidatesSinceYesterday.length > 0 && session.status === 'registration_open') {
-    if (newCandidatesSinceYesterday.length === 1) {
-      const c = newCandidatesSinceYesterday[0]
-      const name = c.stage_name || `${c.first_name} ${c.last_name}`
-      posts.push({
-        type: 'new_candidate_welcome',
-        priority: 1,
-        message: `🎤 Bienvenue à ${name} qui rejoint l'aventure ${session.name} ! Bonne chance ! 🍀\n\nDécouvrez son profil 👉 ${sessionUrl}/candidats/${c.slug}\n\n#ChanteEnScène #ConcoursDeChant`,
-        link: `${sessionUrl}/candidats/${c.slug}`,
-      })
-    } else if (newCandidatesSinceYesterday.length <= 5) {
-      const names = newCandidatesSinceYesterday.map(c => c.stage_name || c.first_name).join(', ')
-      posts.push({
-        type: 'new_candidates_welcome',
-        priority: 1,
-        message: `🎤 ${newCandidatesSinceYesterday.length} nouveaux candidats rejoignent ${session.name} !\n\nBienvenue à ${names} ! Bonne chance à tous ! 🍀\n\nDécouvrez-les 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
-        link: `${sessionUrl}/candidats`,
-      })
+    const count = newCandidatesSinceYesterday.length
+    const displayCandidates = newCandidatesSinceYesterday.slice(0, 5)
+
+    // Build candidate lines
+    const candidateLines = displayCandidates.map(c => {
+      const name = c.stage_name || c.first_name
+      const song = c.song_title ? ` — \u00AB ${c.song_title} \u00BB` : ''
+      const artist = c.song_artist ? ` (${c.song_artist})` : ''
+      return `🎙️ ${name}${song}${artist}\n👉 ${sessionUrl}/candidats/${c.slug}`
+    }).join('\n\n')
+
+    // Footer message based on count
+    let footerMsg = ''
+    if (count <= 3) {
+      footerMsg = '💬 Il reste de la place, inscrivez-vous !\n👉 ' + sessionUrl + '/inscription'
+    } else if (count <= 5) {
+      footerMsg = '🔥 La compétition s\'intensifie, qui sera le prochain ?'
     } else {
-      posts.push({
-        type: 'new_candidates_wave',
-        priority: 1,
-        message: `🔥 ${newCandidatesSinceYesterday.length} nouveaux candidats ont rejoint ${session.name} ! La compétition s'annonce intense !\n\nDécouvrez-les tous 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant`,
-        link: `${sessionUrl}/candidats`,
-      })
+      footerMsg = `🔥 ${count} nouveaux aujourd'hui ! La suite demain...`
     }
+
+    const title = count === 1
+      ? `🎤 Nouveau candidat ${session.name} !`
+      : `🎤 ${count} nouveaux candidats ${session.name} !`
+
+    // Slugs for social card image
+    const slugs = displayCandidates.map(c => c.slug).join(',')
+    const imageUrl = `${siteUrl}/api/social-card?session_id=${session.id}&slugs=${slugs}`
+
+    posts.push({
+      type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
+      priority: 1,
+      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n🗳️ Votez pour votre favori !\n\n#ChanteEnScène #ConcoursDeChant`,
+      link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
+      imageUrl,
+    })
   }
 
   // ── 2. Countdown fermeture inscriptions (après 5+ inscrits) ─
@@ -220,13 +232,13 @@ export async function GET(request: Request) {
     // Nouveaux candidats depuis hier (24h)
     const { data: newCandidates } = await supabase
       .from('candidates')
-      .select('first_name, last_name, stage_name, slug')
+      .select('first_name, last_name, stage_name, slug, song_title, song_artist, photo_url')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
       .gte('created_at', oneDayAgo)
 
     const posts = generatePosts(
-      { name: session.name, slug: session.slug, config, status: session.status },
+      { id: session.id, name: session.name, slug: session.slug, config, status: session.status },
       totalCandidates || 0,
       newCandidates || [],
       socialSiteUrl
@@ -238,7 +250,7 @@ export async function GET(request: Request) {
     const postToPublish = posts[0]
     if (postToPublish) {
       try {
-        const result = await publishEverywhere(postToPublish.message, undefined, postToPublish.link)
+        const result = await publishEverywhere(postToPublish.message, postToPublish.imageUrl, postToPublish.link)
         const fbOk = result.facebook && !('error' in result.facebook)
         const fbError = result.facebook && 'error' in result.facebook ? result.facebook.error : undefined
 
@@ -254,6 +266,7 @@ export async function GET(request: Request) {
           post_type: postToPublish.type,
           source: 'cron',
           message: postToPublish.message,
+          image_url: postToPublish.imageUrl || null,
           link: postToPublish.link || null,
           facebook_post_id: fbOk && 'id' in result.facebook! ? result.facebook.id : null,
           instagram_post_id: result.instagram && 'id' in result.instagram ? result.instagram.id : null,
