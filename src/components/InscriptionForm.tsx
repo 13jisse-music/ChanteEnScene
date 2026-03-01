@@ -323,6 +323,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
             email: email.trim().toLowerCase(),
             candidateName: stageName.trim() || `${firstName.trim()} ${lastName.trim()}`,
             sessionName: session.name,
+            sessionId: session.id,
             category,
             songTitle: songTitle.trim(),
             songArtist: songArtist.trim(),
