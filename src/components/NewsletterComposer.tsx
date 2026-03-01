@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   createCampaignWithSections,
   deleteCampaign,
@@ -104,9 +104,28 @@ export default function NewsletterComposer({
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
   const [quotaRetryIn, setQuotaRetryIn] = useState(0)
   const [showOpenAIConfirm, setShowOpenAIConfirm] = useState<'suggest' | 'compose' | null>(null)
+
+  // State: header composer (magazine style)
+  const [headerPhoto, setHeaderPhoto] = useState<string | null>(null)
+  const [headerLine1, setHeaderLine1] = useState('')
+  const [headerLine2, setHeaderLine2] = useState('')
+  const [headerEmoji, setHeaderEmoji] = useState('')
+  const [headerBanner, setHeaderBanner] = useState('')
+
   const pendingDalleRef = useRef<number | null>(null)
 
   const recipientCount = target === 'all' ? counts.total : target === 'voluntary' ? counts.voluntary : counts.legacy
+
+  // Auto-compose header image when composer inputs change
+  useEffect(() => {
+    if (!headerPhoto) return
+    const img = new Image()
+    img.onload = () => {
+      const result = composeHeaderImage(img, headerLine1, headerLine2, headerEmoji, headerBanner)
+      setHeaderImageUrl(result)
+    }
+    img.src = headerPhoto
+  }, [headerPhoto, headerLine1, headerLine2, headerEmoji, headerBanner])
 
   // ─── Handlers ───
 
@@ -224,9 +243,13 @@ export default function NewsletterComposer({
       })
       const data = await res.json()
       if (data.imageUrl) {
+        // Resize base64 images to 600px wide for consistent newsletter layout
+        const finalUrl = data.imageUrl.startsWith('data:')
+          ? await resizeImageToWidth(data.imageUrl, 600)
+          : data.imageUrl
         setSections((prev) => {
           const next = [...prev]
-          next[index] = { ...next[index], imageUrl: data.imageUrl }
+          next[index] = { ...next[index], imageUrl: finalUrl }
           return next
         })
         setMessage({ type: 'success', text: `Image générée via ${data.provider === 'dalle' ? 'DALL-E (~0.04$)' : 'Gemini (gratuit)'}` })
@@ -343,6 +366,11 @@ export default function NewsletterComposer({
       setSelectedThemes([])
       setSuggestedThemes([])
       setHeaderImageUrl('')
+      setHeaderPhoto(null)
+      setHeaderLine1('')
+      setHeaderLine2('')
+      setHeaderEmoji('')
+      setHeaderBanner('')
       window.location.reload()
     }
     setLoading('')
@@ -635,16 +663,140 @@ export default function NewsletterComposer({
             />
           </div>
 
-          {/* Header image */}
-          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4">
-            <label className="text-white/50 text-xs block mb-1">Image d&apos;en-tête (optionnel)</label>
-            <input
-              type="url"
-              value={headerImageUrl}
-              onChange={(e) => setHeaderImageUrl(e.target.value)}
-              placeholder="URL image ou glisser une image..."
-              className="w-full px-4 py-2.5 rounded-xl bg-[#1a1533] border border-[#2a2545] text-sm text-white placeholder-white/20 focus:border-[#e91e8c]/50 focus:outline-none"
-            />
+          {/* Header image — magazine-style composer */}
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-white/50 text-xs">En-tête magazine</label>
+              {(headerImageUrl || headerPhoto) && (
+                <button
+                  onClick={() => {
+                    setHeaderImageUrl('')
+                    setHeaderPhoto(null)
+                    setHeaderLine1('')
+                    setHeaderLine2('')
+                    setHeaderEmoji('')
+                    setHeaderBanner('')
+                  }}
+                  className="text-xs text-red-400/50 hover:text-red-400"
+                >
+                  Supprimer
+                </button>
+              )}
+            </div>
+
+            {/* Upload buttons — shown when no header yet */}
+            {!headerPhoto && !headerImageUrl && (
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 px-3 py-4 rounded-xl border border-dashed border-[#2a2545] text-xs text-white/40 hover:border-[#e91e8c]/30 hover:text-white/60 cursor-pointer transition-colors">
+                  Composer (photo + texte)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = () => setHeaderPhoto(reader.result as string)
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+                <label className="flex-1 flex items-center justify-center gap-2 px-3 py-4 rounded-xl border border-dashed border-[#2a2545] text-xs text-white/40 hover:border-[#7ec850]/30 hover:text-white/60 cursor-pointer transition-colors">
+                  Image toute faite
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = () => {
+                          const img = new Image()
+                          img.onload = () => {
+                            const MAX_W = 600
+                            const ratio = Math.min(MAX_W / img.width, 1)
+                            const w = Math.round(img.width * ratio)
+                            const h = Math.round(img.height * ratio)
+                            const canvas = document.createElement('canvas')
+                            canvas.width = w
+                            canvas.height = h
+                            const ctx = canvas.getContext('2d')!
+                            ctx.drawImage(img, 0, 0, w, h)
+                            setHeaderImageUrl(canvas.toDataURL('image/jpeg', 0.92))
+                          }
+                          img.src = reader.result as string
+                        }
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* Composer fields — visible when photo uploaded */}
+            {headerPhoto && (
+              <div className="space-y-2">
+                <label className="inline-flex items-center gap-1 text-[10px] text-white/30 hover:text-white/50 cursor-pointer transition-colors">
+                  Changer la photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = () => setHeaderPhoto(reader.result as string)
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={headerLine1}
+                  onChange={(e) => setHeaderLine1(e.target.value)}
+                  placeholder="Ligne noire (ex: c'est l'appel)"
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white font-bold focus:border-[#e91e8c]/50 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={headerLine2}
+                    onChange={(e) => setHeaderLine2(e.target.value)}
+                    placeholder="Ligne rose (ex: du micro)"
+                    className="flex-1 px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm font-bold focus:border-[#e91e8c]/50 focus:outline-none"
+                    style={{ color: '#e91e8c' }}
+                  />
+                  <input
+                    type="text"
+                    value={headerEmoji}
+                    onChange={(e) => setHeaderEmoji(e.target.value)}
+                    placeholder="🎤"
+                    className="w-14 px-2 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-xl text-center focus:border-[#e91e8c]/50 focus:outline-none"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={headerBanner}
+                  onChange={(e) => setHeaderBanner(e.target.value)}
+                  placeholder="Bandeau bas (ex: les inscriptions sont ouvertes)"
+                  className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white focus:border-[#e91e8c]/50 focus:outline-none"
+                />
+              </div>
+            )}
+
+            {/* Live preview */}
+            {headerImageUrl && (
+              <div className="rounded-xl overflow-hidden border border-[#2a2545]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={headerImageUrl} alt="En-tête" className="w-full" />
+              </div>
+            )}
           </div>
 
           {/* Sections */}
@@ -1067,6 +1219,136 @@ function processImageForNewsletter(
   return canvas.toDataURL('image/jpeg', QUALITY)
 }
 
+// ─── Header composer (magazine editorial style — 600×500) ───
+
+function composeHeaderImage(
+  photo: HTMLImageElement,
+  line1: string,
+  line2: string,
+  emoji: string,
+  banner: string
+): string {
+  const W = 600, H = 500
+  const QUALITY = 0.92
+  const PHOTO_START = 175 // photo starts here → overlap with text
+  const MARGIN = 24
+
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')!
+
+  // 1. White background
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, W, H)
+
+  // 2. Photo — center-crop to fill bottom area (600 × 325)
+  const photoH = H - PHOTO_START
+  const dstAspect = W / photoH
+  const srcAspect = photo.width / photo.height
+  let sx = 0, sy = 0, sw = photo.width, sh = photo.height
+  if (srcAspect > dstAspect) {
+    sw = Math.round(photo.height * dstAspect)
+    sx = Math.round((photo.width - sw) / 2)
+  } else {
+    sh = Math.round(photo.width / dstAspect)
+    sy = Math.round((photo.height - sh) / 2)
+  }
+  ctx.drawImage(photo, sx, sy, sw, sh, 0, PHOTO_START, W, photoH)
+
+  // 3. Line 1 — bold black on white band
+  if (line1.trim()) {
+    const maxW = W - MARGIN * 2
+    let fontSize = 58
+    ctx.font = `900 ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
+    while (ctx.measureText(line1).width > maxW && fontSize > 20) {
+      fontSize -= 2
+      ctx.font = `900 ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
+    }
+    ctx.fillStyle = '#000000'
+    ctx.textBaseline = 'top'
+    ctx.fillText(line1, MARGIN, 28)
+  }
+
+  // 4. Line 2 — bold pink, overlapping white/photo boundary
+  if (line2.trim()) {
+    const emojiSpace = emoji.trim() ? 70 : 0
+    const maxW = W - MARGIN * 2 - emojiSpace
+    let fontSize = 64
+    ctx.font = `900 italic ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
+    while (ctx.measureText(line2).width > maxW && fontSize > 20) {
+      fontSize -= 2
+      ctx.font = `900 italic ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
+    }
+    ctx.fillStyle = '#e91e8c'
+    ctx.textBaseline = 'top'
+    // White shadow for readability on photo overlap
+    ctx.shadowColor = 'rgba(255,255,255,0.7)'
+    ctx.shadowBlur = 6
+    ctx.fillText(line2, MARGIN, 110)
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+
+    // Emoji next to line 2
+    if (emoji.trim()) {
+      const textW = ctx.measureText(line2).width
+      ctx.font = `${fontSize + 10}px serif`
+      ctx.fillText(emoji, MARGIN + textW + 14, 104)
+    }
+  }
+
+  // 5. Bottom banner — pink highlight with white text
+  if (banner.trim()) {
+    const bannerH = 46
+    const bannerY = H - bannerH - 14
+    let fontSize = 30
+    ctx.font = `900 ${fontSize}px "Arial Black", Arial, sans-serif`
+    // Auto-shrink banner text
+    while (ctx.measureText(banner).width + 36 > W - 24 && fontSize > 16) {
+      fontSize -= 2
+      ctx.font = `900 ${fontSize}px "Arial Black", Arial, sans-serif`
+    }
+    const textW = ctx.measureText(banner).width
+    const bannerW = textW + 36
+    const bannerX = 12
+
+    // Pink pill background
+    ctx.fillStyle = '#e91e8c'
+    ctx.beginPath()
+    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 6)
+    ctx.fill()
+
+    // White text
+    ctx.fillStyle = '#ffffff'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(banner, bannerX + 18, bannerY + bannerH / 2 + 1)
+  }
+
+  return canvas.toDataURL('image/jpeg', QUALITY)
+}
+
+// ─── Resize a base64 image to max width (for consistent 600px newsletter images) ───
+
+function resizeImageToWidth(dataUrl: string, maxWidth: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      if (img.width <= maxWidth) { resolve(dataUrl); return }
+      const ratio = maxWidth / img.width
+      const w = maxWidth
+      const h = Math.round(img.height * ratio)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
 // ─── Preview HTML builder (client-side approximation) ───
 
 function blendWithBg(hex: string, alpha: number): string {
@@ -1087,7 +1369,7 @@ function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Sec
     const borderColor = blendWithBg(sColor, 0.25)
 
     const img = s.imageUrl
-      ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" style="max-width:100%;display:block;" /></div>`
+      ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;"><img src="${s.imageUrl}" alt="" width="600" style="width:100%;max-width:600px;display:block;" /></div>`
       : ''
 
     const cta = s.ctaText && s.ctaUrl
@@ -1105,7 +1387,7 @@ function buildPreviewHtml(subject: string, headerImageUrl: string, sections: Sec
   }).join('')
 
   const headerImg = headerImageUrl
-    ? `<div style="text-align:center;margin-bottom:32px;"><img src="${headerImageUrl}" alt="" style="max-width:100%;border-radius:16px;" /></div>`
+    ? `<div style="text-align:center;margin-bottom:32px;"><img src="${headerImageUrl}" alt="" width="600" style="width:100%;max-width:600px;border-radius:16px;" /></div>`
     : ''
 
   return `

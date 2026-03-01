@@ -758,7 +758,7 @@ export function newsletterEmail({
       const sectionImage = s.imageUrl
         ? `<div style="margin-bottom:0;border-radius:16px 16px 0 0;overflow:hidden;">
             <a href="${escapeHtml(s.ctaUrl || linkUrl)}">
-              <img src="${escapeHtml(s.imageUrl)}" alt="${escapeHtml(s.title || s.label || '')}" style="max-width:100%;display:block;" />
+              <img src="${escapeHtml(s.imageUrl)}" alt="${escapeHtml(s.title || s.label || '')}" width="600" style="width:100%;max-width:600px;display:block;" />
             </a>
           </div>`
         : ''
@@ -831,7 +831,7 @@ export function newsletterEmail({
     <!-- Header image -->
     <div style="text-align:center;margin-bottom:32px;">
       <a href="${escapeHtml(linkUrl)}">
-        <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" style="max-width:100%;border-radius:16px;" />
+        <img src="${escapeHtml(imageUrl)}" alt="${safeSubject}" width="600" style="width:100%;max-width:600px;border-radius:16px;" />
       </a>
     </div>
     ` : ''}
