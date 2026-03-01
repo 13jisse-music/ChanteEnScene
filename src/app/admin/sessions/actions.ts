@@ -16,7 +16,7 @@ const DEFAULT_CONFIG = {
   semifinal_location: '',
   final_location: '',
   max_video_duration_sec: 180,
-  max_video_size_mb: 100,
+  max_video_size_mb: 50,
   max_mp3_size_mb: 20,
   max_photo_size_mb: 5,
   max_votes_per_device: 50,

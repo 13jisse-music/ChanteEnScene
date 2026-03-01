@@ -278,8 +278,16 @@ export default function InscriptionForm({ session }: { session: Session }) {
         }
         if (!uploadRes.ok) {
           const sizeMb = Math.round(videoFile.size / 1024 / 1024)
-          if (uploadRes.status === 413 || sizeMb > 500) {
-            throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). Essayez de filmer en qualité standard ou de raccourcir la vidéo.`)
+          // Supabase returns status 400 with body {"statusCode":"413"} when file exceeds limit
+          let isPayloadTooLarge = uploadRes.status === 413 || sizeMb > 50
+          if (uploadRes.status === 400) {
+            try {
+              const errBody = await uploadRes.clone().text()
+              if (errBody.includes('Payload too large') || errBody.includes('413')) isPayloadTooLarge = true
+            } catch {}
+          }
+          if (isPayloadTooLarge) {
+            throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). La taille maximum est de 50 Mo. Essayez de filmer en qualité standard (720p), de raccourcir la vidéo, ou de la compresser avant de l'envoyer.`)
           }
           throw new Error(`Erreur lors de l'envoi de la vidéo (${uploadRes.status}). Veuillez réessayer.`)
         }
@@ -600,7 +608,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
             {videoMode === 'url' ? (
               <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className={INPUT} />
             ) : (
-              <FileZone label="" accept="video/*" file={videoFile} onChange={setVideoFile} maxSizeMb={config.max_video_size_mb} hint={`Max ${config.max_video_duration_sec || 180}s`} />
+              <FileZone label="" accept="video/*" file={videoFile} onChange={setVideoFile} maxSizeMb={config.max_video_size_mb} hint={`Max ${config.max_video_size_mb} Mo — ${config.max_video_duration_sec || 180}s — Filmez en 720p si la vidéo est trop lourde`} />
             )}
           </div>
 

@@ -461,7 +461,7 @@ export default function AdminConfig({ session }: Props) {
           <Field label="Taille max vidéo (MB)">
             <input
               type="number"
-              value={config.max_video_size_mb || 100}
+              value={config.max_video_size_mb || 50}
               onChange={(e) => updateField('max_video_size_mb', parseInt(e.target.value) || 0)}
               className={inputClass}
             />
