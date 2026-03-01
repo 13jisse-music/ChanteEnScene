@@ -234,13 +234,6 @@ export default function InscriptionForm({ session }: { session: Session }) {
     }
   }
 
-  async function uploadFile(supabase: ReturnType<typeof createClient>, path: string, file: File): Promise<string> {
-    const { error } = await supabase.storage.from('candidates').upload(path, file, { upsert: true })
-    if (error) throw new Error(`Upload échoué: ${error.message}`)
-    const { data } = supabase.storage.from('candidates').getPublicUrl(path)
-    return data.publicUrl
-  }
-
   async function handleSubmit() {
     if (currentStep < STEPS.length - 1) return
     setError('')
@@ -252,62 +245,51 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (!category) throw new Error('Votre âge ne correspond à aucune catégorie.')
       if (isMinor && !consent) throw new Error("L'autorisation parentale est obligatoire pour les mineurs.")
 
-      const supabase = createClient()
       const candidateSlug = slugify(`${firstName}-${lastName}`) + '-' + Math.random().toString(36).substring(2, 6)
-      const basePath = `${session.id}/${candidateSlug}`
 
-      setUploadStep('Photo...')
-      const photoUrl = await uploadFile(supabase, `${basePath}/photo`, photo)
-
-      let finalVideoUrl = ''
-      if (videoMode === 'file' && videoFile) {
-        setUploadStep('Vidéo...')
-        finalVideoUrl = await uploadFile(supabase, `${basePath}/video`, videoFile)
-      } else if (videoMode === 'url' && videoUrl.trim()) {
-        finalVideoUrl = videoUrl.trim()
-      }
-
-      let consentUrl = ''
-      if (consent) {
-        setUploadStep('Autorisation...')
-        consentUrl = await uploadFile(supabase, `${basePath}/consent`, consent)
-      }
-
-      // Capture fingerprint for push notification targeting (silent fail)
+      // Capture fingerprint (silent fail)
       let fingerprint: string | null = null
       try { fingerprint = await getFingerprint() } catch {}
 
-      setUploadStep('Enregistrement...')
+      // Build FormData — tout passe par notre serveur (aucun appel tiers)
+      setUploadStep('Envoi en cours...')
+      const fd = new FormData()
+      fd.append('session_id', session.id)
+      fd.append('first_name', firstName.trim())
+      fd.append('last_name', lastName.trim())
+      if (stageName.trim()) fd.append('stage_name', stageName.trim())
+      fd.append('date_of_birth', dob)
+      fd.append('email', email.trim().toLowerCase())
+      if (phone.trim()) fd.append('phone', phone.trim())
+      if (city.trim()) fd.append('city', city.trim())
+      fd.append('category', category)
+      fd.append('song_title', songTitle.trim())
+      fd.append('song_artist', songArtist.trim())
+      if (bio.trim()) fd.append('bio', bio.trim())
+      fd.append('accent_color', accentColor)
+      fd.append('slug', candidateSlug)
+      fd.append('video_public', String(videoPublic))
+      if (youtubeUrl.trim()) fd.append('youtube_url', youtubeUrl.trim())
+      if (instagramUrl.trim()) fd.append('instagram_url', instagramUrl.trim())
+      if (tiktokUrl.trim()) fd.append('tiktok_url', tiktokUrl.trim())
+      if (websiteUrl.trim()) fd.append('website_url', websiteUrl.trim())
+      if (fingerprint) fd.append('fingerprint', fingerprint)
+      if (referredBy) fd.append('referred_by', referredBy)
+
+      // Files
+      fd.append('photo', photo)
+      if (videoMode === 'file' && videoFile) {
+        fd.append('video', videoFile)
+      } else if (videoMode === 'url' && videoUrl.trim()) {
+        fd.append('video_url_text', videoUrl.trim())
+      }
+      if (consent) {
+        fd.append('consent', consent)
+      }
+
       const registerRes = await fetch('/api/register-candidate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: session.id,
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          stage_name: stageName.trim() || null,
-          date_of_birth: dob,
-          email: email.trim().toLowerCase(),
-          phone: phone.trim() || null,
-          city: city.trim() || null,
-          category,
-          photo_url: photoUrl,
-          video_url: finalVideoUrl || null,
-          mp3_url: null,
-          song_title: songTitle.trim(),
-          song_artist: songArtist.trim(),
-          bio: bio.trim() || null,
-          accent_color: accentColor,
-          slug: candidateSlug,
-          video_public: videoPublic,
-          youtube_url: youtubeUrl.trim() || null,
-          instagram_url: instagramUrl.trim() || null,
-          tiktok_url: tiktokUrl.trim() || null,
-          website_url: websiteUrl.trim() || null,
-          parental_consent_url: consentUrl || null,
-          fingerprint,
-          referred_by: referredBy,
-        }),
+        body: fd,
       })
 
       const registerData = await registerRes.json()
