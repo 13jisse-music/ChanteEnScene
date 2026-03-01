@@ -1045,21 +1045,21 @@ export function juryInvitationEmail({
         Vous avez été sélectionné(e) comme <strong style="color:#e91e8c;">${safeRoleLabel}</strong> pour le concours <strong style="color:#ffffff;">${safeSessionName}</strong>.
       </p>
 
+      <!-- Bookmark tip -->
+      <div style="background:#2a1a2e;border:1px solid #e91e8c50;border-radius:10px;padding:16px;margin:0 0 24px 0;">
+        <p style="color:#e91e8c;font-size:14px;font-weight:bold;margin:0 0 8px 0;">
+          ⭐ Gardez cet email !
+        </p>
+        <p style="color:#ffffffcc;font-size:13px;line-height:1.6;margin:0;">
+          Ce lien est votre <strong style="color:#ffffff;">accès permanent</strong> au vote. Pour revenir voter, il suffit de rouvrir cet email et de cliquer sur le bouton ci-dessous.
+        </p>
+      </div>
+
       <!-- CTA Button -->
       <div style="text-align:center;margin:24px 0;">
         <a href="${juryUrl}" style="display:inline-block;padding:14px 32px;background:#e91e8c;color:#ffffff;text-decoration:none;border-radius:12px;font-size:14px;font-weight:bold;">
           Accéder à mon espace jury
         </a>
-      </div>
-
-      <!-- Bookmark tip -->
-      <div style="background:#e91e8c15;border:1px solid #e91e8c30;border-radius:10px;padding:16px;margin:24px 0 0 0;">
-        <p style="color:#e91e8c;font-size:13px;font-weight:bold;margin:0 0 6px 0;">
-          Gardez cet email !
-        </p>
-        <p style="color:#ffffff80;font-size:12px;line-height:1.5;margin:0;">
-          Ce lien est votre accès permanent au vote. Pour revenir voter, il suffit de rouvrir cet email et de cliquer sur le bouton ci-dessus.
-        </p>
       </div>
 
       <p style="color:#ffffff50;font-size:12px;line-height:1.6;margin:24px 0 0 0;">

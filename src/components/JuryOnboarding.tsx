@@ -38,7 +38,7 @@ export default function JuryOnboarding({ jurorName, onComplete }: Props) {
       {/* Close button */}
       <button
         onClick={onComplete}
-        className="absolute top-6 left-6 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all"
+        className="absolute top-6 right-6 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all"
         aria-label="Fermer"
       >
         <span className="text-white/50 text-xl leading-none">&times;</span>
