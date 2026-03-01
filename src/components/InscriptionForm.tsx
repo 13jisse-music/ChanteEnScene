@@ -35,6 +35,37 @@ const STEPS = [
   { title: 'Finaliser', icon: '✨' },
 ]
 
+/** Compress a photo client-side to max 1200px and JPEG ~85% quality */
+async function compressPhoto(file: File, maxDim = 1200, quality = 0.85): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(file); return }
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        quality,
+      )
+    }
+    img.onerror = () => reject(new Error('Impossible de lire la photo'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 /* ─── File Upload (mobile-friendly tap zone) ─── */
 function FileZone({
   label,
@@ -186,9 +217,16 @@ export default function InscriptionForm({ session }: { session: Session }) {
   const age = dob ? calculateAge(dob, new Date().toISOString()) : null
   const isMinor = age !== null && age < 18
 
-  function handlePhotoChange(f: File | null) {
-    setPhoto(f)
-    setPhotoPreview(f ? URL.createObjectURL(f) : '')
+  async function handlePhotoChange(f: File | null) {
+    if (!f) { setPhoto(null); setPhotoPreview(''); return }
+    try {
+      const compressed = await compressPhoto(f)
+      setPhoto(compressed)
+      setPhotoPreview(URL.createObjectURL(compressed))
+    } catch {
+      setPhoto(f)
+      setPhotoPreview(URL.createObjectURL(f))
+    }
   }
 
   // Validation per step — returns error message or null
@@ -296,8 +334,47 @@ export default function InscriptionForm({ session }: { session: Session }) {
         resolvedVideoUrl = videoUrl.trim()
       }
 
-      // === STEP 2: Upload photo + consent + data via our server (small files only) ===
-      setUploadStep('Photo & inscription...')
+      // === STEP 2: Upload photo via signed URL (bypasses Vercel 4.5MB limit) ===
+      setUploadStep('Photo...')
+      let photoUrl = ''
+      {
+        const photoRes = await fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `${basePath}/photo`, bucket: 'candidates' }),
+        })
+        const photoData = await photoRes.json()
+        if (!photoRes.ok) throw new Error(photoData.error || 'Erreur préparation photo')
+        const uploadRes = await fetch(photoData.signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': photo.type || 'image/jpeg' },
+          body: photo,
+        })
+        if (!uploadRes.ok) throw new Error("Erreur lors de l'envoi de la photo. Veuillez réessayer.")
+        photoUrl = photoData.publicUrl
+      }
+
+      // === STEP 3: Upload consent via signed URL if any ===
+      let consentUrl = ''
+      if (consent) {
+        const consentRes = await fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `${basePath}/consent`, bucket: 'candidates' }),
+        })
+        const consentData = await consentRes.json()
+        if (!consentRes.ok) throw new Error(consentData.error || 'Erreur préparation autorisation')
+        const uploadRes = await fetch(consentData.signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': consent.type || 'application/pdf' },
+          body: consent,
+        })
+        if (!uploadRes.ok) throw new Error("Erreur lors de l'envoi de l'autorisation parentale.")
+        consentUrl = consentData.publicUrl
+      }
+
+      // === STEP 4: Register candidate (JSON only, no files) ===
+      setUploadStep('Inscription...')
       const fd = new FormData()
       fd.append('session_id', session.id)
       fd.append('first_name', firstName.trim())
@@ -321,11 +398,8 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (websiteUrl.trim()) fd.append('website_url', websiteUrl.trim())
       if (fingerprint) fd.append('fingerprint', fingerprint)
       if (referredBy) fd.append('referred_by', referredBy)
-
-      // Photo file (goes through server — usually < 4MB)
-      fd.append('photo', photo)
-      // Consent file if any (PDF, small)
-      if (consent) fd.append('consent', consent)
+      fd.append('photo_url', photoUrl)
+      if (consentUrl) fd.append('consent_url', consentUrl)
 
       const registerRes = await fetch('/api/register-candidate', {
         method: 'POST',
