@@ -138,7 +138,16 @@ CONSIGNES :
 - Chaque section a : un LABEL (titre de catégorie en majuscules, 2-4 mots), un TITRE (accrocheur, 5-10 mots), un BODY (2-4 paragraphes courts, séparés par \\n\\n)
 - Pour chaque section, propose un imagePrompt (description d'image à générer, en anglais, style réaliste/photo, 1 phrase)
 - Propose une couleur hex par section (variée, dans la palette : #e91e8c rose, #7ec850 vert, #FFB800 doré, #6366f1 violet, #06b6d4 cyan, #f43f5e rouge)
-- Si pertinent, ajoute un CTA (bouton) avec texte et URL vers chantenscene.fr
+- Si pertinent, ajoute un CTA (bouton) avec texte et URL. IMPORTANT : utilise UNIQUEMENT ces URLs réelles :
+  * https://chantenscene.fr (accueil)
+  * https://chantenscene.fr/inscription (inscription candidat)
+  * https://chantenscene.fr/reglement (règlement)
+  * https://chantenscene.fr/palmares (palmarès éditions passées)
+  * https://chantenscene.fr/editions (les éditions)
+  * https://chantenscene.fr/proposer-un-lieu (proposer un lieu)
+  * https://chantenscene.fr/soutenir (devenir sponsor)
+  * https://chantenscene.fr/presse (espace presse)
+  Si aucune URL ne correspond au thème, mets ctaUrl à null
 - Le sujet de l'email doit être accrocheur et résumer le contenu
 
 Réponds UNIQUEMENT en JSON valide :
