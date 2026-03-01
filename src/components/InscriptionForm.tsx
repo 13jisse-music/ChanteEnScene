@@ -246,13 +246,39 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (isMinor && !consent) throw new Error("L'autorisation parentale est obligatoire pour les mineurs.")
 
       const candidateSlug = slugify(`${firstName}-${lastName}`) + '-' + Math.random().toString(36).substring(2, 6)
+      const basePath = `${session.id}/${candidateSlug}`
 
       // Capture fingerprint (silent fail)
       let fingerprint: string | null = null
       try { fingerprint = await getFingerprint() } catch {}
 
-      // Build FormData — tout passe par notre serveur (aucun appel tiers)
-      setUploadStep('Envoi en cours...')
+      // === STEP 1: Upload video via signed URL if file (can be large, bypasses 4.5MB limit) ===
+      let resolvedVideoUrl = ''
+      if (videoMode === 'file' && videoFile) {
+        setUploadStep('Vidéo...')
+        // Get a signed upload URL from our server
+        const urlRes = await fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `${basePath}/video`, bucket: 'candidates' }),
+        })
+        const urlData = await urlRes.json()
+        if (!urlRes.ok) throw new Error(urlData.error || 'Erreur préparation vidéo')
+
+        // Upload directly to the signed URL (works in all browsers)
+        const uploadRes = await fetch(urlData.signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': videoFile.type || 'video/mp4' },
+          body: videoFile,
+        })
+        if (!uploadRes.ok) throw new Error('Erreur upload vidéo')
+        resolvedVideoUrl = urlData.publicUrl
+      } else if (videoMode === 'url' && videoUrl.trim()) {
+        resolvedVideoUrl = videoUrl.trim()
+      }
+
+      // === STEP 2: Upload photo + consent + data via our server (small files only) ===
+      setUploadStep('Photo & inscription...')
       const fd = new FormData()
       fd.append('session_id', session.id)
       fd.append('first_name', firstName.trim())
@@ -269,6 +295,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       fd.append('accent_color', accentColor)
       fd.append('slug', candidateSlug)
       fd.append('video_public', String(videoPublic))
+      if (resolvedVideoUrl) fd.append('video_url', resolvedVideoUrl)
       if (youtubeUrl.trim()) fd.append('youtube_url', youtubeUrl.trim())
       if (instagramUrl.trim()) fd.append('instagram_url', instagramUrl.trim())
       if (tiktokUrl.trim()) fd.append('tiktok_url', tiktokUrl.trim())
@@ -276,16 +303,10 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (fingerprint) fd.append('fingerprint', fingerprint)
       if (referredBy) fd.append('referred_by', referredBy)
 
-      // Files
+      // Photo file (goes through server — usually < 4MB)
       fd.append('photo', photo)
-      if (videoMode === 'file' && videoFile) {
-        fd.append('video', videoFile)
-      } else if (videoMode === 'url' && videoUrl.trim()) {
-        fd.append('video_url_text', videoUrl.trim())
-      }
-      if (consent) {
-        fd.append('consent', consent)
-      }
+      // Consent file if any (PDF, small)
+      if (consent) fd.append('consent', consent)
 
       const registerRes = await fetch('/api/register-candidate', {
         method: 'POST',
