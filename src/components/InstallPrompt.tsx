@@ -122,7 +122,7 @@ export default function InstallPrompt() {
     // In-app browser (Facebook, Instagram, etc.) — prompt to open in real browser
     if (isInAppBrowser()) {
       const inAppDismissed = localStorage.getItem('pwa-inapp-dismissed')
-      if (inAppDismissed && Date.now() - parseInt(inAppDismissed) < 24 * 60 * 60 * 1000) return
+      if (inAppDismissed && Date.now() - parseInt(inAppDismissed) < 1 * 60 * 60 * 1000) return
       setPhase('open-browser')
       return
     }
@@ -275,29 +275,66 @@ export default function InstallPrompt() {
   if (phase === 'open-browser') {
     // In-app browser detected — show prompt to open in real browser
     const platform = detectPlatform()
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://chantenscene.fr'
+
+    const handleOpenInBrowser = () => {
+      if (platform === 'android') {
+        // Try intent:// to force Chrome on Android
+        const path = window.location.pathname + window.location.search
+        const intentUrl = `intent://${window.location.host}${path}#Intent;scheme=https;package=com.android.chrome;end`
+        window.location.href = intentUrl
+        // Fallback: if intent doesn't work after 2s, copy URL
+        setTimeout(() => {
+          navigator.clipboard?.writeText(currentUrl)
+        }, 2000)
+      } else {
+        // iOS + other: copy URL to clipboard
+        navigator.clipboard?.writeText(currentUrl).then(() => {
+          alert('Lien copié ! Ouvrez Safari et collez le lien dans la barre d\'adresse.')
+        }).catch(() => {
+          // Fallback for older browsers
+          prompt('Copiez ce lien et ouvrez-le dans Safari :', currentUrl)
+        })
+      }
+    }
+
     return (
       <div className="fixed z-[60] bottom-0 left-0 right-0 animate-in slide-in-from-bottom">
         <div className="bg-[#1a1232] border-t border-[#e91e8c]/30 rounded-t-2xl p-5 pb-8 shadow-lg shadow-[#e91e8c]/10">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-white">Ouvrir dans votre navigateur</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📲</span>
+              <p className="text-sm font-bold text-white">Installez l&apos;appli ChanteEnScene !</p>
+            </div>
             <button onClick={handleDismiss} className="text-white/20 hover:text-white/50 text-lg">&times;</button>
           </div>
           <p className="text-xs text-white/60 mb-4">
-            Vous êtes dans le navigateur intégré de Facebook. Pour profiter de toutes les fonctionnalités (installation, notifications), ouvrez cette page dans {platform === 'ios' ? 'Safari' : 'Chrome'}.
+            Pour profiter pleinement de l&apos;expérience (notifications des résultats, accès rapide, mode hors-ligne), ouvrez cette page dans {platform === 'ios' ? 'Safari' : 'Chrome'}.
           </p>
+
+          {/* Bouton principal — ouvrir dans le navigateur */}
+          <button
+            onClick={handleOpenInBrowser}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#e91e8c] to-[#c4157a] text-white text-sm font-bold mb-4 active:scale-95 transition-transform"
+          >
+            {platform === 'ios' ? '📋 Copier le lien (puis ouvrir Safari)' : '🌐 Ouvrir dans Chrome'}
+          </button>
+
+          {/* Instructions manuelles si le bouton ne marche pas */}
+          <p className="text-[10px] text-white/30 text-center mb-2">Si le bouton ne fonctionne pas :</p>
           <div className="bg-white/5 rounded-xl p-3">
             <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e91e8c] text-white text-xs font-bold shrink-0">1</span>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white/10 text-white text-xs font-bold shrink-0">1</span>
               <p className="text-xs text-white/70">
-                Appuyez sur <strong className="text-white">&#x22EE;</strong> ou <strong className="text-white">&#x2026;</strong> en haut à droite
+                Appuyez sur <strong className="text-white">⋮</strong> ou <strong className="text-white">…</strong> en haut à droite
               </p>
             </div>
           </div>
           <div className="bg-white/5 rounded-xl p-3 mt-2">
             <div className="flex items-center gap-3">
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#e91e8c] text-white text-xs font-bold shrink-0">2</span>
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white/10 text-white text-xs font-bold shrink-0">2</span>
               <p className="text-xs text-white/70">
-                Choisissez <strong className="text-white">&quot;Ouvrir dans {platform === 'ios' ? 'Safari' : 'Chrome'}&quot;</strong>
+                Choisissez <strong className="text-white">&quot;Ouvrir dans {platform === 'ios' ? 'Safari' : 'le navigateur'}&quot;</strong>
               </p>
             </div>
           </div>
