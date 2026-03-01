@@ -278,40 +278,41 @@ export default function InscriptionForm({ session }: { session: Session }) {
       try { fingerprint = await getFingerprint() } catch {}
 
       setUploadStep('Enregistrement...')
-      const { error: insertError } = await supabase.from('candidates').insert({
-        session_id: session.id,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        stage_name: stageName.trim() || null,
-        date_of_birth: dob,
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || null,
-        city: city.trim() || null,
-        category,
-        photo_url: photoUrl,
-        video_url: finalVideoUrl || null,
-        mp3_url: null,
-        song_title: songTitle.trim(),
-        song_artist: songArtist.trim(),
-        bio: bio.trim() || null,
-        accent_color: accentColor,
-        slug: candidateSlug,
-        video_public: videoPublic,
-        youtube_url: youtubeUrl.trim() || null,
-        instagram_url: instagramUrl.trim() || null,
-        tiktok_url: tiktokUrl.trim() || null,
-        website_url: websiteUrl.trim() || null,
-        parental_consent_url: consentUrl || null,
-        fingerprint,
-        referred_by: referredBy,
-        status: 'pending',
+      const registerRes = await fetch('/api/register-candidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: session.id,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          stage_name: stageName.trim() || null,
+          date_of_birth: dob,
+          email: email.trim().toLowerCase(),
+          phone: phone.trim() || null,
+          city: city.trim() || null,
+          category,
+          photo_url: photoUrl,
+          video_url: finalVideoUrl || null,
+          mp3_url: null,
+          song_title: songTitle.trim(),
+          song_artist: songArtist.trim(),
+          bio: bio.trim() || null,
+          accent_color: accentColor,
+          slug: candidateSlug,
+          video_public: videoPublic,
+          youtube_url: youtubeUrl.trim() || null,
+          instagram_url: instagramUrl.trim() || null,
+          tiktok_url: tiktokUrl.trim() || null,
+          website_url: websiteUrl.trim() || null,
+          parental_consent_url: consentUrl || null,
+          fingerprint,
+          referred_by: referredBy,
+        }),
       })
 
-      if (insertError) {
-        if (insertError.code === '23505' && insertError.message.includes('email')) {
-          throw new Error('Un candidat avec cet email est déjà inscrit pour cette session.')
-        }
-        throw new Error(insertError.message)
+      const registerData = await registerRes.json()
+      if (!registerRes.ok) {
+        throw new Error(registerData.error || "Erreur lors de l'inscription")
       }
 
       // Send confirmation email (non-blocking)
