@@ -172,7 +172,7 @@ export async function GET(request: Request) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '32px', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '32px', gap: '14px' }}>
           <div style={{
             fontSize: '22px',
             color: '#e91e8c',
@@ -181,14 +181,21 @@ export async function GET(request: Request) {
           }}>
             {footerMessage}
           </div>
+          {/* CTA vote */}
           <div style={{
-            fontSize: '18px',
-            color: 'rgba(255,255,255,0.6)',
+            background: '#e91e8c',
+            color: 'white',
+            fontSize: '20px',
+            fontWeight: 700,
+            padding: '14px 40px',
+            borderRadius: '16px',
             display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
           }}>
-            chantenscene.fr
+            🗳️ Votez sur chantenscene.fr
           </div>
-          <div style={{ display: 'flex', gap: '4px', fontSize: '13px' }}>
+          <div style={{ display: 'flex', gap: '4px', fontSize: '13px', marginTop: '4px' }}>
             <span style={{ color: 'rgba(255,255,255,0.25)' }}>Chant</span>
             <span style={{ color: 'rgba(126,200,80,0.35)' }}>En</span>
             <span style={{ color: 'rgba(233,30,140,0.35)' }}>Scene</span>

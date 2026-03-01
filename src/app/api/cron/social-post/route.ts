@@ -50,12 +50,13 @@ function generatePosts(
     const count = newCandidatesSinceYesterday.length
     const displayCandidates = newCandidatesSinceYesterday.slice(0, 5)
 
-    // Build candidate lines
+    // Build candidate lines with vote links
     const candidateLines = displayCandidates.map(c => {
       const name = c.stage_name || c.first_name
       const song = c.song_title ? ` — \u00AB ${c.song_title} \u00BB` : ''
       const artist = c.song_artist ? ` (${c.song_artist})` : ''
-      return `🎙️ ${name}${song}${artist}\n👉 ${sessionUrl}/candidats/${c.slug}`
+      const pronoun = count === 1 ? '' : ` pour ${name}`
+      return `🎙️ ${name}${song}${artist}\n🗳️ Votez${pronoun} → ${sessionUrl}/candidats/${c.slug}`
     }).join('\n\n')
 
     // Footer message based on count
@@ -79,7 +80,7 @@ function generatePosts(
     posts.push({
       type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
       priority: 1,
-      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n🗳️ Votez pour votre favori !\n\n#ChanteEnScène #ConcoursDeChant`,
+      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n#ChanteEnScène #ConcoursDeChant`,
       link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
       imageUrl,
     })

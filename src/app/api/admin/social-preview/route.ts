@@ -42,12 +42,13 @@ function generateAllPossiblePosts(
     const count = newCandidates.length
     const displayCandidates = newCandidates.slice(0, 5)
 
-    // Build candidate lines
+    // Build candidate lines with vote links
     const candidateLines = displayCandidates.map(c => {
       const name = c.stage_name || c.first_name
       const song = c.song_title ? ` \u2014 \u00AB ${c.song_title} \u00BB` : ''
       const artist = c.song_artist ? ` (${c.song_artist})` : ''
-      return `🎙️ ${name}${song}${artist}\n👉 ${sessionUrl}/candidats/${c.slug}`
+      const pronoun = count === 1 ? '' : ` pour ${name}`
+      return `🎙️ ${name}${song}${artist}\n🗳️ Votez${pronoun} \u2192 ${sessionUrl}/candidats/${c.slug}`
     }).join('\n\n')
 
     // Footer message based on count
@@ -72,7 +73,7 @@ function generateAllPossiblePosts(
       type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
       label: count === 1 ? `Bienvenue : ${displayCandidates[0].stage_name || displayCandidates[0].first_name}` : `${count} nouveaux candidats`,
       priority: 1,
-      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n🗳️ Votez pour votre favori !\n\n#ChanteEnScène #ConcoursDeChant`,
+      message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n#ChanteEnScène #ConcoursDeChant`,
       link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
       imageUrl,
       suggested_image_prompt: `Affiche concours de chant "${count} nouveaux candidats", photos rondes sur fond sombre, ambiance concert, couleurs rose #e91e8c et violet #1a1232`,
