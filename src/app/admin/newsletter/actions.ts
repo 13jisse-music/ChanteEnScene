@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/security'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { sendSmtp } from '@/lib/smtp'
 import { newsletterEmail } from '@/lib/emails'
 import { goUrl } from '@/lib/email-utils'
 import { revalidatePath } from 'next/cache'
@@ -172,7 +173,6 @@ export async function sendCampaign(campaignId: string) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
   const campaignCtaUrl = goUrl(siteUrl, '/', 'newsletter')
-  const resend = getResend()
   let sent = 0
   let errors = 0
 
@@ -189,8 +189,8 @@ export async function sendCampaign(campaignId: string) {
         ctaUrl: campaignCtaUrl,
       })
 
-      const { error: sendErr } = await resend.emails.send({
-        from: FROM_EMAIL,
+      // Envoi via IONOS SMTP (pas de quota journalier comme Resend)
+      const { error: sendErr } = await sendSmtp({
         to: sub.email,
         subject: campaign.subject,
         html,
@@ -205,8 +205,8 @@ export async function sendCampaign(campaignId: string) {
         sent++
       }
 
-      // Rate limit: 600ms between sends (Resend free plan: 2 req/s)
-      await new Promise((r) => setTimeout(r, 600))
+      // Rate limit: 300ms entre chaque envoi (IONOS ~500 emails/h)
+      await new Promise((r) => setTimeout(r, 300))
     } catch {
       errors++
     }
