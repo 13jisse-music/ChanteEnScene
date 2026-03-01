@@ -5,6 +5,7 @@ import RegistrationCountdown from '@/components/RegistrationCountdown'
 import Link from 'next/link'
 import Image from 'next/image'
 import PageTracker from '@/components/PageTracker'
+import { autoAdvanceSessionStatus } from '@/lib/auto-advance'
 
 type Params = Promise<{ slug: string }>
 
@@ -33,6 +34,10 @@ export default async function InscriptionPage({ params }: { params: Params }) {
     .single()
 
   if (!session) notFound()
+
+  // Auto-advance session status if dates have passed (fallback for cron)
+  const advancedStatus = await autoAdvanceSessionStatus(session)
+  if (advancedStatus !== session.status) session.status = advancedStatus
 
   const config = session.config as Record<string, unknown>
   const regStart = config.registration_start as string | undefined

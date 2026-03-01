@@ -6,6 +6,7 @@ import PageTracker from "@/components/PageTracker";
 import FooterEmailSubscribe from "@/components/FooterEmailSubscribe";
 import { createClient } from "@/lib/supabase/server";
 import { statusToTimelineStep } from "@/lib/phases";
+import { autoAdvanceSessionStatus } from "@/lib/auto-advance";
 
 export const revalidate = 60;
 
@@ -91,6 +92,12 @@ export default async function HomePage() {
     .single();
 
   const sessionSlug = session?.slug || SESSION_SLUG;
+
+  // Auto-advance session status if dates have passed (fallback for cron)
+  if (session) {
+    const advanced = await autoAdvanceSessionStatus(session);
+    if (advanced !== session.status) session.status = advanced;
+  }
 
   // Fetch published sponsors (gold + silver for homepage)
   let sponsors: { id: string; name: string; logo_url: string | null; website_url: string | null; tier: string }[] = [];

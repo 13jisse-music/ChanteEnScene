@@ -342,6 +342,13 @@ export default function InscriptionForm({ session }: { session: Session }) {
         }
       }
 
+      // Track Meta Pixel conversion (non-blocking)
+      try {
+        if (typeof window !== 'undefined' && typeof (window as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any).fbq === 'function') {
+          (window as any).fbq('track', 'Lead', { content_name: 'Inscription ChanteEnScene' })
+        }
+      } catch {}
+
       setCreatedSlug(candidateSlug)
       setSuccess(true)
     } catch (err) {
