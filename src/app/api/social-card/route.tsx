@@ -61,21 +61,20 @@ export async function GET(request: Request) {
 
   const displayCandidates = candidates.slice(0, 5)
 
-  // Compute image height based on candidate count
-  const rowHeight = 104 // each candidate row
-  const headerHeight = 200
-  const footerHeight = 120
-  const padding = 120 // top + bottom
-  const gapTotal = (displayCandidates.length - 1) * 16
-  const minHeight = headerHeight + (displayCandidates.length * rowHeight) + gapTotal + footerHeight + padding
-  const imgHeight = Math.max(1080, Math.min(1350, minHeight)) // Instagram: 1080-1350
+  // Dynamic sizing — fewer candidates = bigger cards
+  const photoSize = count === 1 ? 140 : count <= 2 ? 110 : count <= 3 ? 96 : 72
+  const nameSize = count === 1 ? 40 : count <= 2 ? 34 : count <= 3 ? 30 : 26
+  const songSize = count === 1 ? 24 : count <= 2 ? 22 : count <= 3 ? 20 : 18
+  const rowPadding = count === 1 ? '28px 36px' : count <= 3 ? '22px 30px' : '16px 24px'
+  const rowGap = count === 1 ? '28px' : count <= 3 ? '22px' : '20px'
+  const listGap = count === 1 ? 24 : count <= 3 ? 20 : 16
 
   return new ImageResponse(
     (
       <div
         style={{
           width: '1080px',
-          height: `${imgHeight}px`,
+          height: '1080px',
           display: 'flex',
           flexDirection: 'column',
           background: 'linear-gradient(180deg, #1a1232 0%, #0d0b1a 100%)',
@@ -98,7 +97,7 @@ export async function GET(request: Request) {
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
+          gap: `${listGap}px`,
           flex: 1,
           justifyContent: 'center',
         }}>
@@ -111,15 +110,15 @@ export async function GET(request: Request) {
                   display: 'flex',
                   alignItems: 'center',
                   background: 'rgba(255,255,255,0.06)',
-                  borderRadius: '20px',
-                  padding: '16px 24px',
-                  gap: '20px',
+                  borderRadius: '24px',
+                  padding: rowPadding,
+                  gap: rowGap,
                 }}
               >
                 {/* Round photo */}
                 <div style={{
-                  width: '72px',
-                  height: '72px',
+                  width: `${photoSize}px`,
+                  height: `${photoSize}px`,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   background: '#2a2545',
@@ -134,39 +133,25 @@ export async function GET(request: Request) {
                     <img
                       src={c.photo_url}
                       alt=""
-                      width={72}
-                      height={72}
-                      style={{ width: '72px', height: '72px', objectFit: 'cover' }}
+                      width={photoSize}
+                      height={photoSize}
+                      style={{ width: `${photoSize}px`, height: `${photoSize}px`, objectFit: 'cover' }}
                     />
                   ) : (
-                    <div style={{ fontSize: '28px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
+                    <div style={{ fontSize: `${Math.round(photoSize * 0.4)}px`, color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
                   )}
                 </div>
 
                 {/* Info */}
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                  <div style={{ fontSize: '26px', fontWeight: 700, color: 'white', display: 'flex' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '6px' }}>
+                  <div style={{ fontSize: `${nameSize}px`, fontWeight: 700, color: 'white', display: 'flex' }}>
                     {name}
                   </div>
                   {c.song_title && (
-                    <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+                    <div style={{ fontSize: `${songSize}px`, color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
                       {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
                     </div>
                   )}
-                </div>
-
-                {/* Vote badge */}
-                <div style={{
-                  background: '#e91e8c',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  padding: '8px 16px',
-                  borderRadius: '12px',
-                  flexShrink: 0,
-                  display: 'flex',
-                }}>
-                  Votez !
                 </div>
               </div>
             )
@@ -187,7 +172,7 @@ export async function GET(request: Request) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '32px', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '32px', gap: '12px' }}>
           <div style={{
             fontSize: '22px',
             color: '#e91e8c',
@@ -196,18 +181,24 @@ export async function GET(request: Request) {
           }}>
             {footerMessage}
           </div>
-          <div style={{ display: 'flex', gap: '4px', fontSize: '14px' }}>
-            <span style={{ color: 'rgba(255,255,255,0.3)' }}>Chant</span>
-            <span style={{ color: 'rgba(126,200,80,0.4)' }}>En</span>
-            <span style={{ color: 'rgba(233,30,140,0.4)' }}>Scene</span>
-            <span style={{ color: 'rgba(255,255,255,0.15)', marginLeft: '8px' }}>chantenscene.fr</span>
+          <div style={{
+            fontSize: '18px',
+            color: 'rgba(255,255,255,0.6)',
+            display: 'flex',
+          }}>
+            chantenscene.fr
+          </div>
+          <div style={{ display: 'flex', gap: '4px', fontSize: '13px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.25)' }}>Chant</span>
+            <span style={{ color: 'rgba(126,200,80,0.35)' }}>En</span>
+            <span style={{ color: 'rgba(233,30,140,0.35)' }}>Scene</span>
           </div>
         </div>
       </div>
     ),
     {
       width: 1080,
-      height: imgHeight,
+      height: 1080,
     }
   )
 }
