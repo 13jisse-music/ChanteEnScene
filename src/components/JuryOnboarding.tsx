@@ -48,7 +48,7 @@ export default function JuryOnboarding({ jurorName, onComplete }: Props) {
       </div>
 
       {/* Content */}
-      <div className="max-w-sm w-full text-center space-y-6 animate-fade-up">
+      <div className="max-w-sm w-full text-center space-y-6 animate-fade-up pb-44">
         <div className="text-7xl">{current.emoji}</div>
 
         {step === 0 && (
