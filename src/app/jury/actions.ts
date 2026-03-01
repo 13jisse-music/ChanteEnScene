@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 
 export async function loginJuror(email: string): Promise<{ error: string }> {
@@ -41,4 +42,37 @@ export async function loginJuror(email: string): Promise<{ error: string }> {
   }
 
   redirect(`/jury/${juror.qr_token}`)
+}
+
+export async function trackJurorLogin(jurorId: string) {
+  const supabase = createAdminClient()
+
+  // Use the RPC function for atomic increment + timestamp
+  try {
+    await supabase.rpc('increment_juror_login', { juror_id: jurorId })
+  } catch {
+    // Fallback: simple update if RPC not available
+    const { data } = await supabase
+      .from('jurors')
+      .select('login_count')
+      .eq('id', jurorId)
+      .single()
+
+    await supabase
+      .from('jurors')
+      .update({
+        last_login_at: new Date().toISOString(),
+        login_count: ((data?.login_count as number) || 0) + 1,
+      })
+      .eq('id', jurorId)
+  }
+}
+
+export async function completeJurorOnboarding(jurorId: string) {
+  const supabase = createAdminClient()
+
+  await supabase
+    .from('jurors')
+    .update({ onboarding_done: true })
+    .eq('id', jurorId)
 }

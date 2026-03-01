@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import JuryScoring from '@/components/JuryScoring'
+import JuryExperience from '@/components/JuryExperience'
 
 type Params = Promise<{ token: string }>
 
@@ -30,6 +31,7 @@ export default async function JuryPage({ params }: { params: Params }) {
     config: {
       jury_criteria: { name: string; max_score: number }[]
       jury_online_voting_closed?: boolean
+      jury_voting_deadline?: string
     }
   }
 
@@ -91,22 +93,19 @@ export default async function JuryPage({ params }: { params: Params }) {
     .limit(1)
     .maybeSingle()
 
-  // Online jurors get fullscreen feed
+  // Online jurors get the full experience: onboarding → dashboard → voting
   if (isOnline) {
     return (
-      <div className="relative z-10">
-        <JuryScoring
-          juror={juror}
-          session={session}
-          candidates={candidates || []}
-          existingScores={existingScores || []}
-          criteria={[]}
-        />
-      </div>
+      <JuryExperience
+        juror={juror}
+        session={session}
+        candidates={candidates || []}
+        existingScores={existingScores || []}
+      />
     )
   }
 
-  // Semifinal/Final jurors get the standard layout
+  // Semifinal/Final jurors get the standard layout (in-person, no dashboard needed)
   return (
     <main className="relative z-50 min-h-screen py-8 px-4 bg-[#0d0b1a] text-white">
       <div className="max-w-2xl mx-auto">

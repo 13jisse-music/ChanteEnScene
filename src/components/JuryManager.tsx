@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { addJuror, toggleJuror, deleteJuror, sendJuryInvitation } from '@/app/admin/jury/actions'
+import { addJuror, toggleJuror, deleteJuror, sendJuryInvitation, setJuryVotingDeadline, sendJuryReminder } from '@/app/admin/jury/actions'
 import JuryQRCode from './JuryQRCode'
 
 interface Juror {
@@ -13,6 +13,9 @@ interface Juror {
   qr_token: string
   is_active: boolean
   created_at: string
+  onboarding_done?: boolean
+  last_login_at?: string | null
+  login_count?: number
 }
 
 interface Candidate {
@@ -37,6 +40,7 @@ interface Session {
   name: string
   config: {
     jury_criteria: { name: string; max_score: number }[]
+    jury_voting_deadline?: string
   }
 }
 
@@ -62,6 +66,10 @@ export default function JuryManager({ session, jurors, candidates, scores }: Pro
   const [loading, setLoading] = useState(false)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [remindingId, setRemindingId] = useState<string | null>(null)
+  const [remindingAll, setRemindingAll] = useState(false)
+  const [deadlineValue, setDeadlineValue] = useState(session?.config?.jury_voting_deadline?.split('T')[0] || '')
+  const [savingDeadline, setSavingDeadline] = useState(false)
   const [appUrl, setAppUrl] = useState(process.env.NEXT_PUBLIC_APP_URL || '')
 
   useEffect(() => {
@@ -304,6 +312,124 @@ export default function JuryManager({ session, jurors, candidates, scores }: Pro
           </p>
         )}
       </div>
+
+      {/* Deadline & Reminders */}
+      <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5 space-y-4">
+        <p className="text-white/40 text-xs uppercase tracking-wider">Jury en ligne — Configuration</p>
+
+        {/* Deadline */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-xs text-white/30 mb-1 block">Date limite de vote</label>
+            <input
+              type="date"
+              value={deadlineValue}
+              onChange={(e) => setDeadlineValue(e.target.value)}
+              className="w-full bg-[#1a1533] border border-[#2a2545] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#e91e8c]"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              setSavingDeadline(true)
+              const dl = deadlineValue ? `${deadlineValue}T23:59:59` : null
+              await setJuryVotingDeadline(session!.id, dl)
+              setSavingDeadline(false)
+            }}
+            disabled={savingDeadline}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-[#3b82f6]/10 border border-[#3b82f6]/25 text-[#3b82f6] hover:bg-[#3b82f6]/20 transition-colors disabled:opacity-50"
+          >
+            {savingDeadline ? 'Enregistrement...' : deadlineValue ? 'Enregistrer' : 'Supprimer la deadline'}
+          </button>
+        </div>
+
+        {/* Reminder */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#2a2545]">
+          <button
+            onClick={async () => {
+              setRemindingAll(true)
+              const result = await sendJuryReminder(session!.id)
+              if (result.error) {
+                alert(`Erreur : ${result.error}`)
+              } else {
+                alert(`Rappel envoyé à ${result.sent}/${result.total} juré(s)`)
+              }
+              setRemindingAll(false)
+            }}
+            disabled={remindingAll}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-[#f59e0b]/10 border border-[#f59e0b]/25 text-[#f59e0b] hover:bg-[#f59e0b]/20 transition-colors disabled:opacity-50"
+          >
+            {remindingAll ? 'Envoi...' : '📩 Rappel à tous les jurés en ligne'}
+          </button>
+        </div>
+      </div>
+
+      {/* Online juror engagement stats */}
+      {jurors.some((j) => j.role === 'online' && j.last_login_at) && (
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5 space-y-3">
+          <p className="text-white/40 text-xs uppercase tracking-wider">Activité des jurés en ligne</p>
+          <div className="space-y-2">
+            {jurors
+              .filter((j) => j.role === 'online' && j.is_active)
+              .map((j) => {
+                const name = `${j.first_name || ''} ${j.last_name || ''}`.trim() || 'Sans nom'
+                const scoreCount = getJurorScoreCount(j.id)
+                const totalCandidates = candidates.filter(
+                  (c) => ['approved', 'semifinalist', 'finalist'].includes(c.status)
+                ).length
+
+                return (
+                  <div key={j.id} className="flex items-center gap-3 bg-[#1a1533]/50 rounded-xl p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{name}</p>
+                      <div className="flex items-center gap-3 text-[10px] text-white/30 mt-0.5">
+                        {j.last_login_at && (
+                          <span>Dernière visite : {new Date(j.last_login_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        )}
+                        {j.login_count !== undefined && j.login_count > 0 && (
+                          <span>{j.login_count} visite{j.login_count > 1 ? 's' : ''}</span>
+                        )}
+                        {j.onboarding_done && (
+                          <span className="text-[#7ec850]">Onboarding OK</span>
+                        )}
+                        {j.last_login_at === null && !j.onboarding_done && (
+                          <span className="text-[#f59e0b]">Jamais connecté</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-bold" style={{ color: scoreCount >= totalCandidates ? '#7ec850' : scoreCount > 0 ? '#f59e0b' : '#ef4444' }}>
+                        {scoreCount}/{totalCandidates}
+                      </p>
+                      <p className="text-[10px] text-white/20">votes</p>
+                    </div>
+
+                    {/* Remind button */}
+                    {j.email && scoreCount < totalCandidates && (
+                      <button
+                        onClick={async () => {
+                          setRemindingId(j.id)
+                          const result = await sendJuryReminder(session!.id, j.id)
+                          if (result.error) {
+                            alert(`Erreur : ${result.error}`)
+                          } else {
+                            alert('Rappel envoyé !')
+                          }
+                          setRemindingId(null)
+                        }}
+                        disabled={remindingId === j.id}
+                        className="px-2.5 py-1.5 rounded-lg text-[10px] bg-[#f59e0b]/10 border border-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/20 transition-colors disabled:opacity-50 shrink-0"
+                      >
+                        {remindingId === j.id ? '...' : '📩'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Criteria reminder */}
       <div className="bg-[#161228] border border-[#2a2545] rounded-xl p-4">
