@@ -11,7 +11,6 @@ const LEFT_LINKS = [
   { href: '/', label: 'Accueil' },
   { href: '#concours', label: 'Le Concours' },
   { href: '/comment-ca-marche', label: 'Comment ça marche' },
-  { href: '/astuces', label: 'Astuces' },
   { href: `/${SESSION_SLUG}/inscription`, label: "S'inscrire" },
 ]
 
