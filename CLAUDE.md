@@ -25,7 +25,7 @@
 ### Crons Vercel (vercel.json)
 | Route | Schedule | Heure Paris | Description |
 |-------|----------|-------------|-------------|
-| `/api/cron/admin-report` | `0 7 * * *` | 8h tous les jours | Rapport admin par email + push |
+| `/api/cron/admin-report` | `0 6 * * *` | 7h tous les jours | Rapport admin par email + push (inclut dons) |
 | `/api/cron/social-post` | `0 9 * * *` | 10h tous les jours | Publication auto réseaux sociaux |
 | `/api/cron/jury-recap` | `0 10 * * 1` | 11h chaque lundi | Récap jury hebdomadaire |
 | `/api/cron/backup` | `0 0 * * 0` | 1h chaque dimanche | Backup BDD dans Supabase Storage |
@@ -55,9 +55,10 @@
 - **Statement descriptor** : CHANTENSCENE / CES
 - **Virements** : automatiques, hebdomadaires le lundi
 - **Clés** : dans `.env.keys` et `.env.local` (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-- **Webhook** : `/api/stripe/webhook` — email + push admin + insert `donations` à chaque paiement
+- **Webhook** : `/api/stripe/webhook` — email + push admin + insert `donations` à chaque paiement + email remerciement donateur (nom complet ou prénom custom)
 - **Dashboard** : Carte "Dons & Partenariats" sur `/admin` (total €, nombre, dernier don)
-- 5 liens de paiement actifs (Supporter 50€, Bronze 100€, Argent 250€, Or 500€, Don libre)
+- 5 liens de paiement actifs (Supporter 50€, Bronze 100€, Argent 250€, Or 500€, Don libre 5€ par défaut)
+- **Don libre** : prénom custom field pour le générique, montant min 1€, preset 5€
 - Après paiement, redirection vers `/aubagne-2026/partenaires?merci=1` (ou `?merci=don`)
 - Détails complets (compte, liens, IDs) dans `.env.keys`
 
@@ -101,7 +102,7 @@
 - **page_views** : Analytics par fingerprint
 - **pwa_installs** : Tracking installations PWA (fingerprint, platform, city, region)
 - **push_subscriptions** : Abonnements push (endpoint, p256dh, auth, role, fingerprint)
-- **email_subscribers** : Abonnés email (79 legacy importés + nouveaux)
+- **email_subscribers** : Abonnés email (86 actifs — 79 legacy + manuels + inscription)
 - **email_campaigns** : Newsletters envoyées (subject, body, status, target)
 - **sponsors** : Sponsors du concours
 - **shares** : Tracking partages réseaux sociaux
@@ -230,6 +231,64 @@
 - **Middleware** : Protection /admin (sauf /admin/login) via Supabase SSR cookies
 - **Push subscribe** : Pattern delete+insert (pas d'upsert, pas de contrainte unique endpoint+session+role)
 
+## Outils disponibles — Ce qui est prêt et fonctionne
+
+### Communication & Marketing
+| Outil | Page admin | État | Description |
+|-------|-----------|------|-------------|
+| **Publications FB/IG** | `/admin/social` | ✅ Prêt | Publication manuelle sur Facebook + Instagram, historique, preview des posts auto |
+| **Cron social auto** | automatique 10h | ✅ Prêt | 1 post/jour max (8 types : bienvenue candidat, countdowns, rappel vote, promo, parrainage) |
+| **Notifications push** | `/admin/notifications` | ✅ Prêt | Segmentation par rôle + statut candidat, historique, test sur son appareil |
+| **Push auto par étape** | automatique | ✅ Prêt | Push public à chaque changement de phase (inscriptions→sélection→demi-finale→finale) |
+| **Newsletter email** | `/admin/newsletter` | ✅ Prêt | Envoi campagne à tous les abonnés, templates HTML, historique |
+| **Rappel inscriptions** | automatique 10h | ✅ Prêt | Email + push à J-5 et Jour J avant ouverture des inscriptions |
+| **Google Analytics** | analytics.google.com | ✅ Actif | ID `G-MQ474FTW73`, tracking automatique toutes les pages |
+| **Parrainage candidats** | profil candidat | ✅ Prêt | Lien `?ref=slug`, compteur filleuls, post auto mercredi |
+
+### Gestion du concours
+| Outil | Page admin | État | Description |
+|-------|-----------|------|-------------|
+| **Inscriptions** | `/admin/candidats` | ✅ Prêt | Formulaire 4 étapes, approbation, email bienvenue |
+| **Jury en ligne** | `/admin/jury-en-ligne` | ✅ Prêt | Notation TikTok-style, critères configurables, QR codes |
+| **Régie demi-finale** | `/admin/demi-finale` | ✅ Prêt | Check-in, lineup drag-and-drop, live + vote public |
+| **Régie finale** | `/admin/finale` | ✅ Prêt | Performances, scoring jury+public, reveal winner + confetti |
+| **Mode Reporter** | pendant le live | ✅ Prêt | Accès caméra téléphone, max 5 photos/event, 30s cooldown, upload auto |
+| **Export MP3** | `/admin/export-mp3` | ✅ Prêt | ZIP par catégorie (adultes/juniors) |
+
+### Vitrine & Engagement
+| Outil | Page publique | État | Description |
+|-------|-------------|------|-------------|
+| **Page Soutenir** | `/soutenir` | ✅ Prêt | Don libre Stripe, chiffres impact, mention générique |
+| **Dossier partenaires** | `/:slug/partenaires/dossier` | ✅ Prêt | 5 formules (Supporter→Or), paiement Stripe, formulaire contact |
+| **Espace Presse** | `/presse` | ✅ Prêt | PDF dossier presse, photos HD, formulaire contact |
+| **Galerie Editions** | `/editions` | ✅ Prêt | Photos + vidéos YouTube par année, lightbox, swipe |
+| **Palmarès** | `/palmares` | ✅ Prêt | Gagnants 2023-2025 avec photos |
+| **Chatbot FAQ** | widget flottant | ✅ Prêt | Réponses auto basées sur la BDD FAQ |
+| **Page /go** | trampoline email | ✅ Prêt | Redirige les clics email vers la PWA (mobile) |
+
+### Infrastructure & Monitoring
+| Outil | Page admin | État | Description |
+|-------|-----------|------|-------------|
+| **Rapport admin quotidien** | email 7h | ✅ Prêt | Dashboard analytique complet (7 sections + dons) + push résumé |
+| **Checkup santé** | `/admin/infra` | ✅ Prêt | Test auto pages/APIs/BDD/push/emails, cron mensuel + bouton manuel |
+| **Backup auto** | automatique dim 1h | ✅ Prêt | Supabase Storage, rétention 8 semaines |
+| **Infra Supabase** | `/admin/infra` | ✅ Prêt | Jauges BDD/Storage, tables, buckets, santé |
+| **Carte installations** | `/admin` | ✅ Prêt | Carte Leaflet avec markers par plateforme |
+| **Suivi dons** | `/admin` | ✅ Prêt | Carte dashboard (total €, nombre, dernier don) |
+| **Guide en ligne** | sidebar admin | ✅ Prêt | 7 étapes du concours, accordéons, responsive mobile |
+| **Temps de travail** | `/admin` | ✅ Prêt | Estimation auto via GitHub API (commits × 7.3h) |
+
+### Réseaux sociaux — Configuration
+| Service | Variable | État | Détail |
+|---------|----------|------|--------|
+| **Facebook** | `FACEBOOK_PAGE_TOKEN` | ✅ Configuré | Token long-lived, Graph API v24.0 |
+| **Instagram** | `INSTAGRAM_TOKEN` + `INSTAGRAM_ACCOUNT_ID` | ✅ Configuré | Business Account lié à la page FB |
+| **Meta App** | `META_APP_ID` + `META_APP_SECRET` | ✅ Configuré | Pour refresh tokens |
+| **Google Analytics** | `NEXT_PUBLIC_GA_ID=G-MQ474FTW73` | ✅ Actif | Ajouté .env.local + Vercel le 24/02 |
+| **Stripe** | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` | ✅ Configuré | Webhook actif, 5 liens de paiement |
+| **Resend** | `RESEND_API_KEY` | ✅ Configuré | Emails transactionnels + newsletters |
+| **VAPID** | `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | ✅ Configuré | Push notifications web |
+
 ## Workflow complet du concours
 1. **Inscriptions** : Formulaire 4 étapes (identité → chanson → média → consentement)
 2. **Jury en ligne** : Notation TikTok-style, critères configurables, 5 étoiles
@@ -261,10 +320,53 @@
 - **Impact** : argument fort pour convaincre donateurs ET sponsors (visibilité garantie devant le public)
 
 ### Autres fonctionnalités prévues
-- **Google Analytics** : créer propriété GA4, obtenir ID G-XXXXXXXXXX, ajouter sur Vercel + redeploy
+- **Google Analytics** : ✅ FAIT — ID `G-MQ474FTW73`, actif depuis le 24/02/2026
 - **Revoir les fonctionnalités live** : vote en direct, déclaration participants, annonce vainqueur — tout sur téléphone du public (pas d'écran géant)
 
 ## Historique des interventions
+
+### 2026-02-25 — Newsletter #2 + Fix Stripe webhook + Dons admin report + InstallPrompt in-app browser
+
+#### Newsletter #2 — J-3 Inscriptions (86 abonnés)
+- **Template HTML** : `newsletter-chantenscene-n2.html` (style "Quotidien" éditorial, mobile-first)
+  - 5 sections : ALERTE ROUGE (rose), PENDANT QUE VOUS DORMIEZ (sombre), VOTRE NOM AU GÉNÉRIQUE (doré), S'INSCRIRE EN 4 ÉTAPES (violet), COMMERÇANTS QUI ONT DU FLAIR (sombre)
+  - Design responsive : `width:100%;max-width:600px`, font-size 16px body / 22-24px titres / 17px CTA, media queries mobile
+  - 5 images uploadées dans Storage `photos/newsletter/` : hero, nouveautés, soutenir (GIF), tuto, partenaires
+- **Script d'envoi** : `send-newsletter2.js` (Downloads, gitignored)
+  - Sujet : "ALERTE ROUGE — Les inscriptions ouvrent dans 3 jours"
+  - 86/86 envoyés, 0 erreurs, campaign loggée dans `email_campaigns`
+- **Abonnée ajoutée** : melisseonglerie@gmail.com (manual)
+
+#### Fix Stripe webhook — signature invalide
+- **Problème** : `STRIPE_WEBHOOK_SECRET` sur Vercel avait un `\n` trailing → HMAC signature toujours invalide → aucun don enregistré
+- **Fix** : Suppression + re-ajout de la variable sans newline sur Vercel + redéploiement
+- **Rattrapage** : Don De Cubber (5€) inséré manuellement en BDD + emails envoyés
+
+#### Webhook Stripe — amélioration nom donateur
+- **Problème** : `name.split(' ')[0]` donnait "De" pour "De Cubber"
+- **Fix** : Utilise le nom complet + extraction champ custom `prenom` depuis Stripe checkout session
+- `displayName = prenom || name` pour le greeting email
+- Prénom stocké dans `donations.notes` pour futur générique
+
+#### Nouveau lien de paiement Stripe (don libre 5€)
+- Ancien lien désactivé (preset 10€, pas de champ prénom)
+- **Nouveau** : preset 5€ (min 1€), champ custom "Prenom (pour le generique de fin)"
+- URL mise à jour dans `src/app/soutenir/page.tsx`
+
+#### Dons dans le rapport admin quotidien
+- **`admin-report/route.ts`** : 2 queries donations ajoutées (total + nouvelles J-1)
+- **`emails.ts`** : Section dons dans "Hier en un coup d'oeil" (fond doré) + ligne "Dons reçus" dans le tableau de bord
+- **Push** : Mention dons dans le résumé push quotidien
+
+#### Cron admin-report avancé à 7h Paris
+- **Problème** : Vercel Hobby ±59 min de précision → le cron à 8h pouvait arriver à 8h59
+- **Fix** : Changé de `0 7 * * *` (8h Paris) à `0 6 * * *` (7h Paris) dans `vercel.json`
+
+#### Détection navigateur in-app (Facebook/Instagram)
+- **Problème** : Le bandeau PWA ne s'affichait pas dans le WebView Facebook (pas de `beforeinstallprompt`)
+- **Fix** : `isInAppBrowser()` détecte FBAN/FBAV/Instagram/LinkedIn/Twitter/Snapchat
+- Nouvelle phase `'open-browser'` dans `InstallPrompt.tsx` avec instructions pour ouvrir dans Chrome/Safari
+- Dismiss stocké en localStorage 24h
 
 ### 2026-02-24 — Fix crons + Page /go + Audit URLs + DevTimeCard + Guide en ligne + Générique
 

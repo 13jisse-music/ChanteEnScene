@@ -111,8 +111,6 @@ export default function NewsletterComposer({
   const [confirmSendId, setConfirmSendId] = useState<string | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
-  const [quotaRetryIn, setQuotaRetryIn] = useState(0)
-  const [showOpenAIConfirm, setShowOpenAIConfirm] = useState<'suggest' | 'compose' | null>(null)
 
   // State: header composer (magazine style)
   const [headerPhoto, setHeaderPhoto] = useState<string | null>(null)
@@ -125,6 +123,9 @@ export default function NewsletterComposer({
   // State: intro + footer tagline
   const [introText, setIntroText] = useState('')
   const [footerTagline, setFooterTagline] = useState('')
+
+  // State: AI provider tracking
+  const [providerLog, setProviderLog] = useState<{ provider: string; action: string; time: Date }[]>([])
 
   const pendingDalleRef = useRef<number | null>(null)
 
@@ -164,10 +165,9 @@ export default function NewsletterComposer({
 
   // ─── Handlers ───
 
-  const handleSuggestThemes = useCallback(async (useOpenAI = false) => {
+  const handleSuggestThemes = useCallback(async () => {
     setLoading('suggest')
     setMessage(null)
-    setShowOpenAIConfirm(null)
     try {
       const res = await fetch('/api/newsletter/generate', {
         method: 'POST',
@@ -175,31 +175,21 @@ export default function NewsletterComposer({
         body: JSON.stringify({
           mode: 'suggest',
           context: sessionContext,
-          siteInfo: { url: 'https://chantenscene.fr', name: 'ChanteEnScène' },
-          useOpenAI,
+          siteInfo: { url: 'https://chantenscene.fr', name: 'ChantEnSc\u00e8ne' },
         }),
       })
       const data = await res.json()
       if (data.themes) {
         setSuggestedThemes(data.themes)
-        if (data.provider) setMessage({ type: 'success', text: `Généré via ${data.provider}` })
-      } else if (data.error === 'quota_exhausted') {
-        setQuotaRetryIn(data.retryIn || 60)
-        setShowOpenAIConfirm('suggest')
-        // Start countdown
-        const start = data.retryIn || 60
-        let remaining = start
-        const timer = setInterval(() => {
-          remaining--
-          setQuotaRetryIn(remaining)
-          if (remaining <= 0) clearInterval(timer)
-        }, 1000)
+        if (data.provider) {
+          setProviderLog(prev => [...prev, { provider: data.provider, action: 'Th\u00e8mes', time: new Date() }])
+          setMessage({ type: 'success', text: `G\u00e9n\u00e9r\u00e9 via ${data.provider}` })
+        }
       } else {
-        const msg = data.error === 'quota_exhausted' ? 'Quota IA épuisé, réessayez plus tard' : (data.error || 'Erreur')
-        setMessage({ type: 'error', text: msg })
+        setMessage({ type: 'error', text: data.error || 'Erreur' })
       }
     } catch {
-      setMessage({ type: 'error', text: 'Erreur réseau' })
+      setMessage({ type: 'error', text: 'Erreur r\u00e9seau' })
     }
     setLoading('')
   }, [sessionContext])
@@ -217,14 +207,13 @@ export default function NewsletterComposer({
     }
   }
 
-  const handleCompose = useCallback(async (useOpenAI = false) => {
+  const handleCompose = useCallback(async () => {
     if (selectedThemes.length === 0) {
-      setMessage({ type: 'error', text: 'Sélectionne au moins un thème' })
+      setMessage({ type: 'error', text: 'S\u00e9lectionne au moins un th\u00e8me' })
       return
     }
     setLoading('compose')
     setMessage(null)
-    setShowOpenAIConfirm(null)
     try {
       const res = await fetch('/api/newsletter/generate', {
         method: 'POST',
@@ -234,8 +223,7 @@ export default function NewsletterComposer({
           themes: selectedThemes,
           tone,
           context: sessionContext,
-          siteInfo: { url: 'https://chantenscene.fr', name: 'ChanteEnScène' },
-          useOpenAI,
+          siteInfo: { url: 'https://chantenscene.fr', name: 'ChantEnSc\u00e8ne' },
         }),
       })
       const data = await res.json()
@@ -243,23 +231,15 @@ export default function NewsletterComposer({
         setSubject(data.subject || '')
         setSections(data.sections)
         setStep('edit')
-        if (data.provider) setMessage({ type: 'success', text: `Généré via ${data.provider}` })
-      } else if (data.error === 'quota_exhausted') {
-        setQuotaRetryIn(data.retryIn || 60)
-        setShowOpenAIConfirm('compose')
-        const start = data.retryIn || 60
-        let remaining = start
-        const timer = setInterval(() => {
-          remaining--
-          setQuotaRetryIn(remaining)
-          if (remaining <= 0) clearInterval(timer)
-        }, 1000)
+        if (data.provider) {
+          setProviderLog(prev => [...prev, { provider: data.provider, action: 'Composition', time: new Date() }])
+          setMessage({ type: 'success', text: `G\u00e9n\u00e9r\u00e9 via ${data.provider}` })
+        }
       } else {
-        const msg = data.error === 'quota_exhausted' ? 'Quota IA épuisé, réessayez plus tard' : (data.error || 'Erreur de génération')
-        setMessage({ type: 'error', text: msg })
+        setMessage({ type: 'error', text: data.error || 'Erreur de g\u00e9n\u00e9ration' })
       }
     } catch {
-      setMessage({ type: 'error', text: 'Erreur réseau' })
+      setMessage({ type: 'error', text: 'Erreur r\u00e9seau' })
     }
     setLoading('')
   }, [selectedThemes, tone, sessionContext])
@@ -287,6 +267,8 @@ export default function NewsletterComposer({
           next[index] = { ...next[index], imageUrl: finalUrl }
           return next
         })
+        const imgProvider = data.provider === 'dalle' ? 'DALL-E' : 'Gemini Imagen'
+        setProviderLog(prev => [...prev, { provider: imgProvider, action: `Image ${index + 1}`, time: new Date() }])
         setMessage({ type: 'success', text: `Image générée via ${data.provider === 'dalle' ? 'DALL-E (~0.04$)' : 'Gemini (gratuit)'}` })
       } else if (data.error === 'quota_exhausted' || res.status === 429) {
         // Gemini quota exhausted — auto-fallback to DALL-E if available
@@ -488,6 +470,48 @@ export default function NewsletterComposer({
         </div>
       </div>
 
+      {/* AI Provider VU meter */}
+      <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[#161228] border border-[#2a2545]">
+        <span className="text-[10px] text-white/30 uppercase tracking-wider font-semibold shrink-0">IA</span>
+        <div className="flex items-center gap-2 flex-1">
+          {[
+            { id: 'gemini', label: 'Gemini', color: '#7ec850', free: true },
+            { id: 'groq', label: 'Groq', color: '#06b6d4', free: true },
+            { id: 'openai', label: 'OpenAI', color: '#f59e0b', free: false },
+            { id: 'dall-e', label: 'DALL-E', color: '#e91e8c', free: false },
+          ].map((p) => {
+            const uses = providerLog.filter(l => l.provider.toLowerCase().includes(p.id)).length
+            const isActive = uses > 0
+            return (
+              <div key={p.id} className="flex items-center gap-1" title={
+                uses > 0
+                  ? `${uses} appel${uses > 1 ? 's' : ''} — ${providerLog.filter(l => l.provider.toLowerCase().includes(p.id)).map(l => l.action).join(', ')}`
+                  : 'Pas encore utilisé'
+              }>
+                <div className={`w-2 h-2 rounded-full transition-all ${isActive ? 'animate-pulse' : 'opacity-30'}`}
+                  style={{ backgroundColor: isActive ? p.color : '#555' }} />
+                <span className={`text-[10px] ${isActive ? 'text-white/70' : 'text-white/25'}`}>
+                  {p.label}
+                </span>
+                {uses > 0 && (
+                  <span className="text-[9px] font-mono px-1 rounded" style={{ color: p.color, backgroundColor: `${p.color}15` }}>
+                    {uses}
+                  </span>
+                )}
+                {!p.free && uses > 0 && (
+                  <span className="text-[9px] text-white/30">$</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {providerLog.length > 0 && (
+          <span className="text-[10px] text-white/20 shrink-0">
+            {providerLog.length} appel{providerLog.length > 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
       {/* Messages */}
       {message && (
         <div className={`px-4 py-3 rounded-xl text-sm ${
@@ -496,72 +520,6 @@ export default function NewsletterComposer({
             : 'bg-red-500/10 border border-red-500/30 text-red-400'
         }`}>
           {message.text}
-        </div>
-      )}
-
-      {/* Quota exhausted banner */}
-      {showOpenAIConfirm && (
-        <div className="bg-[#161228] border border-[#f59e0b]/30 rounded-2xl p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl shrink-0">⏳</span>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-[#f59e0b]">Quota Gemini épuisé</p>
-              <p className="text-xs text-white/40">
-                Les modèles gratuits sont temporairement indisponibles.
-              </p>
-            </div>
-          </div>
-
-          {/* Countdown progress bar */}
-          {quotaRetryIn > 0 && (
-            <div className="space-y-2">
-              <div className="h-2 bg-[#2a2545] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#f59e0b] to-[#7ec850] rounded-full transition-all duration-1000"
-                  style={{ width: `${Math.max(0, 100 - (quotaRetryIn / 60) * 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-white/30 text-center">
-                Réessai automatique dans <span className="text-[#f59e0b] font-mono font-bold">{quotaRetryIn}s</span>
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            {/* Retry Gemini button (enabled when countdown reaches 0) */}
-            <button
-              onClick={() => {
-                setShowOpenAIConfirm(null)
-                if (showOpenAIConfirm === 'suggest') handleSuggestThemes()
-                else handleCompose()
-              }}
-              disabled={quotaRetryIn > 0 || !!loading}
-              className="flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-30
-                border-[#7ec850]/30 text-[#7ec850] hover:bg-[#7ec850]/10"
-            >
-              {quotaRetryIn > 0 ? `Gemini dans ${quotaRetryIn}s` : 'Réessayer Gemini (gratuit)'}
-            </button>
-
-            {/* OpenAI fallback button */}
-            <button
-              onClick={() => {
-                setShowOpenAIConfirm(null)
-                if (showOpenAIConfirm === 'suggest') handleSuggestThemes(true)
-                else handleCompose(true)
-              }}
-              disabled={!!loading}
-              className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/20 transition-all disabled:opacity-50"
-            >
-              Utiliser OpenAI (~0.01$)
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowOpenAIConfirm(null)}
-            className="w-full text-center text-xs text-white/20 hover:text-white/40 transition-colors"
-          >
-            Annuler
-          </button>
         </div>
       )}
 
@@ -885,8 +843,8 @@ export default function NewsletterComposer({
           {/* Intro text (between header and first section) */}
           <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-white/50 text-xs">Intro (sous l&apos;image d&apos;en-t\u00eate)</label>
-              {!introText && subject && (
+              <label className="text-white/50 text-xs">{"Intro (sous l'image d'en-t\u00eate)"}</label>
+              {subject && (
                 <button
                   type="button"
                   onClick={async () => {
@@ -898,21 +856,28 @@ export default function NewsletterComposer({
                         body: JSON.stringify({ action: 'suggest-intro', subject, tone }),
                       })
                       const data = await res.json()
-                      if (data.introText) setIntroText(data.introText)
-                    } catch { /* ignore */ }
+                      if (!res.ok) {
+                        alert(data.error || 'Erreur lors de la suggestion')
+                      } else if (data.introText) {
+                        setIntroText(data.introText)
+                        if (data.provider) setProviderLog(prev => [...prev, { provider: data.provider, action: 'Intro', time: new Date() }])
+                      }
+                    } catch (err) {
+                      alert('Erreur réseau : ' + (err instanceof Error ? err.message : 'inconnue'))
+                    }
                     setLoading('')
                   }}
                   disabled={loading === 'intro'}
                   className="text-xs text-[#e91e8c] hover:text-[#e91e8c]/80 disabled:opacity-50"
                 >
-                  {loading === 'intro' ? 'G\u00e9n\u00e9ration...' : '\u2728 Sugg\u00e9rer par IA'}
+                  {loading === 'intro' ? 'G\u00e9n\u00e9ration...' : introText ? '\u2728 Reg\u00e9n\u00e9rer' : '\u2728 Sugg\u00e9rer par IA'}
                 </button>
               )}
             </div>
             <textarea
               value={introText}
               onChange={(e) => setIntroText(e.target.value)}
-              placeholder="Court paragraphe d'accroche avant les sections..."
+              placeholder={"Court paragraphe d'accroche avant les sections..."}
               rows={2}
               className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white/90 focus:border-[#e91e8c]/50 focus:outline-none resize-none"
             />
@@ -922,7 +887,7 @@ export default function NewsletterComposer({
           <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-white/50 text-xs">Phrase virale (barre rose du bas)</label>
-              {!footerTagline && subject && (
+              {subject && (
                 <button
                   type="button"
                   onClick={async () => {
@@ -934,21 +899,28 @@ export default function NewsletterComposer({
                         body: JSON.stringify({ action: 'suggest-tagline', subject, tone }),
                       })
                       const data = await res.json()
-                      if (data.tagline) setFooterTagline(data.tagline)
-                    } catch { /* ignore */ }
+                      if (!res.ok) {
+                        alert(data.error || 'Erreur lors de la suggestion')
+                      } else if (data.tagline) {
+                        setFooterTagline(data.tagline)
+                        if (data.provider) setProviderLog(prev => [...prev, { provider: data.provider, action: 'Tagline', time: new Date() }])
+                      }
+                    } catch (err) {
+                      alert('Erreur réseau : ' + (err instanceof Error ? err.message : 'inconnue'))
+                    }
                     setLoading('')
                   }}
                   disabled={loading === 'tagline'}
                   className="text-xs text-[#e91e8c] hover:text-[#e91e8c]/80 disabled:opacity-50"
                 >
-                  {loading === 'tagline' ? 'G\u00e9n\u00e9ration...' : '\u2728 Sugg\u00e9rer par IA'}
+                  {loading === 'tagline' ? 'G\u00e9n\u00e9ration...' : footerTagline ? '\u2728 Reg\u00e9n\u00e9rer' : '\u2728 Sugg\u00e9rer par IA'}
                 </button>
               )}
             </div>
             <textarea
               value={footerTagline}
               onChange={(e) => setFooterTagline(e.target.value)}
-              placeholder="Ex: Vous aimez cette newsletter ? Transf\u00e9rez-la \u00e0 quelqu'un qui chante sous la douche..."
+              placeholder={"Vous aimez cette newsletter ? Transf\u00e9rez-la \u00e0 quelqu'un qui chante sous la douche..."}
               rows={2}
               className="w-full px-3 py-2 rounded-lg bg-[#1a1533] border border-[#2a2545] text-sm text-white/90 focus:border-[#e91e8c]/50 focus:outline-none resize-none"
             />

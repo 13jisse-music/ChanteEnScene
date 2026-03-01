@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Cascade: Gemini 2.5 Flash (gratuit) → Gemini 2.0 Flash (gratuit) → OpenAI (payant, avec confirmation)
+// Cascade: Gemini (gratuit) → Groq (gratuit) → OpenAI (payant, avec confirmation)
 const GEMINI_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
+];
+
+const GROQ_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
 ];
 
 const TONE_PROMPTS: Record<string, string> = {
@@ -41,9 +47,9 @@ type Section = {
  * mode=compose_openai : génère via OpenAI (après confirmation utilisateur)
  */
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
+  if (!GEMINI_API_KEY && !GROQ_API_KEY && !OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: "Aucune clé API configurée (Gemini ni OpenAI)" },
+      { error: "Aucune clé API configurée (Gemini, Groq ou OpenAI)" },
       { status: 500 }
     );
   }
@@ -86,18 +92,19 @@ Sujet de la newsletter : "${subject}"
 Elle doit inciter au partage, \u00eatre dr\u00f4le ou touchante selon le ton, et finir par un emoji.
 1 seule phrase. R\u00e9ponds UNIQUEMENT avec la phrase, sans guillemets.`;
 
+  // Cascade complète : Gemini → Groq → OpenAI (automatique)
   const result = await callWithCascade(prompt);
 
   if (!result.data) {
-    return NextResponse.json({ error: result.error || 'Erreur IA' }, { status: 502 });
+    return NextResponse.json({ error: result.error || 'Erreur IA — réessaie dans quelques secondes' }, { status: 502 });
   }
 
   const text = extractText(result.data).trim().replace(/^["']|["']$/g, '');
 
   if (isIntro) {
-    return NextResponse.json({ introText: text });
+    return NextResponse.json({ introText: text, provider: result.provider });
   }
-  return NextResponse.json({ tagline: text });
+  return NextResponse.json({ tagline: text, provider: result.provider });
 }
 
 async function handleSuggestThemes(
@@ -259,7 +266,7 @@ async function callWithCascade(prompt: string, useOpenAI?: boolean): Promise<Cas
     return { data: null, error: "Erreur OpenAI" };
   }
 
-  // Try Gemini models in cascade
+  // 1. Try Gemini models (gratuit)
   if (GEMINI_API_KEY) {
     let lastRetryIn = 60;
     for (const model of GEMINI_MODELS) {
@@ -269,19 +276,31 @@ async function callWithCascade(prompt: string, useOpenAI?: boolean): Promise<Cas
       }
       if (result.quotaExhausted) {
         if (result.retryIn) lastRetryIn = result.retryIn;
-        continue; // Try next model
+        continue;
       }
-      // Other error, try next
     }
-
-    // All Gemini models exhausted
-    return { data: null, needsOpenAI: !!OPENAI_API_KEY, retryIn: lastRetryIn };
+    // All Gemini exhausted, continue to Groq
+    console.log("Gemini épuisé, fallback Groq...");
+    void lastRetryIn; // retryIn tracked for UI
   }
 
-  // No Gemini key, try OpenAI directly
+  // 2. Try Groq models (gratuit)
+  if (GROQ_API_KEY) {
+    for (const model of GROQ_MODELS) {
+      const result = await callGroq(prompt, model);
+      if (result.data) {
+        return { data: result.data, provider: `groq/${model}` };
+      }
+      if (result.rateLimited) continue;
+    }
+    console.log("Groq épuisé, fallback OpenAI...");
+  }
+
+  // 3. Try OpenAI (payant)
   if (OPENAI_API_KEY) {
     const data = await callOpenAI(prompt);
     if (data) return { data, provider: "openai" };
+    return { data: null, needsOpenAI: false, error: "Erreur OpenAI" };
   }
 
   return { data: null, error: "Aucun service IA disponible" };
@@ -319,6 +338,44 @@ async function callGemini(prompt: string, model: string): Promise<{ data: Record
     return { data: await res.json() };
   } catch (err) {
     console.error(`Gemini ${model} fetch error:`, err);
+    return { data: null };
+  }
+}
+
+async function callGroq(prompt: string, model: string): Promise<{ data: Record<string, unknown> | null; rateLimited?: boolean }> {
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+    });
+
+    if (res.status === 429) {
+      console.error(`Groq ${model} rate limited`);
+      return { data: null, rateLimited: true };
+    }
+
+    if (!res.ok) {
+      console.error(`Groq ${model} error:`, res.status);
+      return { data: null };
+    }
+
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || "";
+    // Normalize to Gemini-compatible format
+    return {
+      data: { candidates: [{ content: { parts: [{ text }] } }] },
+    };
+  } catch (err) {
+    console.error(`Groq ${model} fetch error:`, err);
     return { data: null };
   }
 }
