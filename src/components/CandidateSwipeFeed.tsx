@@ -76,7 +76,8 @@ function SwipeSlide({
 
   const displayName = candidate.stage_name || candidate.first_name
   const accent = candidate.accent_color || '#e91e8c'
-  const showVideo = candidate.video_public && candidate.video_url
+  const isYouTube = candidate.video_url ? !!getYouTubeId(candidate.video_url) : false
+  const showVideo = candidate.video_public && candidate.video_url && !isYouTube
 
   // Check existing vote
   useEffect(() => {
@@ -182,38 +183,29 @@ function SwipeSlide({
     <div className="h-full w-full snap-start relative flex-shrink-0 bg-black">
       {/* Media */}
       {showVideo ? (
-        getYouTubeId(candidate.video_url!) ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${getYouTubeId(candidate.video_url!)}?autoplay=1&rel=0&mute=${globalMuted ? 1 : 0}&playsinline=1`}
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full"
-          />
-        ) : (
-          <>
-            {/* Blurred background for landscape videos */}
-            {isLandscape && (
-              <video
-                ref={bgVideoRef}
-                src={candidate.video_url!}
-                muted
-                loop
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl brightness-50"
-                aria-hidden="true"
-              />
-            )}
-            {/* Main video */}
+        <>
+          {/* Blurred background for landscape videos */}
+          {isLandscape && (
             <video
-              ref={videoRef}
+              ref={bgVideoRef}
               src={candidate.video_url!}
-              muted={globalMuted}
+              muted
               loop
               playsInline
-              className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
+              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl brightness-50"
+              aria-hidden="true"
             />
-          </>
-        )
+          )}
+          {/* Main video */}
+          <video
+            ref={videoRef}
+            src={candidate.video_url!}
+            muted={globalMuted}
+            loop
+            playsInline
+            className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
+          />
+        </>
       ) : candidate.photo_url ? (
         <img
           src={candidate.photo_url}
