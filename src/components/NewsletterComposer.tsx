@@ -1265,19 +1265,51 @@ function composeHeaderImage(
 ): string {
   const W = 600, H = 500
   const QUALITY = 0.92
-  const PHOTO_START = 175 // photo starts here → overlap with text
-  const MARGIN = 24
+  const MARGIN = 20
 
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')!
 
+  // ── Measure text sizes first to compute layout ──
+  const FONT_FAMILY = 'Impact, "Arial Black", "Arial Narrow", sans-serif'
+
+  // Line 1 — bold black (slightly smaller)
+  let fs1 = 56
+  if (line1.trim()) {
+    ctx.font = `${fs1}px ${FONT_FAMILY}`
+    while (ctx.measureText(line1).width > W - MARGIN * 2 && fs1 > 24) {
+      fs1 -= 2
+      ctx.font = `${fs1}px ${FONT_FAMILY}`
+    }
+  }
+
+  // Line 2 — bold pink (bigger)
+  let fs2 = 86
+  const emojiSpace = emoji.trim() ? 110 : 0
+  if (line2.trim()) {
+    ctx.font = `italic ${fs2}px ${FONT_FAMILY}`
+    while (ctx.measureText(line2).width > W - MARGIN * 2 - emojiSpace && fs2 > 30) {
+      fs2 -= 2
+      ctx.font = `italic ${fs2}px ${FONT_FAMILY}`
+    }
+  }
+
+  // Compute vertical layout: both lines tight, centered on white/photo boundary
+  const gap = 2 // tiny gap between lines
+  const totalTextH = (line1.trim() ? fs1 : 0) + gap + (line2.trim() ? fs2 : 0)
+  // Place text block so line2 straddles the photo boundary
+  // Photo boundary = where line2 is roughly 40% on white, 60% on photo
+  const PHOTO_START = Math.max(140, Math.round(totalTextH * 0.72) + 16)
+  const line1Y = PHOTO_START - totalTextH + fs2 * 0.35
+  const line2Y = line1Y + (line1.trim() ? fs1 + gap : 0)
+
   // 1. White background
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, W, H)
 
-  // 2. Photo — center-crop to fill bottom area (600 × 325)
+  // 2. Photo — center-crop to fill bottom area
   const photoH = H - PHOTO_START
   const dstAspect = W / photoH
   const srcAspect = photo.width / photo.height
@@ -1291,51 +1323,34 @@ function composeHeaderImage(
   }
   ctx.drawImage(photo, sx, sy, sw, sh, 0, PHOTO_START, W, photoH)
 
-  // 3. Line 1 — bold black on white band (smaller, above the overlap)
-  let line1Bottom = 80
+  // 3. Line 1 — black, Impact style
   if (line1.trim()) {
-    const maxW = W - MARGIN * 2
-    let fontSize = 46
-    ctx.font = `900 ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
-    while (ctx.measureText(line1).width > maxW && fontSize > 20) {
-      fontSize -= 2
-      ctx.font = `900 ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
-    }
+    ctx.font = `${fs1}px ${FONT_FAMILY}`
     ctx.fillStyle = '#000000'
     ctx.textBaseline = 'top'
-    ctx.fillText(line1, MARGIN, 24)
-    line1Bottom = 24 + fontSize + 4
+    ctx.fillText(line1, MARGIN, line1Y)
   }
 
-  // 4. Line 2 — BIG bold pink, straddling white/photo boundary
+  // 4. Line 2 — pink italic, overlapping onto photo
   if (line2.trim()) {
-    const emojiSpace = emoji.trim() ? 120 : 0
-    const maxW = W - MARGIN * 2 - emojiSpace
-    let fontSize = 90
-    ctx.font = `900 italic ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
-    while (ctx.measureText(line2).width > maxW && fontSize > 30) {
-      fontSize -= 2
-      ctx.font = `900 italic ${fontSize}px "Arial Black", Impact, Arial, sans-serif`
-    }
-    // Position line2 so it straddles the PHOTO_START boundary
-    const line2Y = PHOTO_START - fontSize * 0.55
-    ctx.fillStyle = '#e91e8c'
+    ctx.font = `italic ${fs2}px ${FONT_FAMILY}`
     ctx.textBaseline = 'top'
-    // White shadow/stroke for readability on photo overlap
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-    ctx.lineWidth = 5
+    // White stroke for readability over photo
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+    ctx.lineWidth = 6
     ctx.lineJoin = 'round'
     ctx.strokeText(line2, MARGIN, line2Y)
+    ctx.fillStyle = '#e91e8c'
     ctx.fillText(line2, MARGIN, line2Y)
 
-    // Emoji — BIG, next to line 2
+    // Emoji — big, next to line 2, slightly above
     if (emoji.trim()) {
       const textW = ctx.measureText(line2).width
-      const emojiFontSize = Math.round(fontSize * 1.1)
+      const emojiFontSize = Math.round(fs2 * 1.15)
       ctx.font = `${emojiFontSize}px serif`
       ctx.strokeStyle = 'transparent'
       ctx.lineWidth = 0
-      ctx.fillText(emoji, MARGIN + textW + 10, line2Y - 8)
+      ctx.fillText(emoji, MARGIN + textW + 8, line2Y - 12)
     }
   }
 
