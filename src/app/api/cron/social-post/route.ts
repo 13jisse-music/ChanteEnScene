@@ -73,9 +73,8 @@ function generatePosts(
       ? `🎤 Nouveau candidat ${session.name} !`
       : `🎤 ${count} nouveaux candidats ${session.name} !`
 
-    // Slugs for social card image
-    const slugs = displayCandidates.map(c => c.slug).join(',')
-    const imageUrl = `${siteUrl}/api/social-card?session_id=${session.id}&slugs=${slugs}`
+    // Use first candidate's photo as image (direct URL from Supabase Storage)
+    const imageUrl = displayCandidates.find(c => c.photo_url)?.photo_url || undefined
 
     posts.push({
       type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
