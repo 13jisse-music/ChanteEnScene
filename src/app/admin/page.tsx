@@ -22,100 +22,55 @@ async function getStats() {
   if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null }, donations: { totalEuros: 0, count: 0, lastDonation: null } }
 
   const activeSession = sessions[0]
+  const sid = activeSession.id
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  const { count: totalCandidates } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-
-  const { count: pending } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-    .eq('status', 'pending')
-
-  const { count: approved } = await supabase
-    .from('candidates')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-    .eq('status', 'approved')
-
-  const { count: totalVotes } = await supabase
-    .from('votes')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-
-  const { data: recentCandidates } = await supabase
-    .from('candidates')
-    .select('id, first_name, last_name, stage_name, category, status, created_at, photo_url')
-    .eq('session_id', activeSession.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Semifinalists with details
-  const { data: semifinalists } = await supabase
-    .from('candidates')
-    .select('id, first_name, last_name, stage_name, category, status, photo_url, mp3_url, song_title, song_artist, slug')
-    .eq('session_id', activeSession.id)
-    .in('status', ['semifinalist', 'finalist', 'winner'])
-    .order('category')
-    .order('last_name')
-
-  // Check if semifinal event exists
-  const { data: semifinalEvent } = await supabase
-    .from('live_events')
-    .select('id, status')
-    .eq('session_id', activeSession.id)
-    .eq('event_type', 'semifinal')
-    .limit(1)
-    .maybeSingle()
+  // All queries in parallel (no dependencies between them)
+  const [
+    { count: totalCandidates },
+    { count: pending },
+    { count: approved },
+    { count: totalVotes },
+    { data: recentCandidates },
+    { data: semifinalists },
+    { data: semifinalEvent },
+    { count: pwaInstalls },
+    { count: pushSubscriptions },
+    { data: recentInstalls },
+    { count: totalPwaInstalls },
+    { count: totalPushSubscriptions },
+    { count: emailSubscribers },
+    { data: visitorsData },
+    { data: installsData },
+    { data: pushData },
+    { data: donationsData },
+    { count: totalPageViews },
+    { data: dailyViewsRaw },
+  ] = await Promise.all([
+    supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', sid),
+    supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('status', 'pending'),
+    supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('status', 'approved'),
+    supabase.from('votes').select('*', { count: 'exact', head: true }).eq('session_id', sid),
+    supabase.from('candidates').select('id, first_name, last_name, stage_name, category, status, created_at, photo_url').eq('session_id', sid).order('created_at', { ascending: false }).limit(5),
+    supabase.from('candidates').select('id, first_name, last_name, stage_name, category, status, photo_url, mp3_url, song_title, song_artist, slug').eq('session_id', sid).in('status', ['semifinalist', 'finalist', 'winner']).order('category').order('last_name'),
+    supabase.from('live_events').select('id, status').eq('session_id', sid).eq('event_type', 'semifinal').limit(1).maybeSingle(),
+    supabase.from('pwa_installs').select('*', { count: 'exact', head: true }).eq('session_id', sid),
+    supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('role', 'public'),
+    supabase.from('pwa_installs').select('id, platform, install_source, city, region, latitude, longitude, created_at').eq('session_id', sid).order('created_at', { ascending: false }),
+    supabase.from('pwa_installs').select('*', { count: 'exact', head: true }),
+    supabase.from('push_subscriptions').select('*', { count: 'exact', head: true }).eq('role', 'public'),
+    supabase.from('email_subscribers').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('is_active', true),
+    supabase.from('page_views').select('fingerprint, user_agent').eq('session_id', sid).not('fingerprint', 'is', null),
+    supabase.from('pwa_installs').select('platform').eq('session_id', sid),
+    supabase.from('push_subscriptions').select('fingerprint').eq('session_id', sid).eq('role', 'public'),
+    supabase.from('donations').select('amount_cents, donor_name, tier, created_at').eq('session_id', sid).order('created_at', { ascending: false }),
+    supabase.from('page_views').select('*', { count: 'exact', head: true }).eq('session_id', sid),
+    supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo),
+  ])
 
   const config = (activeSession.config || {}) as Record<string, unknown>
 
-  // PWA installs for active session
-  const { count: pwaInstalls } = await supabase
-    .from('pwa_installs')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-
-  // Push notification subscriptions (public only) for active session
-  const { count: pushSubscriptions } = await supabase
-    .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-    .eq('role', 'public')
-
-  // Recent PWA installs
-  const { data: recentInstalls } = await supabase
-    .from('pwa_installs')
-    .select('id, platform, install_source, city, region, latitude, longitude, created_at')
-    .eq('session_id', activeSession.id)
-    .order('created_at', { ascending: false })
-
-  // All-time totals
-  const { count: totalPwaInstalls } = await supabase
-    .from('pwa_installs')
-    .select('*', { count: 'exact', head: true })
-
-  const { count: totalPushSubscriptions } = await supabase
-    .from('push_subscriptions')
-    .select('*', { count: 'exact', head: true })
-    .eq('role', 'public')
-
-  // Email subscribers for active session
-  const { count: emailSubscribers } = await supabase
-    .from('email_subscribers')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-    .eq('is_active', true)
-
   // Unique visitors with device classification
-  const { data: visitorsData } = await supabase
-    .from('page_views')
-    .select('fingerprint, user_agent')
-    .eq('session_id', activeSession.id)
-    .not('fingerprint', 'is', null)
-
   const visitorsByDevice = { android: 0, ios: 0, desktop: 0 }
   if (visitorsData) {
     const seen = new Map<string, string | null>()
@@ -136,11 +91,6 @@ async function getStats() {
   const uniqueVisitors = visitorsByDevice.android + visitorsByDevice.ios + visitorsByDevice.desktop
 
   // PWA installs by device
-  const { data: installsData } = await supabase
-    .from('pwa_installs')
-    .select('platform')
-    .eq('session_id', activeSession.id)
-
   const installsByDevice = { android: 0, ios: 0, desktop: 0 }
   if (installsData) {
     for (const row of installsData) {
@@ -155,12 +105,6 @@ async function getStats() {
   }
 
   // Push subscriptions by device (match fingerprint to page_views user_agent)
-  const { data: pushData } = await supabase
-    .from('push_subscriptions')
-    .select('fingerprint')
-    .eq('session_id', activeSession.id)
-    .eq('role', 'public')
-
   const pushByDevice = { android: 0, ios: 0, desktop: 0 }
   if (pushData && visitorsData) {
     const fpToUa = new Map<string, string | null>()
@@ -183,33 +127,14 @@ async function getStats() {
     }
   }
 
-  // Donations for this session
-  const { data: donationsData } = await supabase
-    .from('donations')
-    .select('amount_cents, donor_name, tier, created_at')
-    .eq('session_id', activeSession.id)
-    .order('created_at', { ascending: false })
-
+  // Donations
   const totalDonationsEuros = donationsData
     ? donationsData.reduce((sum, d) => sum + d.amount_cents, 0) / 100
     : 0
   const donationsCount = donationsData?.length || 0
   const lastDonation = donationsData?.[0] || null
 
-  // Total page views for this session
-  const { count: totalPageViews } = await supabase
-    .from('page_views')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', activeSession.id)
-
   // Daily stats for last 7 days
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: dailyViewsRaw } = await supabase
-    .from('page_views')
-    .select('fingerprint, created_at')
-    .eq('session_id', activeSession.id)
-    .gte('created_at', sevenDaysAgo)
-
   const dailyStats: { date: string; label: string; pageViews: number; uniqueVisitors: number }[] = []
   if (dailyViewsRaw) {
     const byDay = new Map<string, { views: number; fingerprints: Set<string> }>()

@@ -139,7 +139,7 @@ export default function CandidatsTable({
       const ai = CATEGORY_ORDER.indexOf(a.category)
       const bi = CATEGORY_ORDER.indexOf(b.category)
       if (ai !== bi) return ai - bi
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     })
 
   async function handleStatus(id: string, status: string) {
