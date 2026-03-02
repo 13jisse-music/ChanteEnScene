@@ -168,7 +168,8 @@ function validateImageUrl(url: string): string | null {
     const hasImageExt = imageExtensions.some(ext => parsed.pathname.toLowerCase().endsWith(ext))
     const isImgurDirect = parsed.hostname === 'i.imgur.com'
     const isPostImg = parsed.hostname.includes('postimg')
-    const isKnownImageHost = isImgurDirect || isPostImg || parsed.hostname.includes('cloudinary') || parsed.hostname.includes('blob.vercel-storage')
+    const isOwnDomain = parsed.hostname.includes('chantenscene') || parsed.hostname.includes('vercel.app')
+    const isKnownImageHost = isImgurDirect || isPostImg || parsed.hostname.includes('cloudinary') || parsed.hostname.includes('blob.vercel-storage') || isOwnDomain
 
     if (!hasImageExt && !isKnownImageHost) {
       return 'L\'URL ne semble pas pointer vers une image directe. Assurez-vous que le lien se termine par .jpg, .png, etc. ou utilisez un hébergeur d\'images (imgur, postimg.cc).'
