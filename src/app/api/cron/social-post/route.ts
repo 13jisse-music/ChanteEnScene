@@ -230,12 +230,13 @@ export async function GET(request: Request) {
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
 
-    // Nouveaux candidats depuis hier (24h)
+    // Nouveaux candidats depuis hier (24h) — uniquement ceux ayant consenti au partage
     const { data: newCandidates } = await supabase
       .from('candidates')
       .select('first_name, last_name, stage_name, slug, song_title, song_artist, photo_url')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
+      .neq('image_social_consent', false)
       .gte('created_at', oneDayAgo)
 
     const posts = generatePosts(

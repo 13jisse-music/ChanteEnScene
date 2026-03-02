@@ -179,6 +179,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
   const [videoUrl, setVideoUrl] = useState('')
   const [videoMode, setVideoMode] = useState<'url' | 'file'>('url')
   const [videoPublic, setVideoPublic] = useState(false)
+  const [imageSocialConsent, setImageSocialConsent] = useState(true)
   const [consent, setConsent] = useState<File | null>(null)
   const [newsletterOptIn, setNewsletterOptIn] = useState(true)
 
@@ -389,6 +390,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       fd.append('accent_color', accentColor)
       fd.append('slug', candidateSlug)
       fd.append('video_public', String(videoPublic))
+      fd.append('image_social_consent', String(imageSocialConsent))
       if (resolvedVideoUrl) fd.append('video_url', resolvedVideoUrl)
       if (youtubeUrl.trim()) fd.append('youtube_url', youtubeUrl.trim())
       if (instagramUrl.trim()) fd.append('instagram_url', instagramUrl.trim())
@@ -675,6 +677,18 @@ export default function InscriptionForm({ session }: { session: Session }) {
               J&apos;accepte que ma vidéo de candidature soit diffusée publiquement sur le site ChanteEnScène
             </span>
           </label>
+
+          <label className="flex items-start gap-3 cursor-pointer group bg-[#1a1232]/80 backdrop-blur-sm border border-[#2e2555] rounded-xl p-4">
+            <input
+              type="checkbox"
+              checked={imageSocialConsent}
+              onChange={(e) => setImageSocialConsent(e.target.checked)}
+              className="mt-0.5 w-5 h-5 rounded border-[#6b5d85] bg-[#0d0b1a] text-[#e91e8c] focus:ring-[#e91e8c]/30 cursor-pointer"
+            />
+            <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+              J&apos;autorise ChanteEnScène à utiliser ma photo et mon nom sur les réseaux sociaux (Facebook, Instagram) pour la promotion du concours
+            </span>
+          </label>
         </div>
       )}
 
@@ -782,6 +796,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
             <p className="text-sm"><span className="text-[#6b5d85]">Photo :</span> {photo ? '✅' : '❌'}</p>
             <p className="text-sm"><span className="text-[#6b5d85]">Vidéo :</span> {videoFile ? '✅' : '❌'}</p>
             <p className="text-sm"><span className="text-[#6b5d85]">Vidéo publique :</span> {videoPublic ? '✅' : '❌'}</p>
+            <p className="text-sm"><span className="text-[#6b5d85]">Partage réseaux sociaux :</span> {imageSocialConsent ? '✅' : '❌'}</p>
             {(youtubeUrl || instagramUrl || tiktokUrl || websiteUrl) && (
               <p className="text-sm"><span className="text-[#6b5d85]">Réseaux :</span> {[youtubeUrl && 'YouTube', instagramUrl && 'Instagram', tiktokUrl && 'TikTok', websiteUrl && 'Site web'].filter(Boolean).join(', ')}</p>
             )}

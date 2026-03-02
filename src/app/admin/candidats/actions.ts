@@ -99,6 +99,23 @@ export async function toggleVideoPublic(candidateId: string, videoPublic: boolea
   return { success: true }
 }
 
+export async function toggleImageSocialConsent(candidateId: string, consent: boolean) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('candidates')
+    .update({ image_social_consent: consent })
+    .eq('id', candidateId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/candidats')
+  return { success: true }
+}
+
 export async function deleteCandidate(candidateId: string) {
   await requireAdmin()
   const supabase = createAdminClient()

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       const fieldNames = [
         'session_id', 'first_name', 'last_name', 'stage_name', 'date_of_birth',
         'email', 'phone', 'city', 'category', 'song_title', 'song_artist',
-        'bio', 'accent_color', 'slug', 'video_public', 'video_url',
+        'bio', 'accent_color', 'slug', 'video_public', 'image_social_consent', 'video_url',
         'youtube_url', 'instagram_url', 'tiktok_url', 'website_url',
         'fingerprint', 'referred_by', 'photo_url', 'consent_url',
       ]
@@ -107,6 +107,7 @@ export async function POST(request: Request) {
       accent_color: accent_color || '#E91E8C',
       slug,
       video_public: video_public === 'true' || video_public === true,
+      image_social_consent: image_social_consent !== 'false' && image_social_consent !== false,
       youtube_url: youtube_url?.trim() || null,
       instagram_url: instagram_url?.trim() || null,
       tiktok_url: tiktok_url?.trim() || null,

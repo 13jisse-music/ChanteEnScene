@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, requestCorrection } from '@/app/admin/candidats/actions'
+import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, toggleImageSocialConsent, requestCorrection } from '@/app/admin/candidats/actions'
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
@@ -47,6 +47,7 @@ interface Candidate {
   bio: string | null
   parental_consent_url: string | null
   video_public: boolean
+  image_social_consent: boolean
   status: string
   likes_count: number
   created_at: string
@@ -490,6 +491,27 @@ export default function CandidatsTable({
                               </span>
                             </div>
                           )}
+                          {/* Image social consent toggle */}
+                          <div className="flex items-center gap-3 mt-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleImageSocialConsent(c.id, !c.image_social_consent)
+                              }}
+                              className={`relative w-10 h-5 rounded-full transition-colors ${
+                                c.image_social_consent ? 'bg-[#7ec850]' : 'bg-[#2a2545]'
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                                  c.image_social_consent ? 'translate-x-5' : ''
+                                }`}
+                              />
+                            </button>
+                            <span className="text-xs text-white/40">
+                              Réseaux sociaux {c.image_social_consent ? '(autorisé)' : '(refusé)'}
+                            </span>
+                          </div>
                           <div className="flex flex-wrap gap-2 mt-3">
                             {c.video_url && (
                               <button
