@@ -1,3 +1,5 @@
+export const revalidate = 300
+
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import PhotoGallery from '@/components/PhotoGallery'
