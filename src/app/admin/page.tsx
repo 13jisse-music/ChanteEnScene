@@ -7,7 +7,7 @@ import PwaFunnel from '@/components/PwaFunnel'
 import InstallsMap from '@/components/InstallsMap'
 import DailyStats from '@/components/DailyStats'
 import ChangelogCard from '@/components/ChangelogCard'
-import DevTimeCard from '@/components/DevTimeCard'
+// DevTimeCard removed from dashboard grid
 import { SESSION_STATUSES, STATUS_CONFIG, getStatusIndex, type SessionStatus } from '@/lib/phases'
 import { Fragment } from 'react'
 
@@ -279,15 +279,19 @@ function StatCard({
   color,
   icon,
   subtitle,
+  href,
+  valueStr,
 }: {
   label: string
-  value: number
+  value?: number
   color: string
   icon: string
   subtitle?: string
+  href?: string
+  valueStr?: string
 }) {
-  return (
-    <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5">
+  const content = (
+    <div className={`bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5 transition-colors ${href ? 'hover:bg-[#1a1533] hover:border-[#3a3565] cursor-pointer' : ''}`}>
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <span className="text-lg sm:text-2xl">{icon}</span>
         <span
@@ -298,13 +302,15 @@ function StatCard({
         </span>
       </div>
       <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl" style={{ color }}>
-        {value}
+        {valueStr ?? value}
       </p>
       {subtitle && (
         <p className="text-white/30 text-xs mt-1">{subtitle}</p>
       )}
     </div>
   )
+  if (href) return <Link href={href}>{content}</Link>
+  return content
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -380,67 +386,42 @@ export default async function AdminDashboard() {
 
       {/* Stats Grid — Concours */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-10">
-        {/* Candidats — carte fusionnée */}
-        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5">
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            <span className="text-lg sm:text-2xl">🎤</span>
-            <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full" style={{ background: '#e91e8c15', color: '#e91e8c' }}>
-              Candidats
-            </span>
-          </div>
-          <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl text-[#e91e8c]">
-            {stats.totalCandidates ?? 0}
-          </p>
-          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#2a2545]">
-            <span className="text-xs" style={{ color: '#7ec850' }}>
-              ✅ {stats.approved ?? 0} <span className="text-white/30">approuvé{(stats.approved ?? 0) > 1 ? 's' : ''}</span>
-            </span>
-            <span className="text-xs" style={{ color: '#f59e0b' }}>
-              ⏳ {stats.pending ?? 0} <span className="text-white/30">en attente</span>
-            </span>
-          </div>
-        </div>
-        <StatCard icon="❤️" label="Votes" value={stats.totalVotes ?? 0} color="#3b82f6" />
-        {semifinalistCount > 0 && (
-          <StatCard icon="🌟" label="Demi-finalistes" value={semifinalistCount} color="#8b5cf6" />
-        )}
-        <StatCard icon="👀" label="Visiteurs" value={stats.uniqueVisitors ?? 0} color="#8b5cf6" />
-        <StatCard icon="📄" label="Pages vues" value={stats.totalPageViews ?? 0} color="#6366f1" />
-        <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" />
-        <DevTimeCard />
-      </div>
-
-      {/* Donations / Partenariats */}
-      <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-4 sm:p-5 mb-6 sm:mb-10">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-sm sm:text-base flex items-center gap-2">
-            <span>💰</span> Dons & Partenariats
-          </h2>
-          {donations.count > 0 && (
-            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: '#7ec85015', color: '#7ec850' }}>
-              {donations.count} don{donations.count > 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        {donations.count > 0 ? (
-          <div className="flex items-end gap-6">
-            <div>
-              <p className="font-[family-name:var(--font-montserrat)] font-black text-3xl sm:text-4xl text-[#7ec850]">
-                {donations.totalEuros.toLocaleString('fr-FR')} €
-              </p>
-              <p className="text-white/30 text-xs mt-1">Total reçu via Stripe</p>
+        {/* Candidats — carte fusionnée cliquable */}
+        <Link href="/admin/candidats" className="block">
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-3 sm:p-5 hover:bg-[#1a1533] hover:border-[#3a3565] transition-colors cursor-pointer">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <span className="text-lg sm:text-2xl">🎤</span>
+              <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full" style={{ background: '#e91e8c15', color: '#e91e8c' }}>
+                Candidats
+              </span>
             </div>
-            {donations.lastDonation && (
-              <div className="text-xs text-white/40 pb-1">
-                Dernier : <span className="text-white/60">{donations.lastDonation.donor_name}</span> — {(donations.lastDonation.amount_cents / 100).toLocaleString('fr-FR')} € ({donations.lastDonation.tier})
-                <br />
-                {new Date(donations.lastDonation.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </div>
-            )}
+            <p className="font-[family-name:var(--font-montserrat)] font-black text-2xl sm:text-3xl text-[#e91e8c]">
+              {stats.totalCandidates ?? 0}
+            </p>
+            <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#2a2545]">
+              <span className="text-xs" style={{ color: '#7ec850' }}>
+                ✅ {stats.approved ?? 0} <span className="text-white/30">approuvé{(stats.approved ?? 0) > 1 ? 's' : ''}</span>
+              </span>
+              <span className="text-xs" style={{ color: '#f59e0b' }}>
+                ⏳ {stats.pending ?? 0} <span className="text-white/30">en attente</span>
+              </span>
+            </div>
           </div>
-        ) : (
-          <p className="text-white/30 text-sm">Aucun don reçu pour le moment.</p>
+        </Link>
+        <StatCard icon="❤️" label="Votes" value={stats.totalVotes ?? 0} color="#3b82f6" href="/admin/votes" />
+        {semifinalistCount > 0 && (
+          <StatCard icon="🌟" label="Demi-finalistes" value={semifinalistCount} color="#8b5cf6" href="/admin/candidats" />
         )}
+        <StatCard icon="👀" label="Visiteurs" value={stats.uniqueVisitors ?? 0} color="#8b5cf6" href="/admin/visiteurs" />
+        <StatCard icon="📧" label="Abonnés email" value={stats.emailSubscribers ?? 0} color="#ec4899" href="/admin/abonnes" />
+        <StatCard
+          icon="💰"
+          label="Dons"
+          valueStr={`${donations.totalEuros.toLocaleString('fr-FR')} €`}
+          color="#7ec850"
+          href="/admin/sponsors"
+          subtitle={donations.count > 0 ? `${donations.count} don${donations.count > 1 ? 's' : ''}` : 'Aucun don'}
+        />
       </div>
 
       {/* Daily Traffic Chart */}
