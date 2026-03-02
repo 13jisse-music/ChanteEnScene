@@ -195,7 +195,24 @@ export async function GET(request: Request) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chantenscene.fr'
   // Toujours utiliser le domaine public pour les posts sociaux (jamais localhost)
   const socialSiteUrl = siteUrl.includes('localhost') ? 'https://chantenscene.fr' : siteUrl
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  // Récupérer les slugs des candidats déjà annoncés dans les posts cron précédents
+  const { data: pastPosts } = await supabase
+    .from('social_posts_log')
+    .select('message')
+    .eq('source', 'cron')
+    .in('post_type', ['new_candidate_welcome', 'new_candidates_welcome', 'new_candidates_wave'])
+
+  // Extraire les slugs des URLs /candidats/{slug} dans les messages passés
+  const announcedSlugs = new Set<string>()
+  if (pastPosts) {
+    for (const post of pastPosts) {
+      const matches = (post.message || '').matchAll(/\/candidats\/([a-z0-9-]+)/g)
+      for (const match of matches) {
+        announcedSlugs.add(match[1])
+      }
+    }
+  }
 
   // Get active session (is_active flag, fallback to most recent non-archived)
   let { data: sessions } = await supabase
@@ -229,14 +246,15 @@ export async function GET(request: Request) {
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
 
-    // Nouveaux candidats depuis hier (24h) — uniquement ceux ayant consenti au partage
-    const { data: newCandidates } = await supabase
+    // Candidats approuvés jamais annoncés (slug absent des posts cron précédents)
+    const { data: allApproved } = await supabase
       .from('candidates')
       .select('first_name, last_name, stage_name, slug, song_title, song_artist, photo_url')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
       .neq('image_social_consent', false)
-      .gte('created_at', oneDayAgo)
+
+    const newCandidates = (allApproved || []).filter(c => !announcedSlugs.has(c.slug))
 
     const posts = generatePosts(
       { id: session.id, name: session.name, slug: session.slug, config, status: session.status },

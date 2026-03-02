@@ -293,7 +293,23 @@ export async function GET() {
   const admin = createAdminClient()
   const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://chantenscene.fr'
   const siteUrl = rawSiteUrl.includes('localhost') ? 'https://chantenscene.fr' : rawSiteUrl
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  // Récupérer les slugs des candidats déjà annoncés dans les posts cron précédents
+  const { data: pastPosts } = await admin
+    .from('social_posts_log')
+    .select('message')
+    .eq('source', 'cron')
+    .in('post_type', ['new_candidate_welcome', 'new_candidates_welcome', 'new_candidates_wave'])
+
+  const announcedSlugs = new Set<string>()
+  if (pastPosts) {
+    for (const post of pastPosts) {
+      const matches = (post.message || '').matchAll(/\/candidats\/([a-z0-9-]+)/g)
+      for (const match of matches) {
+        announcedSlugs.add(match[1])
+      }
+    }
+  }
 
   // Get active session (is_active flag, fallback to most recent non-archived)
   let { data: sessions } = await admin
@@ -327,12 +343,14 @@ export async function GET() {
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
 
-    const { data: newCandidates } = await admin
+    // Candidats approuvés jamais annoncés
+    const { data: allApproved } = await admin
       .from('candidates')
       .select('first_name, last_name, stage_name, slug, song_title, song_artist')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
-      .gte('created_at', oneDayAgo)
+
+    const newCandidates = (allApproved || []).filter(c => !announcedSlugs.has(c.slug))
 
     const posts = generateAllPossiblePosts(
       { id: session.id, name: session.name, slug: session.slug, config, status: session.status },
