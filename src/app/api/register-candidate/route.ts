@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const {
       session_id, first_name, last_name, stage_name, date_of_birth,
       email, phone, city, category, song_title, song_artist,
-      bio, accent_color, slug, video_public, video_url,
+      bio, accent_color, slug, video_public, image_social_consent, video_url,
       youtube_url, instagram_url, tiktok_url, website_url,
       fingerprint, referred_by,
     } = fields
