@@ -33,6 +33,10 @@ interface PushStats {
   total: number
   public: number
   jury: number
+  jury_generic: number
+  jury_online: number
+  jury_semi: number
+  jury_finale: number
   admin: number
   reachableCandidates: number
   totalCandidates: number
@@ -57,6 +61,9 @@ type SegmentValue =
   | 'all'
   | 'public'
   | 'jury'
+  | 'jury_online'
+  | 'jury_semi'
+  | 'jury_finale'
   | 'admin'
   | 'all_candidates'
   | 'approved'
@@ -74,7 +81,10 @@ interface SegmentDef {
 const SEGMENTS: SegmentDef[] = [
   { value: 'all', label: 'Tous', icon: '📢' },
   { value: 'public', label: 'Public', icon: '👥' },
-  { value: 'jury', label: 'Jury', icon: '⭐' },
+  { value: 'jury', label: 'Jury (tous)', icon: '⭐' },
+  { value: 'jury_online', label: 'Jury online', icon: '🌐' },
+  { value: 'jury_semi', label: 'Jury demi', icon: '🎬' },
+  { value: 'jury_finale', label: 'Jury finale', icon: '🏆' },
   { value: 'admin', label: 'Admin', icon: '🔧' },
   { value: 'all_candidates', label: 'Candidats', icon: '🎤', minPhase: 'registration_open' },
   { value: 'approved', label: 'Approuvés', icon: '✅', minPhase: 'registration_closed' },
@@ -86,7 +96,10 @@ const SEGMENTS: SegmentDef[] = [
 const SEGMENT_LABELS: Record<string, string> = {
   all: 'Tous',
   public: 'Public',
-  jury: 'Jury',
+  jury: 'Jury (tous)',
+  jury_online: 'Jury online',
+  jury_semi: 'Jury demi-finale',
+  jury_finale: 'Jury finale',
   admin: 'Admin',
   all_candidates: 'Candidats',
   approved: 'Approuvés',
@@ -133,6 +146,10 @@ export default function NotificationsAdmin({
   // Push logs
   const [pushLogs, setPushLogs] = useState<PushLog[]>(initialPushLogs)
   const [loadingPushLogs, setLoadingPushLogs] = useState(false)
+
+  // Cleanup state
+  const [cleanupRole, setCleanupRole] = useState<string | null>(null)
+  const [cleanupResult, setCleanupResult] = useState<string | null>(null)
 
   const activeSession = sessions.find((s) => s.id === sessionId)
   const sessionStatus = activeSession?.status || activeSessionStatus
@@ -182,6 +199,9 @@ export default function NotificationsAdmin({
     if (segment === 'all') return pushStats.total
     if (segment === 'public') return pushStats.public
     if (segment === 'jury') return pushStats.jury
+    if (segment === 'jury_online') return pushStats.jury_online
+    if (segment === 'jury_semi') return pushStats.jury_semi
+    if (segment === 'jury_finale') return pushStats.jury_finale
     if (segment === 'admin') return pushStats.admin
     if (segment === 'specific_candidate') {
       if (!selectedCandidate) return 0
@@ -203,6 +223,28 @@ export default function NotificationsAdmin({
       .limit(50)
     setPushLogs((data as PushLog[]) || [])
     setLoadingPushLogs(false)
+  }
+
+  async function handleCleanup(role: string) {
+    setCleanupRole(role)
+    setCleanupResult(null)
+    try {
+      const res = await fetch('/api/push/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, role }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setCleanupResult(`Erreur : ${data.error}`)
+      } else {
+        setCleanupResult(`${data.deleted} abonnement${data.deleted > 1 ? 's' : ''} supprimé${data.deleted > 1 ? 's' : ''}`)
+      }
+    } catch {
+      setCleanupResult('Erreur réseau')
+    } finally {
+      setCleanupRole(null)
+    }
   }
 
   function prefillPhase(phase: string) {
@@ -305,7 +347,7 @@ export default function NotificationsAdmin({
     setPushResult(null)
     try {
       // Build request body based on segment type
-      const isRoleSegment = ['all', 'public', 'jury', 'admin'].includes(segment)
+      const isRoleSegment = ['all', 'public', 'jury', 'jury_online', 'jury_semi', 'jury_finale', 'admin'].includes(segment)
       const body: Record<string, unknown> = {
         sessionId,
         payload: {
@@ -372,6 +414,13 @@ export default function NotificationsAdmin({
           </div>
           <div className="flex items-center gap-2 text-white/40">
             ⭐ {pushStats.jury} jury
+            {(pushStats.jury_online > 0 || pushStats.jury_semi > 0 || pushStats.jury_finale > 0) && (
+              <span className="text-[10px] text-white/25">
+                ({pushStats.jury_online > 0 && `${pushStats.jury_online} online`}
+                {pushStats.jury_semi > 0 && `${pushStats.jury_online > 0 ? ', ' : ''}${pushStats.jury_semi} demi`}
+                {pushStats.jury_finale > 0 && `${pushStats.jury_online > 0 || pushStats.jury_semi > 0 ? ', ' : ''}${pushStats.jury_finale} finale`})
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-white/40">
             🔧 {pushStats.admin} admin
@@ -383,6 +432,49 @@ export default function NotificationsAdmin({
           )}
         </div>
       </div>
+
+      {/* ── Nettoyage rôles jury ── */}
+      {pushStats.jury > 0 && (
+        <div className="bg-[#1a1232]/60 rounded-2xl p-4 mb-6 border border-[#2a2545]/60">
+          <h3 className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2">
+            <span>🧹</span> Nettoyage rôles jury
+          </h3>
+          <p className="text-white/30 text-xs mb-3">
+            Supprimez les abonnements push d&apos;une phase jury terminée.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { role: 'jury_online', label: 'Jury online', count: pushStats.jury_online, icon: '🌐' },
+              { role: 'jury_semi', label: 'Jury demi-finale', count: pushStats.jury_semi, icon: '🎬' },
+              { role: 'jury_finale', label: 'Jury finale', count: pushStats.jury_finale, icon: '🏆' },
+              { role: 'jury', label: 'Jury (legacy)', count: pushStats.jury_generic, icon: '⭐' },
+            ]
+              .filter((r) => r.count > 0)
+              .map((r) => (
+                <button
+                  key={r.role}
+                  onClick={() => {
+                    if (confirm(`Supprimer ${r.count} abonnement(s) ${r.label} ?`)) {
+                      handleCleanup(r.role)
+                    }
+                  }}
+                  disabled={cleanupRole === r.role}
+                  className="px-3 py-2 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                >
+                  {cleanupRole === r.role ? '...' : `${r.icon} ${r.label} (${r.count})`}
+                </button>
+              ))}
+            {pushStats.jury_online === 0 && pushStats.jury_semi === 0 && pushStats.jury_finale === 0 && pushStats.jury_generic === 0 && (
+              <p className="text-white/20 text-xs">Aucun abonnement jury à nettoyer</p>
+            )}
+          </div>
+          {cleanupResult && (
+            <p className={`mt-2 text-xs ${cleanupResult.startsWith('Erreur') ? 'text-red-400' : 'text-green-400'}`}>
+              {cleanupResult}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Formulaire push ── */}
       <div id="push-section" className="bg-[#1a1232] rounded-2xl p-6 mb-8 border border-[#2a2545]">
@@ -818,15 +910,7 @@ export default function NotificationsAdmin({
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-xs bg-[#e91e8c]/20 text-[#e91e8c]">
-                          {log.role === 'all'
-                            ? 'Tous'
-                            : log.role === 'public'
-                              ? 'Public'
-                              : log.role === 'jury'
-                                ? 'Jury'
-                                : log.role === 'admin'
-                                  ? 'Admin'
-                                  : log.role}
+                          {SEGMENT_LABELS[log.role] || log.role}
                         </span>
                       )}
                     </td>

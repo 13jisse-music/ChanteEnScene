@@ -86,6 +86,90 @@ export function registrationConfirmationEmail({
   return { subject, html }
 }
 
+// ─── Correction request email ───
+
+const FIELD_LABELS: Record<string, string> = {
+  song_title: 'Titre de la chanson',
+  song_artist: 'Artiste original',
+  video: 'Vidéo',
+  photo: 'Photo',
+}
+
+export function correctionRequestEmail({
+  candidateName,
+  sessionName,
+  correctionUrl,
+  fields,
+}: {
+  candidateName: string
+  sessionName: string
+  correctionUrl: string
+  fields: string[]
+}) {
+  const safeName = escapeHtml(candidateName)
+  const safeSession = escapeHtml(sessionName)
+  const fieldList = fields.map((f) => FIELD_LABELS[f] || f).join(', ')
+  const subject = `Votre inscription ChanteEnScène – petite correction demandée`
+
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#0d0b1a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:22px;font-weight:bold;">
+        <span style="color:#ffffff;">Chant</span><span style="color:#7ec850;">En</span><span style="color:#e91e8c;">Scène</span>
+      </span>
+    </div>
+
+    <!-- Card -->
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:32px;">
+      <h1 style="color:#ffffff;font-size:20px;margin:0 0 8px 0;">
+        Bonjour ${safeName} !
+      </h1>
+      <p style="color:#ffffff99;font-size:14px;line-height:1.6;margin:0 0 24px 0;">
+        Merci pour votre inscription au concours <strong style="color:#ffffff;">${safeSession}</strong>. Nous avons besoin d'une petite correction avant de valider votre candidature.
+      </p>
+
+      <!-- What to correct -->
+      <div style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);border-radius:12px;padding:16px;margin:0 0 24px 0;">
+        <p style="color:#f5a623;font-size:13px;line-height:1.6;margin:0;">
+          <strong>A corriger :</strong> ${escapeHtml(fieldList)}
+        </p>
+      </div>
+
+      <p style="color:#ffffff70;font-size:13px;line-height:1.6;margin:0 0 24px 0;">
+        Cliquez sur le bouton ci-dessous pour corriger votre candidature. Vous pouvez utiliser ce lien <strong style="color:#ffffff;">autant de fois que necessaire</strong> tant que votre candidature n'est pas encore validee.
+      </p>
+
+      <!-- CTA button -->
+      <div style="text-align:center;margin:0 0 24px 0;">
+        <a href="${correctionUrl}" style="display:inline-block;background:#e91e8c;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:bold;">
+          Corriger ma candidature
+        </a>
+      </div>
+
+      <p style="color:#ffffff40;font-size:11px;line-height:1.5;margin:0;text-align:center;">
+        Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
+        <span style="color:#e91e8c;word-break:break-all;">${correctionUrl}</span>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <p style="color:#ffffff30;font-size:11px;text-align:center;margin-top:24px;line-height:1.5;">
+      En cas de question, contactez l'organisateur.<br/>
+      ChanteEnScene — Concours de chant
+    </p>
+  </div>
+</body>
+</html>`
+
+  return { subject, html }
+}
+
 // ─── Candidate approved email ───
 
 export function candidateApprovedEmail({

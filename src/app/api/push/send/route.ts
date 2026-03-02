@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { sessionId, role, jurorId, endpoint, segment, candidateId, payload } = body as {
       sessionId: string
-      role?: 'public' | 'jury' | 'admin' | 'all'
+      role?: 'public' | 'jury' | 'admin' | 'all' | 'jury_online' | 'jury_semi' | 'jury_finale'
       jurorId?: string
       endpoint?: string
       segment?: PushSegment

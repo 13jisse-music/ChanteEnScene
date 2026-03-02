@@ -22,9 +22,18 @@ interface Candidate {
   song_artist: string
 }
 
+// Map juror role (from jurors table) to push subscription sub-role
+function getJuryPushRole(jurorRole?: string): 'jury' | 'jury_online' | 'jury_semi' | 'jury_finale' {
+  if (jurorRole === 'online') return 'jury_online'
+  if (jurorRole === 'semifinal') return 'jury_semi'
+  if (jurorRole === 'final') return 'jury_finale'
+  return 'jury'
+}
+
 interface Props {
   jurorName: string
   jurorId: string
+  jurorRole?: string
   sessionId: string
   candidates: Candidate[]
   existingScores: ExistingScore[]
@@ -38,16 +47,17 @@ const DECISION_CONFIG: Record<Decision, { emoji: string; color: string; label: s
   non: { emoji: '👎', color: '#ef4444', label: 'Non' },
 }
 
-export default function JuryDashboard({ jurorName, jurorId, sessionId, candidates, existingScores, deadline, onStartVoting }: Props) {
+export default function JuryDashboard({ jurorName, jurorId, jurorRole, sessionId, candidates, existingScores, deadline, onStartVoting }: Props) {
   const [showInstallBanner, setShowInstallBanner] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
 
-  // Auto re-subscribe push with jury role (silent, no prompt unless needed)
+  // Auto re-subscribe push with phase-specific jury role
+  const pushRole = getJuryPushRole(jurorRole)
   const { isSubscribed: pushSubscribed, subscribe: subscribePush, isSupported: pushSupported } = usePushSubscription({
     sessionId,
-    role: 'jury',
+    role: pushRole,
     jurorId,
-    autoSubscribe: true, // If permission already granted, silently re-subscribe as jury role
+    autoSubscribe: true,
   })
 
   // Vote counts

@@ -82,7 +82,11 @@ export default async function NotificationsPage() {
         pushStats={{
           total: pushSubs?.length || 0,
           public: pushSubs?.filter((s) => s.role === 'public').length || 0,
-          jury: pushSubs?.filter((s) => s.role === 'jury').length || 0,
+          jury: pushSubs?.filter((s) => s.role === 'jury' || s.role?.startsWith('jury_')).length || 0,
+          jury_generic: pushSubs?.filter((s) => s.role === 'jury').length || 0,
+          jury_online: pushSubs?.filter((s) => s.role === 'jury_online').length || 0,
+          jury_semi: pushSubs?.filter((s) => s.role === 'jury_semi').length || 0,
+          jury_finale: pushSubs?.filter((s) => s.role === 'jury_finale').length || 0,
           admin: pushSubs?.filter((s) => s.role === 'admin').length || 0,
           reachableCandidates,
           totalCandidates: candidates?.length || 0,

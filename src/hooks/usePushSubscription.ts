@@ -5,7 +5,7 @@ import { getFingerprint } from '@/lib/fingerprint'
 
 interface UsePushSubscriptionOptions {
   sessionId: string
-  role?: 'public' | 'jury' | 'admin'
+  role?: 'public' | 'jury' | 'admin' | 'jury_online' | 'jury_semi' | 'jury_finale'
   jurorId?: string
   autoSubscribe?: boolean
 }

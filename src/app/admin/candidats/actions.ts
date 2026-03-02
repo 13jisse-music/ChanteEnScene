@@ -3,10 +3,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
-import { candidateApprovedEmail } from '@/lib/emails'
+import { candidateApprovedEmail, correctionRequestEmail } from '@/lib/emails'
 import { sendPushNotifications } from '@/lib/push'
 import { requireAdmin, escapeHtml } from '@/lib/security'
 import { goUrl } from '@/lib/email-utils'
+import { randomUUID } from 'crypto'
 
 export async function updateCandidateStatus(candidateId: string, status: string) {
   await requireAdmin()
@@ -129,4 +130,64 @@ export async function deleteCandidate(candidateId: string) {
   revalidatePath('/admin/candidats')
   revalidatePath('/admin')
   return { success: true }
+}
+
+export async function requestCorrection(candidateId: string, fields: string[]) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  if (!fields.length) return { error: 'Sélectionnez au moins un champ à corriger' }
+
+  // Fetch candidate + session
+  const { data: candidate } = await supabase
+    .from('candidates')
+    .select('id, first_name, last_name, stage_name, email, session_id, correction_token, status')
+    .eq('id', candidateId)
+    .single()
+
+  if (!candidate) return { error: 'Candidat introuvable' }
+  if (candidate.status === 'approved') return { error: 'Candidat déjà approuvé' }
+
+  // Reuse existing token or generate a new one
+  const token = candidate.correction_token || randomUUID()
+
+  const { error } = await supabase
+    .from('candidates')
+    .update({ correction_token: token, correction_fields: fields })
+    .eq('id', candidateId)
+
+  if (error) return { error: error.message }
+
+  // Fetch session info for email
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('name')
+    .eq('id', candidate.session_id)
+    .single()
+
+  const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
+  const correctionUrl = `${siteUrl}/corriger/${token}`
+
+  // Send correction email
+  try {
+    const { subject, html } = correctionRequestEmail({
+      candidateName: escapeHtml(displayName),
+      sessionName: escapeHtml(session?.name || 'ChanteEnScène'),
+      correctionUrl,
+      fields,
+    })
+
+    await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: candidate.email,
+      subject,
+      html,
+    })
+  } catch {
+    // Email failure should not block the action
+  }
+
+  revalidatePath('/admin/candidats')
+  return { success: true, token }
 }

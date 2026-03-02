@@ -34,21 +34,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Delete any existing subscription for this endpoint
+    // Delete existing subscription for this endpoint+role combo only (preserve other roles)
     await supabase
       .from('push_subscriptions')
       .delete()
       .eq('endpoint', endpoint)
       .eq('session_id', sessionId)
+      .eq('role', resolvedRole)
 
-    // Also clean up old subscriptions for the same device (fingerprint)
-    // iOS PWA reinstalls generate new endpoints, leaving orphaned entries
+    // Clean up old subscriptions for same device+role (iOS PWA reinstalls generate new endpoints)
     if (fingerprint) {
       await supabase
         .from('push_subscriptions')
         .delete()
         .eq('fingerprint', fingerprint)
         .eq('session_id', sessionId)
+        .eq('role', resolvedRole)
+        .neq('endpoint', endpoint)
     }
 
     const { error } = await supabase

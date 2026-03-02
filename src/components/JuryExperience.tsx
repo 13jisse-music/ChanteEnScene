@@ -90,6 +90,7 @@ export default function JuryExperience({ juror, session, candidates, existingSco
       <JuryDashboard
         jurorName={jurorName}
         jurorId={juror.id}
+        jurorRole={juror.role}
         sessionId={session.id}
         candidates={candidates}
         existingScores={existingScores}

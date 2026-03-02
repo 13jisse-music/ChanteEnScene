@@ -32,9 +32,12 @@ export type PushSegment =
   | 'finalist'
   | 'specific_candidate'
 
+// All jury sub-roles that should receive 'jury' targeted pushes
+const JURY_ROLES = ['jury', 'jury_online', 'jury_semi', 'jury_finale']
+
 interface SendPushOptions {
   sessionId: string
-  role?: 'public' | 'jury' | 'admin' | 'all'
+  role?: 'public' | 'jury' | 'admin' | 'all' | 'jury_online' | 'jury_semi' | 'jury_finale'
   jurorId?: string
   endpoint?: string
   segment?: PushSegment
@@ -102,7 +105,12 @@ export async function sendPushNotifications(options: SendPushOptions) {
     if (endpoint) {
       query = query.eq('endpoint', endpoint)
     } else if (role !== 'all') {
-      query = query.eq('role', role)
+      // 'jury' targets all jury sub-roles; specific sub-roles target only themselves
+      if (role === 'jury') {
+        query = query.in('role', JURY_ROLES)
+      } else {
+        query = query.eq('role', role)
+      }
     }
     if (jurorId) {
       query = query.eq('juror_id', jurorId)

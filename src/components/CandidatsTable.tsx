@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { updateCandidateStatus, deleteCandidate, toggleVideoPublic } from '@/app/admin/candidats/actions'
+import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, requestCorrection } from '@/app/admin/candidats/actions'
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
@@ -50,6 +50,9 @@ interface Candidate {
   status: string
   likes_count: number
   created_at: string
+  updated_at: string | null
+  correction_token: string | null
+  correction_fields: string[] | null
   finale_songs: { title: string; artist: string; youtube_url: string }[] | null
 }
 
@@ -110,6 +113,9 @@ export default function CandidatsTable({
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null)
+  const [correctionId, setCorrectionId] = useState<string | null>(null)
+  const [correctionChecked, setCorrectionChecked] = useState<Record<string, boolean>>({})
+  const [correctionLoading, setCorrectionLoading] = useState(false)
 
   const CATEGORY_ORDER = ['Enfant', 'Ado', 'Adulte']
 
@@ -146,6 +152,21 @@ export default function CandidatsTable({
     setLoadingId(id)
     await deleteCandidate(id)
     setLoadingId(null)
+  }
+
+  function openCorrectionModal(id: string) {
+    setCorrectionId(id)
+    setCorrectionChecked({})
+  }
+
+  async function handleCorrection() {
+    if (!correctionId) return
+    const fields = Object.entries(correctionChecked).filter(([, v]) => v).map(([k]) => k)
+    if (fields.length === 0) return
+    setCorrectionLoading(true)
+    await requestCorrection(correctionId, fields)
+    setCorrectionLoading(false)
+    setCorrectionId(null)
   }
 
   const counts = {
@@ -260,6 +281,16 @@ export default function CandidatsTable({
                             style={{ background: `${juryVerdict.color}15`, color: juryVerdict.color }}
                           >
                             {juryVerdict.emoji} {juryVerdict.label}
+                          </span>
+                        )}
+                        {c.correction_token && c.updated_at && new Date(c.updated_at).getTime() > new Date(c.created_at).getTime() + 60000 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-[#f59e0b]/15 text-[#f59e0b]" title={`Corrigé le ${new Date(c.updated_at).toLocaleDateString('fr-FR')} à ${new Date(c.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}>
+                            ✏️ Corrigé
+                          </span>
+                        )}
+                        {c.correction_token && (!c.updated_at || new Date(c.updated_at).getTime() <= new Date(c.created_at).getTime() + 60000) && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-[#e91e8c]/15 text-[#e91e8c]">
+                            ✉️ Correction demandée
                           </span>
                         )}
                         {minor && (
@@ -527,6 +558,14 @@ export default function CandidatsTable({
                             ↩ Remettre en attente
                           </button>
                         )}
+                        {c.status !== 'approved' && (
+                          <button
+                            onClick={() => openCorrectionModal(c.id)}
+                            className="px-4 py-2 rounded-xl text-xs font-medium bg-[#f59e0b]/10 border border-[#f59e0b]/25 text-[#f59e0b] hover:bg-[#f59e0b]/20 transition-colors"
+                          >
+                            ✏️ Demander correction
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(c.id, `${c.first_name} ${c.last_name}`)}
                           className="px-4 py-2 rounded-xl text-xs font-medium bg-red-500/5 border border-red-500/15 text-red-400/60 hover:bg-red-500/15 hover:text-red-400 transition-colors ml-auto"
@@ -548,6 +587,49 @@ export default function CandidatsTable({
         )}
       </div>
       {videoModalUrl && <VideoModal url={videoModalUrl} onClose={() => setVideoModalUrl(null)} />}
+
+      {/* Correction modal */}
+      {correctionId && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={() => setCorrectionId(null)}>
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-white mb-1">Demander une correction</h3>
+            <p className="text-white/40 text-xs mb-4">Le candidat recevra un email avec un lien pour corriger les champs sélectionnés.</p>
+            <div className="space-y-3 mb-5">
+              {[
+                { key: 'song_title', label: 'Titre de la chanson' },
+                { key: 'song_artist', label: 'Artiste original' },
+                { key: 'video', label: 'Vidéo' },
+                { key: 'photo', label: 'Photo' },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={correctionChecked[key] || false}
+                    onChange={(e) => setCorrectionChecked((prev) => ({ ...prev, [key]: e.target.checked }))}
+                    className="w-4 h-4 rounded border-[#2a2545] bg-[#1a1533] text-[#e91e8c] focus:ring-[#e91e8c]/30 accent-[#e91e8c]"
+                  />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCorrectionId(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCorrection}
+                disabled={correctionLoading || !Object.values(correctionChecked).some(Boolean)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium bg-[#f59e0b]/10 border border-[#f59e0b]/25 text-[#f59e0b] hover:bg-[#f59e0b]/20 disabled:opacity-40 transition-colors"
+              >
+                {correctionLoading ? 'Envoi...' : 'Envoyer le lien'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
