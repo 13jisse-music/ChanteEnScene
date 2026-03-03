@@ -73,6 +73,18 @@ function SwipeSlide({
   const [voting, setVoting] = useState(false)
   const [heartPop, setHeartPop] = useState(false)
   const [isLandscape, setIsLandscape] = useState(false)
+  const [showPulse, setShowPulse] = useState(false)
+
+  // Pulse le bouton Profil pendant 3s quand le slide devient actif
+  useEffect(() => {
+    if (isActive) {
+      setShowPulse(true)
+      const t = setTimeout(() => setShowPulse(false), 3000)
+      return () => clearTimeout(t)
+    } else {
+      setShowPulse(false)
+    }
+  }, [isActive])
 
   const displayName = candidate.stage_name || candidate.first_name
   const accent = candidate.accent_color || '#e91e8c'
@@ -286,18 +298,24 @@ function SwipeSlide({
           <span className="text-white text-xs font-semibold tabular-nums drop-shadow">{likes}</span>
         </button>
 
-        {/* Profile link */}
+        {/* Profile link — rose + pulse */}
         <Link
           href={`/${sessionSlug}/candidats/${candidate.slug}`}
           className="flex flex-col items-center gap-1"
         >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md active:scale-90 transition-transform">
-            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+          <div className="relative">
+            {/* Cercle pulsant rose */}
+            {showPulse && (
+              <span className="absolute inset-0 rounded-full animate-ping bg-[#e91e8c]/40" style={{ animationDuration: '1.2s', animationIterationCount: '3' }} />
+            )}
+            <div className="relative w-12 h-12 rounded-full flex items-center justify-center bg-[#e91e8c]/20 border border-[#e91e8c]/50 backdrop-blur-md active:scale-90 transition-transform">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#e91e8c]" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
           </div>
-          <span className="text-white/60 text-[10px]">Profil</span>
+          <span className="text-[#e91e8c]/80 text-[10px] font-semibold">Profil</span>
         </Link>
 
         {/* Share */}
