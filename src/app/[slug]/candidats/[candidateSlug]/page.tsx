@@ -230,7 +230,7 @@ export default async function CandidateProfilePage({ params }: { params: Params 
             </p>
 
             {/* Bio tronquée */}
-            {candidate.bio && <HeroBio bio={candidate.bio} />}
+            {candidate.bio && <HeroBio bio={candidate.bio} name={displayName} />}
 
             {/* Ville */}
             {candidate.city && (
