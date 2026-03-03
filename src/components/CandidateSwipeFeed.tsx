@@ -39,7 +39,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; medal: strin
   winner: { label: 'Gagnant(e)', color: '#ffd700', medal: '🏆' },
   finalist: { label: 'Finaliste', color: '#8b5cf6', medal: '🥇' },
   semifinalist: { label: 'Demi-finaliste', color: '#7ec850', medal: '🥈' },
-  approved: { label: 'Sélectionné(e)', color: '#e91e8c', medal: '🥉' },
+  approved: { label: 'Approuvé(e)', color: '#e91e8c', medal: '🥉' },
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -47,7 +47,7 @@ const STATUS_FILTER_OPTIONS = [
   { key: 'winner', label: 'Gagnants', icon: '🏆' },
   { key: 'finalist', label: 'Finalistes', icon: '🥇' },
   { key: 'semifinalist', label: 'Demi-fin.', icon: '🥈' },
-  { key: 'approved', label: 'Sélectionnés', icon: '🥉' },
+  { key: 'approved', label: 'Approuvés', icon: '🥉' },
 ]
 
 /* ─── Single Slide ─── */
@@ -313,20 +313,20 @@ function SwipeSlide({
         </button>
       </div>
 
-      {/* Mute/unmute (only for video slides) */}
+      {/* Mute/unmute (only for video slides) — bien visible */}
       {showVideo && (
         <button
           onClick={onToggleMute}
-          className="absolute top-14 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform"
+          className="absolute top-4 right-4 z-30 w-12 h-12 rounded-full bg-black/70 border border-white/20 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform shadow-lg"
         >
           {globalMuted ? (
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white/90" fill="none" stroke="currentColor" strokeWidth={2}>
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               <line x1="23" y1="9" x2="17" y2="15" />
               <line x1="17" y1="9" x2="23" y2="15" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
@@ -403,8 +403,8 @@ export default function CandidateSwipeFeed({ candidates, sessionId, categories }
 
   return (
     <div className="fixed inset-0 z-20 bg-black">
-      {/* Category filter (sticky top, pt-14 clears the fixed nav) */}
-      <div className="absolute top-0 inset-x-0 z-30 px-4 pt-14 pb-2 bg-gradient-to-b from-black/70 to-transparent">
+      {/* Category filter (desktop only — hidden on mobile) */}
+      <div className="hidden lg:block absolute top-0 inset-x-0 z-30 px-4 pt-14 pb-2 bg-gradient-to-b from-black/70 to-transparent">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           <button
             onClick={() => handleCategoryChange(null)}

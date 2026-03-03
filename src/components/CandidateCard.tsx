@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; medal: strin
   winner: { label: 'Gagnant(e)', color: '#ffd700', medal: '🏆' },
   finalist: { label: 'Finaliste', color: '#8b5cf6', medal: '🥇' },
   semifinalist: { label: 'Demi-finaliste', color: '#7ec850', medal: '🥈' },
-  approved: { label: 'Sélectionné(e)', color: '#e91e8c', medal: '🥉' },
+  approved: { label: 'Approuvé(e)', color: '#e91e8c', medal: '🥉' },
 }
 
 export default function CandidateCard({ candidate, sessionId, isSemifinalist }: Props) {

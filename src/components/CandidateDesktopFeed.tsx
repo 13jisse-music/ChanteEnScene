@@ -46,7 +46,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; medal: strin
   winner: { label: 'Gagnant(e)', color: '#ffd700', medal: '🏆' },
   finalist: { label: 'Finaliste', color: '#8b5cf6', medal: '🥇' },
   semifinalist: { label: 'Demi-finaliste', color: '#7ec850', medal: '🥈' },
-  approved: { label: 'Sélectionné(e)', color: '#e91e8c', medal: '🥉' },
+  approved: { label: 'Approuvé(e)', color: '#e91e8c', medal: '🥉' },
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -54,7 +54,7 @@ const STATUS_FILTER_OPTIONS = [
   { key: 'winner', label: 'Gagnants', icon: '🏆' },
   { key: 'finalist', label: 'Finalistes', icon: '🥇' },
   { key: 'semifinalist', label: 'Demi-finalistes', icon: '🥈' },
-  { key: 'approved', label: 'Sélectionnés', icon: '🥉' },
+  { key: 'approved', label: 'Approuvés', icon: '🥉' },
 ]
 
 /* ─── Single Post Card ─── */

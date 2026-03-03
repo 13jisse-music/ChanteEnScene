@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 
 interface Props {
   videoUrl: string
+  compact?: boolean
 }
 
 function getYouTubeId(url: string): string | null {
@@ -11,7 +12,7 @@ function getYouTubeId(url: string): string | null {
   return m ? m[1] : null
 }
 
-export default function InlineVideoPlayer({ videoUrl }: Props) {
+export default function InlineVideoPlayer({ videoUrl, compact }: Props) {
   const [open, setOpen] = useState(false)
   const ytId = getYouTubeId(videoUrl)
 
@@ -40,12 +41,15 @@ export default function InlineVideoPlayer({ videoUrl }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 text-sm hover:bg-white/20 transition-all"
+        className={compact
+          ? "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold hover:bg-white/25 transition-all shadow-lg"
+          : "inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-white/80 text-sm hover:bg-white/20 transition-all"
+        }
       >
-        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+        <svg viewBox="0 0 24 24" className={compact ? "w-5 h-5 fill-current" : "w-4 h-4 fill-current"}>
           <path d="M8 5v14l11-7z" />
         </svg>
-        Voir la vidéo
+        Vidéo
       </button>
 
       {open && (

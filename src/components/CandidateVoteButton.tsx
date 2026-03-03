@@ -58,23 +58,22 @@ export default function CandidateVoteButton({ candidateId, sessionId, initialLik
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2">
       <button
         onClick={handleVote}
         disabled={hasVoted || voting}
-        className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:cursor-default"
+        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:cursor-default"
         style={
           hasVoted
             ? { background: `${accent}20`, color: accent }
             : { background: `${accent}`, color: '#fff', boxShadow: `0 4px 20px ${accent}40` }
         }
       >
-        <span className="text-lg">{hasVoted ? '❤️' : '🤍'}</span>
-        {hasVoted ? 'Merci pour votre vote !' : 'Voter pour ce candidat'}
+        <svg viewBox="0 0 24 24" className={`w-5 h-5 transition-colors ${hasVoted ? `fill-current` : 'fill-none stroke-current stroke-2'}`}>
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        <span className="tabular-nums">{likes}</span>
       </button>
-      <span className="text-[#6b5d85] text-sm font-medium tabular-nums">
-        {likes} {likes <= 1 ? 'vote' : 'votes'}
-      </span>
     </div>
   )
 }

@@ -309,7 +309,7 @@ export default function RegieEnLigne({ session, candidates, juryScores, jurors, 
         <StatCard icon="🗳️" label="Votes" value={totalVotes} color="#7ec850" />
         <StatCard icon="👨‍⚖️" label="Jurés" value={activeJurors} color="#3b82f6" />
         <StatCard icon="✅" label="Évalués" value={votedCandidates} color="#f5a623" />
-        <StatCard icon="⭐" label="Sélectionnés" value={totalSelected} color="#8b5cf6" />
+        <StatCard icon="⭐" label="Approuvés" value={totalSelected} color="#8b5cf6" />
       </div>
 
       {/* Per-category sections */}

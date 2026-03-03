@@ -27,8 +27,8 @@ export default function ChatbotWidget() {
 
   useEffect(() => setMounted(true), [])
 
-  // Hide on admin/jury pages
-  const hidden = pathname.startsWith('/admin') || pathname.startsWith('/jury') || pathname.startsWith('/upload-mp3')
+  // Hide on admin/jury/candidats pages
+  const hidden = pathname.startsWith('/admin') || pathname.startsWith('/jury') || pathname.startsWith('/upload-mp3') || pathname.includes('/candidats')
 
   useEffect(() => {
     if (!open || loaded) return

@@ -8,6 +8,7 @@ import ShareButtons from '@/components/ShareButtons'
 import HeroBio from '@/components/HeroBio'
 import PageTracker from '@/components/PageTracker'
 import InlineVideoPlayer from '@/components/InlineVideoPlayer'
+import ProfilePhoto from '@/components/ProfilePhoto'
 
 type Params = Promise<{ slug: string; candidateSlug: string }>
 
@@ -76,7 +77,7 @@ export default async function CandidateProfilePage({ params }: { params: Params 
     winner: { label: 'Gagnant(e)', color: '#ffd700', medal: '🏆' },
     finalist: { label: 'Finaliste', color: '#8b5cf6', medal: '🥇' },
     semifinalist: { label: 'Demi-finaliste', color: '#7ec850', medal: '🥈' },
-    approved: { label: 'Sélectionné(e)', color: '#e91e8c', medal: '🥉' },
+    approved: { label: 'Approuvé(e)', color: '#e91e8c', medal: '🥉' },
   }
   const statusInfo = STATUS_LABELS[candidate.status]
 
@@ -121,25 +122,20 @@ export default async function CandidateProfilePage({ params }: { params: Params 
           MOBILE — plein écran immersif (< lg)
       ═══════════════════════════════════════════════════════════ */}
       <section className="lg:hidden relative min-h-[500px] overflow-hidden" style={{ height: 'calc(100dvh - 4rem)' }}>
-        {/* Photo de fond */}
+        {/* Photo de fond — gère portrait ET paysage */}
         {candidate.photo_url ? (
-          <img
-            src={candidate.photo_url}
-            alt={displayName}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: 'center 20%' }}
-          />
+          <ProfilePhoto src={candidate.photo_url} alt={displayName} />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-[#1a1232] to-[#0d0b1a] flex items-center justify-center">
             <span className="text-[120px] opacity-10">🎤</span>
           </div>
         )}
 
-        {/* Gradient dramatique */}
+        {/* Gradient dramatique — renforcé pour lisibilité du texte */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `linear-gradient(to top, #0d0b1a 0%, ${accent}66 8%, ${accent}22 18%, rgba(13,11,26,0.2) 38%, rgba(13,11,26,0.05) 55%, transparent 75%)`,
+            background: `linear-gradient(to top, #0d0b1a 0%, #0d0b1a 5%, ${accent}99 14%, ${accent}55 26%, rgba(13,11,26,0.65) 42%, rgba(13,11,26,0.35) 55%, rgba(13,11,26,0.15) 68%, transparent 82%)`,
           }}
         />
 
@@ -166,7 +162,7 @@ export default async function CandidateProfilePage({ params }: { params: Params 
         </div>
 
         {/* ── Contenu hero (bas de l'écran) ── */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-8 pr-16">
+        <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-20 pr-16">
           <div className="max-w-lg mx-auto">
             {/* Catégorie + statut */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -192,13 +188,13 @@ export default async function CandidateProfilePage({ params }: { params: Params 
                 className="font-[family-name:var(--font-montserrat)] font-black text-white leading-[1.05] tracking-tight"
                 style={{
                   fontSize: candidate.stage_name.length > 15 ? 'clamp(1.6rem, 7vw, 3rem)' : 'clamp(2rem, 9vw, 3.5rem)',
-                  textShadow: `0 0 40px ${accent}80, 0 4px 15px rgba(0,0,0,0.6)`,
+                  textShadow: `0 0 40px ${accent}80, 0 4px 15px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.9)`,
                 }}
               >
                 {candidate.stage_name}
               </h1>
             ) : (
-              <div style={{ textShadow: `0 0 40px ${accent}80, 0 4px 15px rgba(0,0,0,0.6)` }}>
+              <div style={{ textShadow: `0 0 40px ${accent}80, 0 4px 15px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.9)` }}>
                 <span
                   className="block font-[family-name:var(--font-montserrat)] font-black text-white leading-[1.05] tracking-tight"
                   style={{ fontSize: 'clamp(2rem, 9vw, 3.5rem)' }}
@@ -227,10 +223,10 @@ export default async function CandidateProfilePage({ params }: { params: Params 
             )}
 
             {/* Chanson */}
-            <p className="text-white/80 text-base mt-3 font-medium"
-              style={{ textShadow: '0 1px 10px rgba(0,0,0,0.6)' }}>
+            <p className="text-white text-base mt-3 font-medium"
+              style={{ textShadow: '0 1px 10px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.9)' }}>
               <em>&laquo;&nbsp;{candidate.song_title}&nbsp;&raquo;</em>
-              <span className="text-white/50"> &mdash; {candidate.song_artist}</span>
+              <span className="text-white/70"> &mdash; {candidate.song_artist}</span>
             </p>
 
             {/* Bio tronquée */}
@@ -238,8 +234,8 @@ export default async function CandidateProfilePage({ params }: { params: Params 
 
             {/* Ville */}
             {candidate.city && (
-              <span className="inline-flex items-center gap-1.5 text-white/50 text-sm mt-2"
-                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              <span className="inline-flex items-center gap-1.5 text-white/70 text-sm mt-2"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/>
                 </svg>
@@ -247,26 +243,24 @@ export default async function CandidateProfilePage({ params }: { params: Params 
               </span>
             )}
 
-            {/* Vote + compteurs */}
-            <div className="mt-4 flex items-center flex-wrap gap-3">
+            {/* Vote + vidéo côte à côte */}
+            <div className="mt-4 flex items-center flex-wrap gap-2">
               <CandidateVoteButton
                 candidateId={candidate.id}
                 sessionId={session.id}
                 initialLikes={candidate.likes_count}
                 accent={accent}
               />
+              {hasVideo && <InlineVideoPlayer videoUrl={candidate.video_url!} compact />}
               {shares > 0 && (
-                <span className="text-white/30 text-sm tabular-nums flex items-center gap-1.5">
+                <span className="text-white/30 text-sm tabular-nums flex items-center gap-1.5 ml-1">
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-4-6l-4-4-4 4m4-4v13" />
                   </svg>
-                  {shares} {shares === 1 ? 'partage' : 'partages'}
+                  {shares}
                 </span>
               )}
             </div>
-
-            {/* Bouton vidéo inline */}
-            {hasVideo && <InlineVideoPlayer videoUrl={candidate.video_url!} />}
           </div>
         </div>
       </section>
@@ -385,26 +379,24 @@ export default async function CandidateProfilePage({ params }: { params: Params 
                 </span>
               )}
 
-              {/* Vote + compteurs */}
-              <div className="mt-6 flex items-center flex-wrap gap-4">
+              {/* Vote + vidéo côte à côte */}
+              <div className="mt-6 flex items-center flex-wrap gap-3">
                 <CandidateVoteButton
                   candidateId={candidate.id}
                   sessionId={session.id}
                   initialLikes={candidate.likes_count}
                   accent={accent}
                 />
+                {hasVideo && <InlineVideoPlayer videoUrl={candidate.video_url!} compact />}
                 {shares > 0 && (
-                  <span className="text-white/30 text-sm tabular-nums flex items-center gap-1.5">
+                  <span className="text-white/30 text-sm tabular-nums flex items-center gap-1.5 ml-1">
                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-4-6l-4-4-4 4m4-4v13" />
                     </svg>
-                    {shares} {shares === 1 ? 'partage' : 'partages'}
+                    {shares}
                   </span>
                 )}
               </div>
-
-              {/* Bouton vidéo inline */}
-              {hasVideo && <InlineVideoPlayer videoUrl={candidate.video_url!} />}
 
               {/* Réseaux sociaux + partage */}
               <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-start gap-8">
