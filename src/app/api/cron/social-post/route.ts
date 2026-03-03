@@ -270,7 +270,29 @@ export async function GET(request: Request) {
     const postToPublish = posts[0]
     if (postToPublish) {
       try {
-        const result = await publishEverywhere(postToPublish.message, postToPublish.imageUrl, postToPublish.link)
+        // Si l'image est une URL social-card dynamique, la convertir en image statique
+        // Instagram exige une URL d'image statique (pas un endpoint dynamique)
+        let finalImageUrl = postToPublish.imageUrl
+        if (finalImageUrl?.includes('/api/social-card')) {
+          try {
+            const imgRes = await fetch(finalImageUrl)
+            if (imgRes.ok) {
+              const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
+              const filename = `social/cron-${Date.now()}.png`
+              const { error: uploadErr } = await supabase.storage
+                .from('photos')
+                .upload(filename, imgBuffer, { contentType: 'image/png', upsert: true })
+              if (!uploadErr) {
+                const { data: publicUrl } = supabase.storage.from('photos').getPublicUrl(filename)
+                finalImageUrl = publicUrl.publicUrl
+              }
+            }
+          } catch {
+            // Fallback : garder l'URL dynamique (marchera pour FB mais pas IG)
+          }
+        }
+
+        const result = await publishEverywhere(postToPublish.message, finalImageUrl, postToPublish.link)
         const fbOk = result.facebook && !('error' in result.facebook)
         const fbError = result.facebook && 'error' in result.facebook ? result.facebook.error : undefined
 
