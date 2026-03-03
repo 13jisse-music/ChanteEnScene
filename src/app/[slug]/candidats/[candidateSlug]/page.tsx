@@ -164,8 +164,8 @@ export default async function CandidateProfilePage({ params }: { params: Params 
         {/* ── Contenu hero (bas de l'écran) ── */}
         <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-20 pr-16">
           <div className="max-w-lg mx-auto">
-            {/* Catégorie + statut */}
-            <div className="flex flex-wrap items-center gap-2 mb-3">
+            {/* Catégorie + statut — masqués sur mobile */}
+            <div className="hidden lg:flex flex-wrap items-center gap-2 mb-3">
               <span
                 className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider"
                 style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
