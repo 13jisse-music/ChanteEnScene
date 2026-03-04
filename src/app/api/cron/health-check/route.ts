@@ -50,7 +50,9 @@ async function checkPage(url: string, expectedStatus = 200): Promise<{ ok: boole
   const start = Date.now()
   try {
     const res = await fetch(url, { redirect: 'manual', cache: 'no-store' })
-    return { ok: res.status === expectedStatus, status: res.status, ms: Date.now() - start }
+    // Accept redirects (307/308) as OK for pages — normal www redirect behavior
+    const ok = res.status === expectedStatus || (expectedStatus === 200 && (res.status === 307 || res.status === 308))
+    return { ok, status: res.status, ms: Date.now() - start }
   } catch {
     return { ok: false, status: 0, ms: Date.now() - start }
   }
