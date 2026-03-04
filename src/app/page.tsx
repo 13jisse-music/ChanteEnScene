@@ -256,7 +256,7 @@ export default async function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full pb-14 lg:pb-0">
           <div className="max-w-2xl animate-fade-up">
             <h1
-              className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] mb-4 text-white"
+              className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] mb-6 text-white"
               style={{ textShadow: "0 0 20px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)" }}
             >
               <span className="text-[1.75rem] sm:text-5xl lg:text-6xl block">Lib&egrave;re ta voix.</span>

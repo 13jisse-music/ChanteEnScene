@@ -115,8 +115,8 @@ export default function PublicNav() {
       </nav>
 
       {/* ━━━ MOBILE NAV (visible below xl) ━━━ */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50" suppressHydrationWarning>
-        <div className="flex items-center justify-between px-4 py-2 bg-[#110d1f] backdrop-blur-xl">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 overflow-visible" suppressHydrationWarning>
+        <div className="flex items-center justify-between px-4 py-2 bg-[#110d1f] backdrop-blur-xl overflow-visible">
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -140,8 +140,8 @@ export default function PublicNav() {
             />
           </button>
 
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 -top-3 z-[60]">
-            <LogoRing size={90} animated />
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2 top-0 z-[60]">
+            <LogoRing size={85} animated />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -153,8 +153,8 @@ export default function PublicNav() {
             </a>
           </div>
         </div>
-        {/* Gradient fade below nav to hide pink bokeh band */}
-        <div className="h-4 bg-gradient-to-b from-[#110d1f] to-transparent pointer-events-none" />
+        {/* Soft gradient fade below nav — no visible line */}
+        <div className="h-6 bg-gradient-to-b from-[#110d1f]/80 to-transparent pointer-events-none" />
       </div>
 
       {/* ━━━ MOBILE OVERLAY ━━━ */}
