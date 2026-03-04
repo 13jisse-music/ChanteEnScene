@@ -232,7 +232,7 @@ export default async function HomePage() {
 
       {/* ━━━ HERO ━━━ */}
       <section
-        className="relative z-10 min-h-[100dvh] lg:min-h-[92vh] flex items-end lg:items-center overflow-hidden -mt-8 lg:-mt-20"
+        className="relative z-10 min-h-[100dvh] lg:min-h-[92vh] flex flex-col lg:justify-center overflow-hidden -mt-8 lg:-mt-20"
       >
         {/* Hero image with fade-out mask (applied only to the image, not the CTA buttons) */}
         <div
@@ -253,10 +253,11 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0618]/90 via-[#0a0618]/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full pb-24 lg:pb-0">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full flex-1 lg:flex-initial flex flex-col lg:block pb-28 lg:pb-0">
+          {/* Titre — haut de page sur mobile */}
           <div className="max-w-2xl animate-fade-up">
             <h1
-              className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] mb-6 text-white"
+              className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] lg:mb-8 text-white"
               style={{ textShadow: "0 0 20px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)" }}
             >
               <span className="text-[1.75rem] sm:text-5xl lg:text-6xl block">Lib&egrave;re ta voix.</span>
@@ -264,6 +265,11 @@ export default async function HomePage() {
                 Monte sur sc&egrave;ne.
               </span>
             </h1>
+          </div>
+          {/* Espace flexible — pousse le reste vers le bas sur mobile */}
+          <div className="flex-1 lg:hidden" />
+          {/* Description + CTA + Partage — bas de page sur mobile */}
+          <div className="max-w-2xl animate-fade-up" style={{ animationDelay: "0.15s" }}>
             <p
               className="text-white text-base sm:text-lg leading-relaxed max-w-lg mb-6"
               style={{ textShadow: "0 0 15px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)" }}

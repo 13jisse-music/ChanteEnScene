@@ -82,7 +82,7 @@ export default function PublicNav() {
         <div className="min-w-[140px] shrink-0" />
 
         <Link href="/" className="absolute left-[42%] -translate-x-1/2 -top-1">
-          <LogoRing size={130} />
+          <LogoRing size={130} pulse />
         </Link>
 
         <div className="flex items-center gap-8">
@@ -141,7 +141,7 @@ export default function PublicNav() {
           </button>
 
           <Link href="/" className="absolute left-1/2 -translate-x-1/2 top-[6px] z-[60]">
-            <LogoRing size={85} />
+            <LogoRing size={85} pulse />
           </Link>
 
           <div className="flex items-center gap-2">
