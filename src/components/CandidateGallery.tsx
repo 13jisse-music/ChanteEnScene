@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import CandidateSwipeFeed from './CandidateSwipeFeed'
 import CandidateDesktopFeed from './CandidateDesktopFeed'
 
@@ -27,17 +28,34 @@ interface Props {
   categories: string[]
 }
 
+// Shuffle Fisher-Yates : ordre aléatoire à chaque chargement
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function CandidateGallery({ candidates, sessionId, categories }: Props) {
+  const [shuffled, setShuffled] = useState(candidates)
+
+  // Shuffle côté client uniquement (évite l'erreur d'hydratation SSR/client)
+  useEffect(() => {
+    setShuffled(shuffle(candidates))
+  }, [candidates])
+
   return (
     <>
     {/* Mobile + Tablet: Swipe Feed (TikTok) */}
     <div className="lg:hidden">
-      <CandidateSwipeFeed candidates={candidates} sessionId={sessionId} categories={categories} />
+      <CandidateSwipeFeed candidates={shuffled} sessionId={sessionId} categories={categories} />
     </div>
 
     {/* Desktop: Social Feed */}
     <div className="hidden lg:block animate-fade-up">
-      <CandidateDesktopFeed candidates={candidates} sessionId={sessionId} categories={categories} />
+      <CandidateDesktopFeed candidates={shuffled} sessionId={sessionId} categories={categories} />
     </div>
     </>
   )

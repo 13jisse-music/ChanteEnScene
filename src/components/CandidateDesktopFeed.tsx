@@ -397,7 +397,6 @@ function FeedPost({
 export default function CandidateDesktopFeed({ candidates, sessionId, categories }: Props) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [activeStatus, setActiveStatus] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'likes' | 'name'>('likes')
   const pathname = usePathname()
   const sessionSlug = pathname.split('/')[1]
 
@@ -409,15 +408,6 @@ export default function CandidateDesktopFeed({ candidates, sessionId, categories
   const filtered = candidates
     .filter((c) => !activeCategory || c.category === activeCategory)
     .filter((c) => !activeStatus || c.status === activeStatus)
-    .sort((a, b) => {
-      const aPriority = STATUS_PRIORITY[a.status] || 0
-      const bPriority = STATUS_PRIORITY[b.status] || 0
-      if (aPriority !== bPriority) return bPriority - aPriority
-      if (sortBy === 'likes') return b.likes_count - a.likes_count
-      const nameA = a.stage_name || `${a.first_name} ${a.last_name}`
-      const nameB = b.stage_name || `${b.first_name} ${b.last_name}`
-      return nameA.localeCompare(nameB)
-    })
 
   return (
     <div className="flex gap-8 max-w-4xl mx-auto">
@@ -505,30 +495,6 @@ export default function CandidateDesktopFeed({ candidates, sessionId, categories
             })}
           </div>
 
-          {/* Sort */}
-          <div className="bg-[#1a1232] border border-[#2e2555] rounded-2xl p-4 space-y-2">
-            <p className="text-[#6b5d85] text-xs uppercase tracking-wider mb-3">Trier par</p>
-            <button
-              onClick={() => setSortBy('likes')}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                sortBy === 'likes'
-                  ? 'bg-white/10 text-white'
-                  : 'text-[#a899c2] hover:bg-white/5'
-              }`}
-            >
-              Populaires
-            </button>
-            <button
-              onClick={() => setSortBy('name')}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                sortBy === 'name'
-                  ? 'bg-white/10 text-white'
-                  : 'text-[#a899c2] hover:bg-white/5'
-              }`}
-            >
-              A — Z
-            </button>
-          </div>
         </div>
       </div>
     </div>
