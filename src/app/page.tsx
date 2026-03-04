@@ -4,6 +4,7 @@ import FloatingNotes from "@/components/FloatingNotes";
 import MiniCountdown from "@/components/MiniCountdown";
 import PageTracker from "@/components/PageTracker";
 import FooterEmailSubscribe from "@/components/FooterEmailSubscribe";
+import ShareRow from "@/components/ShareRow";
 import { createClient } from "@/lib/supabase/server";
 import { statusToTimelineStep } from "@/lib/phases";
 import { autoAdvanceSessionStatus } from "@/lib/auto-advance";
@@ -231,7 +232,7 @@ export default async function HomePage() {
 
       {/* ━━━ HERO ━━━ */}
       <section
-        className="relative z-10 min-h-[92vh] flex items-end lg:items-center overflow-hidden lg:-mt-20"
+        className="relative z-10 min-h-[80vh] lg:min-h-[92vh] flex items-end lg:items-center overflow-hidden lg:-mt-20"
       >
         {/* Hero image with fade-out mask (applied only to the image, not the CTA buttons) */}
         <div
@@ -252,24 +253,23 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0618]/90 via-[#0a0618]/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full pb-20 lg:pb-0">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full pb-14 lg:pb-0">
           <div className="max-w-2xl animate-fade-up">
             <h1
-              className="font-[family-name:var(--font-montserrat)] font-black text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6 text-white"
+              className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] mb-4 text-white"
               style={{ textShadow: "0 0 20px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.8)" }}
             >
-              Lib&egrave;re ta voix.
-              <br />
-              <span className="text-gradient-gold" style={{ textShadow: "none" }}>
+              <span className="text-[1.75rem] sm:text-5xl lg:text-6xl block">Lib&egrave;re ta voix.</span>
+              <span className="text-gradient-gold text-[2.1rem] sm:text-6xl lg:text-7xl block" style={{ textShadow: "none" }}>
                 Monte sur sc&egrave;ne.
               </span>
             </h1>
             <p
-              className="text-white text-lg sm:text-xl leading-relaxed max-w-lg mb-8"
+              className="text-white text-base sm:text-lg leading-relaxed max-w-lg mb-6"
               style={{ textShadow: "0 0 15px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)" }}
             >
-              Participe au premier concours de chant live &agrave; Aubagne.
-              Sur sc&egrave;ne, avec des musiciens et un vrai public.
+              Le premier concours de chant live &agrave; Aubagne.
+              Sur sc&egrave;ne, avec musiciens et vrai public.
             </p>
             <div
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up"
@@ -322,6 +322,8 @@ export default async function HomePage() {
                 </>
               )}
             </div>
+            {/* ━━━ Share row ━━━ */}
+            <ShareRow />
           </div>
         </div>
       </section>
