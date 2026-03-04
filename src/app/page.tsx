@@ -232,7 +232,7 @@ export default async function HomePage() {
 
       {/* ━━━ HERO ━━━ */}
       <section
-        className="relative z-10 min-h-[80vh] lg:min-h-[92vh] flex items-end lg:items-center overflow-hidden lg:-mt-20"
+        className="relative z-10 min-h-[80vh] lg:min-h-[92vh] flex items-end lg:items-center overflow-hidden -mt-8 lg:-mt-20"
       >
         {/* Hero image with fade-out mask (applied only to the image, not the CTA buttons) */}
         <div

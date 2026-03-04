@@ -140,7 +140,7 @@ export default function PublicNav() {
             />
           </button>
 
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 top-0 z-[60]">
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2 top-[6px] z-[60]">
             <LogoRing size={85} />
           </Link>
 
@@ -154,7 +154,7 @@ export default function PublicNav() {
           </div>
         </div>
         {/* Soft gradient fade below nav — no visible line */}
-        <div className="h-6 bg-gradient-to-b from-[#110d1f]/80 to-transparent pointer-events-none" />
+        <div className="h-10 bg-gradient-to-b from-[#110d1f] to-transparent pointer-events-none" />
       </div>
 
       {/* ━━━ MOBILE OVERLAY ━━━ */}
