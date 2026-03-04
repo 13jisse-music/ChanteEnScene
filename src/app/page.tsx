@@ -253,8 +253,8 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0618]/90 via-[#0a0618]/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full flex-1 lg:flex-initial flex flex-col lg:block pb-28 lg:pb-0">
-          {/* Titre — haut de page sur mobile */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full flex-1 lg:flex-initial flex flex-col lg:block pt-20 lg:pt-0 pb-28 lg:pb-0">
+          {/* Titre — haut de page sur mobile, sous le header+logo */}
           <div className="max-w-2xl animate-fade-up">
             <h1
               className="font-[family-name:var(--font-montserrat)] font-black leading-[1.05] lg:mb-8 text-white"
