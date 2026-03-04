@@ -354,6 +354,7 @@ function SwipeSlide({
             <span className="text-white/60 text-[10px]">{globalMuted ? 'Son' : 'Muet'}</span>
           </button>
         )}
+      </div>
     </div>
   )
 }
