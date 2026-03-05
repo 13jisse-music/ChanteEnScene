@@ -258,6 +258,19 @@ export function candidateApprovedEmail({
       </div>
       ` : ''}
 
+      <!-- WhatsApp channel -->
+      <div style="background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.2);border-radius:12px;padding:16px;margin:20px 0 0 0;text-align:center;">
+        <p style="color:#25D366;font-size:13px;font-weight:bold;margin:0 0 8px 0;">
+          Rejoignez notre canal WhatsApp !
+        </p>
+        <p style="color:#ffffff80;font-size:12px;line-height:1.6;margin:0 0 12px 0;">
+          Suivez toute l'actu du concours en temps réel :
+        </p>
+        <a href="https://whatsapp.com/channel/0029Vb7aEcVDOQIXPLHWJh1k" style="display:inline-block;background:#25D366;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;">
+          Suivre le canal
+        </a>
+      </div>
+
       ${galleryUrl ? `
       <div style="text-align:center;margin-top:20px;">
         <a href="${galleryUrl}" style="color:#ffffff50;font-size:12px;text-decoration:underline;">
