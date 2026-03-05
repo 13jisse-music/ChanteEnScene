@@ -19,7 +19,7 @@ async function getStats() {
     .select('id, name, slug, status, city, year, config')
     .order('year', { ascending: false })
 
-  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null }, donations: { totalEuros: 0, count: 0, lastDonation: null } }
+  if (!sessions || sessions.length === 0) return { sessions: [], stats: {}, semifinalists: [], recentInstalls: [], semifinalEvent: null, config: { semifinal_date: null, semifinal_time: null, semifinal_location: null, selection_notifications_sent_at: null }, donations: { totalEuros: 0, count: 0, lastDonation: null }, jury: { onlineNow: 0, totalActive: 0 } }
 
   const activeSession = sessions[0]
   const sid = activeSession.id
@@ -46,6 +46,8 @@ async function getStats() {
     { data: donationsData },
     { count: totalPageViews },
     { data: dailyViewsRaw },
+    { data: onlineJurors },
+    { count: totalJurors },
   ] = await Promise.all([
     supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', sid),
     supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('status', 'pending'),
@@ -66,6 +68,8 @@ async function getStats() {
     supabase.from('donations').select('amount_cents, donor_name, tier, created_at').eq('session_id', sid).order('created_at', { ascending: false }),
     supabase.from('page_views').select('*', { count: 'exact', head: true }).eq('session_id', sid),
     supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo),
+    supabase.from('jurors').select('id, last_seen_at').eq('session_id', sid).eq('is_active', true).not('last_seen_at', 'is', null).gte('last_seen_at', new Date(Date.now() - 2 * 60 * 1000).toISOString()),
+    supabase.from('jurors').select('*', { count: 'exact', head: true }).eq('session_id', sid).eq('is_active', true),
   ])
 
   const config = (activeSession.config || {}) as Record<string, unknown>
@@ -195,6 +199,10 @@ async function getStats() {
       count: donationsCount,
       lastDonation,
     },
+    jury: {
+      onlineNow: onlineJurors?.length || 0,
+      totalActive: totalJurors || 0,
+    },
   }
 }
 
@@ -248,7 +256,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default async function AdminDashboard() {
-  const { activeSession, stats, dailyStats = [], recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config, donations } = await getStats()
+  const { activeSession, stats, dailyStats = [], recentCandidates = [], recentInstalls = [], semifinalists = [], semifinalEvent, config, donations, jury } = await getStats()
 
   const semifinalistCount = semifinalists.length
   const mp3Count = semifinalists.filter((c) => c.mp3_url).length
@@ -346,6 +354,14 @@ export default async function AdminDashboard() {
           color="#7ec850"
           href="/admin/sponsors"
           subtitle={donations.count > 0 ? `${donations.count} don${donations.count > 1 ? 's' : ''}` : 'Aucun don'}
+        />
+        <StatCard
+          icon="👨‍⚖️"
+          label="Jury"
+          valueStr={`${jury.onlineNow}/${jury.totalActive}`}
+          color={jury.onlineNow > 0 ? '#7ec850' : '#3b82f6'}
+          href="/admin/jury"
+          subtitle={jury.onlineNow > 0 ? `${jury.onlineNow} en ligne maintenant` : `${jury.totalActive} juré(s) au total`}
         />
       </div>
 

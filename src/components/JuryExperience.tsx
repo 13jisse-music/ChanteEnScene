@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import JuryOnboarding from './JuryOnboarding'
 import JuryDashboard from './JuryDashboard'
 import JuryScoring from './JuryScoring'
-import { trackJurorLogin, completeJurorOnboarding } from '@/app/jury/actions'
+import { trackJurorLogin, completeJurorOnboarding, heartbeatJuror } from '@/app/jury/actions'
 
 interface Candidate {
   id: string
@@ -69,6 +69,16 @@ export default function JuryExperience({ juror, session, candidates, existingSco
   useEffect(() => {
     trackJurorLogin(juror.id).catch(() => {})
   }, [juror.id])
+
+  // Heartbeat every 30s for presence tracking
+  useEffect(() => {
+    // Initial ping
+    heartbeatJuror(juror.id, juror.session_id).catch(() => {})
+    const interval = setInterval(() => {
+      heartbeatJuror(juror.id, juror.session_id).catch(() => {})
+    }, 30_000)
+    return () => clearInterval(interval)
+  }, [juror.id, juror.session_id])
 
   async function handleOnboardingComplete() {
     // Save onboarding done (fire-and-forget)

@@ -40,11 +40,20 @@ interface Candidate {
   song_artist: string
 }
 
+interface JurorSession {
+  id: string
+  juror_id: string
+  started_at: string
+  last_ping_at: string
+  ended_at: string | null
+}
+
 interface Props {
   session: { id: string; name: string }
   jurors: Juror[]
   juryScores: JuryScore[]
   candidates: Candidate[]
+  jurorSessions?: JurorSession[]
 }
 
 /* ---------- helpers ---------- */
@@ -89,7 +98,7 @@ function candidateName(c: Candidate): string {
 
 /* ---------- component ---------- */
 
-export default function JuryEngagementStats({ session, jurors, juryScores, candidates }: Props) {
+export default function JuryEngagementStats({ session, jurors, juryScores, candidates, jurorSessions = [] }: Props) {
   const [expandedJurorId, setExpandedJurorId] = useState<string | null>(null)
 
   const candidatesWithMedia = useMemo(
@@ -302,6 +311,55 @@ export default function JuryEngagementStats({ session, jurors, juryScores, candi
                 <span className="text-xs text-white/50 font-bold w-8 text-right">{count}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Connection History */}
+      {jurorSessions.length > 0 && (
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#2a2545] flex items-center justify-between">
+            <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-base">
+              Historique des connexions
+            </h2>
+            <span className="text-xs text-white/30">{jurorSessions.length} session(s)</span>
+          </div>
+          <div className="divide-y divide-[#2a2545]/50 overflow-y-auto" style={{ maxHeight: '400px' }}>
+            {jurorSessions.map((s) => {
+              const j = jurors.find((j) => j.id === s.juror_id)
+              const name = j ? jurorName(j) : 'Inconnu'
+              const isActive = !s.ended_at && (Date.now() - new Date(s.last_ping_at).getTime() < 2 * 60 * 1000)
+              const durationMs = s.ended_at
+                ? new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()
+                : isActive
+                  ? Date.now() - new Date(s.started_at).getTime()
+                  : new Date(s.last_ping_at).getTime() - new Date(s.started_at).getTime()
+              const durationMin = Math.max(1, Math.round(durationMs / 60000))
+
+              return (
+                <div key={s.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/[0.02] transition-colors">
+                  <span
+                    className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${isActive ? 'bg-[#7ec850] shadow-[0_0_6px_rgba(126,200,80,0.5)]' : 'bg-white/10'}`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/70 truncate">
+                      <span className="font-medium text-white">{name}</span>
+                      {isActive && <span className="text-[#7ec850] text-xs ml-2">en ligne</span>}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-white/50">
+                      {new Date(s.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      {' '}
+                      {new Date(s.started_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    <p className="text-[10px] text-white/30">
+                      {isActive ? `depuis ${durationMin} min` : `${durationMin} min`}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

@@ -15,7 +15,15 @@ interface Juror {
   created_at: string
   onboarding_done?: boolean
   last_login_at?: string | null
+  last_seen_at?: string | null
   login_count?: number
+}
+
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000 // 2 minutes
+
+function isJurorOnline(j: Juror): boolean {
+  if (!j.last_seen_at) return false
+  return Date.now() - new Date(j.last_seen_at).getTime() < ONLINE_THRESHOLD_MS
 }
 
 interface Candidate {
@@ -129,7 +137,23 @@ export default function JuryManager({ session, jurors, candidates, scores }: Pro
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Online now */}
+        <div className="bg-[#161228] border border-[#2a2545] rounded-xl p-4">
+          <p className="text-white/30 text-xs uppercase tracking-wider mb-1">En ligne</p>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              {jurors.some(isJurorOnline) && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7ec850] opacity-75" />
+              )}
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${jurors.some(isJurorOnline) ? 'bg-[#7ec850]' : 'bg-white/10'}`} />
+            </span>
+            <p className="font-[family-name:var(--font-montserrat)] font-bold text-2xl text-[#7ec850]">
+              {jurors.filter(isJurorOnline).length}
+            </p>
+          </div>
+          <p className="text-white/20 text-xs mt-1">maintenant</p>
+        </div>
         {(['online', 'semifinal', 'final'] as const).map((r) => {
           const rl = ROLE_LABELS[r]
           const count = jurors.filter((j) => j.role === r && j.is_active).length
@@ -231,6 +255,10 @@ export default function JuryManager({ session, jurors, candidates, scores }: Pro
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${isJurorOnline(j) ? 'bg-[#7ec850] shadow-[0_0_6px_rgba(126,200,80,0.5)]' : 'bg-white/10'}`}
+                          title={isJurorOnline(j) ? 'En ligne' : j.last_seen_at ? `Hors ligne — vu ${new Date(j.last_seen_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Jamais connecté'}
+                        />
                         <p className="text-sm font-medium text-white">{name}</p>
                         <span
                           className="text-xs px-2 py-0.5 rounded-full"
@@ -380,8 +408,16 @@ export default function JuryManager({ session, jurors, candidates, scores }: Pro
                 return (
                   <div key={j.id} className="flex items-center gap-3 bg-[#1a1533]/50 rounded-xl p-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{name}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-white/30 mt-0.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full shrink-0 ${isJurorOnline(j) ? 'bg-[#7ec850] shadow-[0_0_6px_rgba(126,200,80,0.5)]' : 'bg-white/10'}`}
+                        />
+                        <p className="text-sm font-medium text-white truncate">{name}</p>
+                        {isJurorOnline(j) && (
+                          <span className="text-[10px] text-[#7ec850] font-medium">en ligne</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-white/30 mt-0.5 ml-4">
                         {j.last_login_at && (
                           <span>Dernière visite : {new Date(j.last_login_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         )}

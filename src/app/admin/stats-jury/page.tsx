@@ -41,6 +41,14 @@ export default async function StatsJuryPage() {
     .order('category')
     .order('last_name')
 
+  // Get connection history
+  const { data: jurorSessions } = await supabase
+    .from('juror_sessions')
+    .select('id, juror_id, started_at, last_ping_at, ended_at')
+    .eq('session_id', session.id)
+    .order('started_at', { ascending: false })
+    .limit(200)
+
   return (
     <div className="p-4 sm:p-6">
       <JuryEngagementStats
@@ -48,6 +56,7 @@ export default async function StatsJuryPage() {
         jurors={jurors || []}
         juryScores={juryScores || []}
         candidates={candidates || []}
+        jurorSessions={jurorSessions || []}
       />
     </div>
   )

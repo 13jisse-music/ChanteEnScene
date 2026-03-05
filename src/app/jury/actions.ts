@@ -76,3 +76,56 @@ export async function completeJurorOnboarding(jurorId: string) {
     .update({ onboarding_done: true })
     .eq('id', jurorId)
 }
+
+/**
+ * Heartbeat: update last_seen_at + manage juror_sessions.
+ * Called every 30s from the jury client.
+ * If no active session exists (or last ping > 2 min ago), creates a new one.
+ */
+export async function heartbeatJuror(jurorId: string, sessionId: string) {
+  const supabase = createAdminClient()
+  const now = new Date().toISOString()
+
+  // Update last_seen_at on jurors table
+  await supabase
+    .from('jurors')
+    .update({ last_seen_at: now })
+    .eq('id', jurorId)
+
+  // Check for an open juror_session (no ended_at, last_ping < 2 min ago)
+  const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+  const { data: openSession } = await supabase
+    .from('juror_sessions')
+    .select('id')
+    .eq('juror_id', jurorId)
+    .is('ended_at', null)
+    .gte('last_ping_at', twoMinAgo)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (openSession) {
+    // Update existing session ping
+    await supabase
+      .from('juror_sessions')
+      .update({ last_ping_at: now })
+      .eq('id', openSession.id)
+  } else {
+    // Close any stale open sessions for this juror
+    await supabase
+      .from('juror_sessions')
+      .update({ ended_at: now })
+      .eq('juror_id', jurorId)
+      .is('ended_at', null)
+
+    // Create new session
+    await supabase
+      .from('juror_sessions')
+      .insert({
+        juror_id: jurorId,
+        session_id: sessionId,
+        started_at: now,
+        last_ping_at: now,
+      })
+  }
+}
