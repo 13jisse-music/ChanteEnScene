@@ -91,6 +91,33 @@ export default function PressePage() {
           </div>
         </div>
 
+        {/* Affiche officielle */}
+        <div className="bg-[#161228]/80 border border-[#2a2545] rounded-2xl p-8">
+          <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-lg text-white mb-2 text-center">
+            Affiche officielle
+          </h2>
+          <p className="text-white/50 text-sm mb-6 text-center">
+            Affiche du concours ChanteEnSc&egrave;ne Aubagne 2026 — libre de diffusion.
+          </p>
+          <div className="flex justify-center">
+            <img
+              src="/images/affiche-chantenscene-2026.png"
+              alt="Affiche ChanteEnScène 2026"
+              className="rounded-xl shadow-lg max-w-xs w-full"
+            />
+          </div>
+          <div className="flex justify-center mt-4">
+            <a
+              href="/images/affiche-chantenscene-2026.png"
+              download="Affiche-ChanteEnScene-2026.png"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#e91e8c] hover:bg-[#d4187e] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+              T&eacute;l&eacute;charger HD
+            </a>
+          </div>
+        </div>
+
         {/* Contact presse — Formulaire */}
         <div className="bg-[#161228]/80 border border-[#2a2545] rounded-2xl p-8">
           <h2 className="font-[family-name:var(--font-montserrat)] font-bold text-lg text-white mb-2 text-center">

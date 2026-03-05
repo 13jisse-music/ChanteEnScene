@@ -39,13 +39,13 @@ export const metadata: Metadata = {
     siteName: "ChanteEnScène",
     title: "ChanteEnScène — Concours de chant",
     description: "Concours de chant live avec musiciens, votes du public et jury professionnel. Aubagne.",
-    images: [{ url: "/images/logo2.png", width: 512, height: 512, alt: "ChanteEnScène — Concours de chant" }],
+    images: [{ url: "/images/affiche-chantenscene-2026.png", width: 1024, height: 1536, alt: "ChanteEnScène — Concours de chant Aubagne 2026" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ChanteEnScène — Concours de chant",
     description: "Concours de chant live avec musiciens, votes du public et jury professionnel.",
-    images: ["/images/logo2.png"],
+    images: ["/images/affiche-chantenscene-2026.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {

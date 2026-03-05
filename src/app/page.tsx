@@ -696,29 +696,36 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ━━━ AFFICHE ━━━ (masquée temporairement — dates à corriger) */}
-      {/* <section className="relative z-10 py-16 px-4">
+      {/* ━━━ AFFICHE ━━━ */}
+      <section id="affiche" className="relative z-10 py-16 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <h2
             className="font-[family-name:var(--font-montserrat)] font-bold text-2xl md:text-3xl text-white mb-2"
             style={{ textShadow: "0 0 15px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.7)" }}
           >
-            L&apos;affiche de la{" "}
-            <span className="text-gradient-gold" style={{ textShadow: "none" }}>Grande Finale</span>
+            L&apos;affiche officielle
           </h2>
           <p
-            className="text-white text-sm mb-8"
+            className="text-white/60 text-sm mb-8"
             style={{ textShadow: "0 0 10px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.6)" }}
           >
-            16 juillet 2026 — Cours Foch, Aubagne
+            La finale sur sc&egrave;ne &agrave; Aubagne — 16 juillet 2026
           </p>
           <img
-            src="/images/affiche.png"
-            alt="Affiche ChanteEnScene — Grande Finale 2026"
+            src="/images/affiche-chantenscene-2026.png"
+            alt="Affiche ChanteEnScène — Concours de chant Aubagne 2026"
             className="mx-auto rounded-2xl shadow-2xl shadow-black/30 max-w-md w-full"
           />
+          <a
+            href="/images/affiche-chantenscene-2026.png"
+            download="Affiche-ChanteEnScene-2026.png"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-full text-sm font-semibold text-white/70 border border-white/15 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+            T&eacute;l&eacute;charger l&apos;affiche
+          </a>
         </div>
-      </section> */}
+      </section>
 
       {/* ━━━ SPONSORS ━━━ */}
       {sponsors.length > 0 && (

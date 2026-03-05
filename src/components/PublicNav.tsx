@@ -198,6 +198,18 @@ export default function PublicNav() {
             ))}
           </nav>
 
+          {/* L'affiche — mobile only */}
+          <div className="border-t border-white/10 pt-4 mt-2">
+            <Link
+              href="/#affiche"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-[#e91e8c]/70 hover:text-[#e91e8c] hover:bg-[#e91e8c]/5 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              L&apos;affiche 2026
+            </Link>
+          </div>
+
           {/* Nous soutenir */}
           <div className="border-t border-white/10 pt-4 mt-2">
             <p className="font-[family-name:var(--font-montserrat)] font-bold text-xs uppercase tracking-[0.3em] text-white/30 mb-3 px-4">

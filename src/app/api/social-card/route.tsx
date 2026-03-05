@@ -2,8 +2,19 @@ import React from 'react'
 import { ImageResponse } from 'next/og'
 import { createAdminClient } from '@/lib/supabase/admin'
 import sharp from 'sharp'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 export const dynamic = 'force-dynamic'
+
+// Load background image as base64 (cached at module level)
+let bgDataUri = ''
+try {
+  const bgBuffer = readFileSync(join(process.cwd(), 'public', 'images', 'fd.png'))
+  bgDataUri = `data:image/png;base64,${bgBuffer.toString('base64')}`
+} catch {
+  // fallback: no background image
+}
 
 /** Fetch photo → sharp auto-orient → base64 data URI */
 async function fixPhoto(url: string, size: number): Promise<string> {
@@ -88,16 +99,6 @@ export async function GET(request: Request) {
     })
   )
 
-  // Dynamic footer message
-  let footerMessage = ''
-  if (count <= 3) {
-    footerMessage = 'Il reste de la place, inscrivez-vous !'
-  } else if (count <= 5) {
-    footerMessage = 'La comp\u00e9tition s\u2019intensifie !'
-  } else {
-    footerMessage = `${count} candidats aujourd\u2019hui ! La suite demain...`
-  }
-
   // Choose layout based on count
   let content: React.ReactNode
 
@@ -106,26 +107,23 @@ export async function GET(request: Request) {
     const c = displayCandidates[0]
     const name = c.stage_name || c.first_name
     content = (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '32px' }}>
-        {/* Big round photo */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '40px' }}>
         <div style={{
-          width: '340px', height: '340px', borderRadius: '50%', overflow: 'hidden',
+          width: '400px', height: '400px', borderRadius: '50%', overflow: 'hidden',
           background: '#2a2545', display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: '6px solid #e91e8c', flexShrink: 0,
         }}>
           {c.photoDataUri ? (
-            <img src={c.photoDataUri} alt="" width={340} height={340} style={{ width: '340px', height: '340px', objectFit: 'cover' }} />
+            <img src={c.photoDataUri} alt="" width={400} height={400} style={{ width: '400px', height: '400px', objectFit: 'cover' }} />
           ) : (
-            <div style={{ fontSize: '120px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
+            <div style={{ fontSize: '140px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
           )}
         </div>
-        {/* Name */}
-        <div style={{ fontSize: '56px', fontWeight: 800, color: 'white', textAlign: 'center', display: 'flex' }}>
+        <div style={{ fontSize: '64px', fontWeight: 800, color: 'white', textAlign: 'center', display: 'flex' }}>
           {name}
         </div>
-        {/* Song */}
         {c.song_title && (
-          <div style={{ fontSize: '30px', color: 'rgba(255,255,255,0.5)', textAlign: 'center', display: 'flex' }}>
+          <div style={{ fontSize: '32px', color: 'rgba(255,255,255,0.4)', textAlign: 'center', display: 'flex' }}>
             {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
           </div>
         )}
@@ -139,24 +137,25 @@ export async function GET(request: Request) {
           const name = c.stage_name || c.first_name
           return (
             <div key={i} style={{
-              display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)',
-              borderRadius: '28px', padding: '32px 40px', gap: '36px', flex: 1,
+              display: 'flex', alignItems: 'center', background: 'rgba(10,8,20,0.65)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '28px', padding: '36px 44px', gap: '36px', flex: 1,
             }}>
               <div style={{
-                width: '220px', height: '220px', borderRadius: '50%', overflow: 'hidden',
+                width: '240px', height: '240px', borderRadius: '50%', overflow: 'hidden',
                 background: '#2a2545', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0, border: '5px solid #e91e8c',
               }}>
                 {c.photoDataUri ? (
-                  <img src={c.photoDataUri} alt="" width={220} height={220} style={{ width: '220px', height: '220px', objectFit: 'cover' }} />
+                  <img src={c.photoDataUri} alt="" width={240} height={240} style={{ width: '240px', height: '240px', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ fontSize: '80px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '10px' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '12px' }}>
+                <div style={{ fontSize: '48px', fontWeight: 800, color: 'white', display: 'flex' }}>{name}</div>
                 {c.song_title && (
-                  <div style={{ fontSize: '24px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+                  <div style={{ fontSize: '26px', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
                     {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
                   </div>
                 )}
@@ -169,29 +168,30 @@ export async function GET(request: Request) {
   } else if (count === 3) {
     // ═══ 1/3 each — Three medium cards ═══
     content = (
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '24px', justifyContent: 'center' }}>
         {displayCandidates.map((c, i) => {
           const name = c.stage_name || c.first_name
           return (
             <div key={i} style={{
-              display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)',
-              borderRadius: '24px', padding: '24px 32px', gap: '28px', flex: 1,
+              display: 'flex', alignItems: 'center', background: 'rgba(10,8,20,0.65)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '28px', padding: '30px 36px', gap: '32px', flex: 1,
             }}>
               <div style={{
-                width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden',
+                width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden',
                 background: '#2a2545', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, border: '4px solid #e91e8c',
+                flexShrink: 0, border: '5px solid #e91e8c',
               }}>
                 {c.photoDataUri ? (
-                  <img src={c.photoDataUri} alt="" width={150} height={150} style={{ width: '150px', height: '150px', objectFit: 'cover' }} />
+                  <img src={c.photoDataUri} alt="" width={180} height={180} style={{ width: '180px', height: '180px', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ fontSize: '56px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
+                  <div style={{ fontSize: '64px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px' }}>
-                <div style={{ fontSize: '34px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '10px' }}>
+                <div style={{ fontSize: '42px', fontWeight: 800, color: 'white', display: 'flex' }}>{name}</div>
                 {c.song_title && (
-                  <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+                  <div style={{ fontSize: '22px', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
                     {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
                   </div>
                 )}
@@ -204,29 +204,30 @@ export async function GET(request: Request) {
   } else {
     // ═══ 4+ — Compact row layout ═══
     content = (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', flex: 1, justifyContent: 'center' }}>
         {displayCandidates.map((c, i) => {
           const name = c.stage_name || c.first_name
           return (
             <div key={i} style={{
-              display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.06)',
-              borderRadius: '20px', padding: '16px 24px', gap: '20px',
+              display: 'flex', alignItems: 'center', background: 'rgba(10,8,20,0.65)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '22px', padding: '18px 28px', gap: '22px',
             }}>
               <div style={{
-                width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden',
+                width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden',
                 background: '#2a2545', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0, border: '3px solid #e91e8c',
               }}>
                 {c.photoDataUri ? (
-                  <img src={c.photoDataUri} alt="" width={80} height={80} style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
+                  <img src={c.photoDataUri} alt="" width={90} height={90} style={{ width: '90px', height: '90px', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ fontSize: '28px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
+                  <div style={{ fontSize: '32px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                <div style={{ fontSize: '26px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '6px' }}>
+                <div style={{ fontSize: '28px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
                 {c.song_title && (
-                  <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>
+                  <div style={{ fontSize: '19px', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
                     {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
                   </div>
                 )}
@@ -235,7 +236,7 @@ export async function GET(request: Request) {
           )
         })}
         {count > 5 && (
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '18px', display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '19px', display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
             + {count - 5} autre{count - 5 > 1 ? 's' : ''} candidat{count - 5 > 1 ? 's' : ''}
           </div>
         )}
@@ -251,41 +252,27 @@ export async function GET(request: Request) {
           height: '1080px',
           display: 'flex',
           flexDirection: 'column',
-          background: 'linear-gradient(180deg, #1a1232 0%, #0d0b1a 100%)',
-          padding: '60px',
+          position: 'relative',
           fontFamily: 'sans-serif',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: count === 1 ? '20px' : '40px' }}>
-          <div style={{ fontSize: '56px', marginBottom: '12px', display: 'flex' }}>🎤</div>
-          <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', textAlign: 'center', display: 'flex' }}>
-            {count === 1 ? 'Nouveau candidat' : 'Nouveaux candidats'}
-          </div>
-          <div style={{ fontSize: '20px', color: '#e91e8c', marginTop: '8px', display: 'flex' }}>
-            {session.name}
-          </div>
-        </div>
+        {/* Background image */}
+        {bgDataUri ? (
+          <img src={bgDataUri} width={1080} height={1080} style={{ position: 'absolute', top: 0, left: 0, width: '1080px', height: '1080px', objectFit: 'cover' }} />
+        ) : (
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '1080px', height: '1080px', background: 'linear-gradient(180deg, #110d1f 0%, #0a0814 100%)' }} />
+        )}
 
-        {/* Content — layout adapts to count */}
-        {content}
+        {/* Content overlay */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '50px 60px', position: 'relative' }}>
+          {/* Mini header — just logo */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+            <span style={{ fontSize: '28px', display: 'flex' }}>🎤</span>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '2px', display: 'flex' }}>CHANTENSC&#200;NE</span>
+          </div>
 
-        {/* Footer */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: count === 1 ? '20px' : '32px', gap: '14px' }}>
-          <div style={{ fontSize: '22px', color: '#e91e8c', fontWeight: 600, display: 'flex' }}>
-            {footerMessage}
-          </div>
-          <div style={{
-            background: '#e91e8c', color: 'white', fontSize: '20px', fontWeight: 700,
-            padding: '14px 40px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px',
-          }}>
-            🗳️ Votez sur chantenscene.fr
-          </div>
-          <div style={{ display: 'flex', gap: '4px', fontSize: '13px', marginTop: '4px' }}>
-            <span style={{ color: 'rgba(255,255,255,0.25)' }}>Chant</span>
-            <span style={{ color: 'rgba(126,200,80,0.35)' }}>En</span>
-            <span style={{ color: 'rgba(233,30,140,0.35)' }}>Scene</span>
-          </div>
+          {/* Content — layout adapts to count */}
+          {content}
         </div>
       </div>
     ),
