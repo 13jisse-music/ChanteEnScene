@@ -54,6 +54,7 @@ interface Candidate {
   updated_at: string | null
   correction_token: string | null
   correction_fields: string[] | null
+  correction_submitted_at: string | null
   finale_songs: { title: string; artist: string; youtube_url: string }[] | null
 }
 
@@ -284,12 +285,12 @@ export default function CandidatsTable({
                             {juryVerdict.emoji} {juryVerdict.label}
                           </span>
                         )}
-                        {c.correction_token && c.updated_at && new Date(c.updated_at).getTime() > new Date(c.created_at).getTime() + 60000 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-[#f59e0b]/15 text-[#f59e0b]" title={`Corrigé le ${new Date(c.updated_at).toLocaleDateString('fr-FR')} à ${new Date(c.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}>
+                        {c.correction_token && c.correction_submitted_at && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-[#f59e0b]/15 text-[#f59e0b]" title={`Corrigé le ${new Date(c.correction_submitted_at).toLocaleDateString('fr-FR')} à ${new Date(c.correction_submitted_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}>
                             ✏️ Corrigé
                           </span>
                         )}
-                        {c.correction_token && (!c.updated_at || new Date(c.updated_at).getTime() <= new Date(c.created_at).getTime() + 60000) && (
+                        {c.correction_token && !c.correction_submitted_at && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 bg-[#e91e8c]/15 text-[#e91e8c]">
                             ✉️ Correction demandée
                           </span>

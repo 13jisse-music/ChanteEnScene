@@ -170,7 +170,7 @@ export async function requestCorrection(candidateId: string, fields: string[]) {
 
   const { error } = await supabase
     .from('candidates')
-    .update({ correction_token: token, correction_fields: fields })
+    .update({ correction_token: token, correction_fields: fields, correction_submitted_at: null })
     .eq('id', candidateId)
 
   if (error) return { error: error.message }

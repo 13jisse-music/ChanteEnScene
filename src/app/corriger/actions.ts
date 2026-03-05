@@ -52,10 +52,10 @@ export async function submitCorrection(
     return { error: 'Aucune modification détectée.' }
   }
 
-  // Add updated_at timestamp
+  // Mark correction as submitted with timestamp
   const { error } = await supabase
     .from('candidates')
-    .update({ ...updateData, updated_at: new Date().toISOString() })
+    .update({ ...updateData, correction_submitted_at: new Date().toISOString() })
     .eq('id', candidate.id)
 
   if (error) {
