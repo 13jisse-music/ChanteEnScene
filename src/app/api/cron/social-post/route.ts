@@ -38,6 +38,7 @@ function generatePosts(
   session: { id: string; name: string; slug: string; config: SessionConfig; status: string },
   totalCandidates: number,
   newCandidatesSinceYesterday: { stage_name: string; first_name: string; last_name: string; slug: string; song_title?: string; song_artist?: string; photo_url?: string }[],
+  spotlightCandidate: { stage_name: string; first_name: string; slug: string; song_title?: string; song_artist?: string; likes_count: number } | null,
   siteUrl: string
 ): GeneratedPost[] {
   const posts: GeneratedPost[] = []
@@ -82,6 +83,21 @@ function generatePosts(
       priority: 1,
       message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n#ChanteEnScène #ConcoursDeChant`,
       link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
+      imageUrl,
+    })
+  }
+
+  // ── 1b. Portrait candidat spotlight (quand pas de nouvelle inscription) ──
+  if (newCandidatesSinceYesterday.length === 0 && spotlightCandidate && totalCandidates > 0) {
+    const name = spotlightCandidate.stage_name || spotlightCandidate.first_name
+    const song = spotlightCandidate.song_title ? `\n🎵 « ${spotlightCandidate.song_title} »${spotlightCandidate.song_artist ? ` — ${spotlightCandidate.song_artist}` : ''}` : ''
+    const imageUrl = `${siteUrl}/api/candidate-portrait?session_id=${session.id}&slug=${spotlightCandidate.slug}`
+
+    posts.push({
+      type: 'candidate_portrait',
+      priority: 1,
+      message: `🌟 Découvrez ${name}, candidat(e) à ${session.name} !${song}\n\nSoutenez ${name} en votant 🗳️\n👉 ${sessionUrl}/candidats/${spotlightCandidate.slug}\n\n#ChanteEnScène #ConcoursDeChant #VotezPourMoi`,
+      link: `${sessionUrl}/candidats/${spotlightCandidate.slug}`,
       imageUrl,
     })
   }
@@ -257,10 +273,39 @@ export async function GET(request: Request) {
 
     const newCandidates = (allApproved || []).filter(c => !announcedSlugs.has(c.slug))
 
+    // Find spotlight candidate: approved, never had a portrait post, fewest votes first
+    const { data: pastPortraits } = await supabase
+      .from('social_posts_log')
+      .select('message')
+      .eq('source', 'cron')
+      .eq('post_type', 'candidate_portrait')
+
+    const portraitSlugs = new Set<string>()
+    if (pastPortraits) {
+      for (const post of pastPortraits) {
+        const matches = (post.message || '').matchAll(/\/candidats\/([a-z0-9-]+)/g)
+        for (const match of matches) {
+          portraitSlugs.add(match[1])
+        }
+      }
+    }
+
+    // Get approved candidates sorted by fewest votes, pick one without a portrait yet
+    const { data: spotlightCandidates } = await supabase
+      .from('candidates')
+      .select('first_name, stage_name, slug, song_title, song_artist, likes_count')
+      .eq('session_id', session.id)
+      .in('status', ['approved', 'semifinalist', 'finalist'])
+      .neq('image_social_consent', false)
+      .order('likes_count', { ascending: true })
+
+    const spotlightCandidate = (spotlightCandidates || []).find(c => !portraitSlugs.has(c.slug)) || null
+
     const posts = generatePosts(
       { id: session.id, name: session.name, slug: session.slug, config, status: session.status },
       totalCandidates || 0,
       newCandidates || [],
+      spotlightCandidate,
       socialSiteUrl
     )
 
@@ -273,7 +318,7 @@ export async function GET(request: Request) {
         // Si l'image est une URL social-card dynamique, la convertir en image statique
         // Instagram exige une URL d'image statique (pas un endpoint dynamique)
         let finalImageUrl = postToPublish.imageUrl
-        if (finalImageUrl?.includes('/api/social-card')) {
+        if (finalImageUrl?.includes('/api/social-card') || finalImageUrl?.includes('/api/candidate-portrait')) {
           try {
             const imgRes = await fetch(finalImageUrl)
             if (imgRes.ok) {
