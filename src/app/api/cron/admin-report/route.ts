@@ -86,8 +86,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Already sent this period', sent: false })
   }
 
+  // Sunday = weekly comprehensive report (email + push), other days = push only
+  const now = new Date()
+  const parisDay = parseInt(now.toLocaleDateString('en-US', { weekday: 'narrow', timeZone: 'Europe/Paris' }).charAt(0))
+  const isSunday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Europe/Paris' }) === 'Sunday'
+
   // Determine the "since" date based on frequency
-  const sinceMs = LOOKBACK_MS[frequency] || 24 * 60 * 60 * 1000
+  // On Sunday: look back 7 days for weekly data
+  const sinceMs = isSunday ? 7 * 24 * 60 * 60 * 1000 : (LOOKBACK_MS[frequency] || 24 * 60 * 60 * 1000)
   const sinceDate = new Date(Date.now() - sinceMs).toISOString()
 
   // ── Collect all stats in parallel ──
@@ -148,6 +154,83 @@ export async function GET(request: Request) {
     ? new Set(visitorsData.map((r) => r.fingerprint)).size
     : 0
 
+  // ── Weekly-only data (jury, top candidates, daily trends) ──
+  let weeklyData: {
+    topCandidates: { name: string; category: string; votes: number }[]
+    jurors: { name: string; role: string; logins: number; lastLogin: string | null; scoresCount: number }[]
+    totalJuryScores: number
+    dailyPageViews: { day: string; count: number }[]
+    dailyVotes: { day: string; count: number }[]
+  } | null = null
+
+  if (isSunday) {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [
+      { data: topCands },
+      { data: jurorsList },
+      { data: allJuryScores },
+      { data: weekPageViews },
+      { data: weekVotes },
+    ] = await Promise.all([
+      supabase.from('candidates')
+        .select('first_name, last_name, stage_name, category, likes_count')
+        .eq('session_id', session.id)
+        .order('likes_count', { ascending: false })
+        .limit(10),
+      supabase.from('jurors')
+        .select('id, first_name, last_name, role, login_count, last_login_at, is_active')
+        .eq('session_id', session.id)
+        .eq('is_active', true),
+      supabase.from('jury_scores')
+        .select('juror_id'),
+      supabase.from('page_views')
+        .select('created_at')
+        .eq('session_id', session.id)
+        .gte('created_at', weekAgo),
+      supabase.from('votes')
+        .select('created_at')
+        .eq('session_id', session.id)
+        .gte('created_at', weekAgo),
+    ])
+
+    // Count jury scores per juror
+    const scoresByJuror: Record<string, number> = {}
+    for (const s of allJuryScores || []) {
+      scoresByJuror[s.juror_id] = (scoresByJuror[s.juror_id] || 0) + 1
+    }
+
+    // Daily breakdowns
+    const pvByDay: Record<string, number> = {}
+    for (const pv of weekPageViews || []) {
+      const day = new Date(pv.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'Europe/Paris' })
+      pvByDay[day] = (pvByDay[day] || 0) + 1
+    }
+    const votesByDay: Record<string, number> = {}
+    for (const v of weekVotes || []) {
+      const day = new Date(v.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'Europe/Paris' })
+      votesByDay[day] = (votesByDay[day] || 0) + 1
+    }
+
+    weeklyData = {
+      topCandidates: (topCands || []).map(c => ({
+        name: c.stage_name || `${c.first_name} ${c.last_name}`.trim(),
+        category: c.category,
+        votes: c.likes_count || 0,
+      })),
+      jurors: (jurorsList || []).map(j => ({
+        name: `${j.first_name} ${j.last_name}`.trim(),
+        role: j.role,
+        logins: j.login_count || 0,
+        lastLogin: j.last_login_at,
+        scoresCount: scoresByJuror[j.id] || 0,
+      })),
+      totalJuryScores: (allJuryScores || []).length,
+      dailyPageViews: Object.entries(pvByDay).map(([day, count]) => ({ day, count })),
+      dailyVotes: Object.entries(votesByDay).map(([day, count]) => ({ day, count })),
+    }
+  }
+
   // Top 5 pages
   const pageCounts: Record<string, number> = {}
   for (const pv of pageViewsData || []) {
@@ -203,11 +286,12 @@ export async function GET(request: Request) {
     // GitHub API unavailable — skip
   }
 
-  // Build email
+  // Build email (only on Sunday)
+  const effectivePeriod = isSunday ? 'hebdomadaire' : period
   const { subject, html } = adminReportEmail({
     sessionName: session.name,
     sessionStatus,
-    period,
+    period: effectivePeriod,
     totalCandidates: totalCandidates || 0,
     newCandidates: newCandidatesCount || 0,
     totalVotes: totalVotes || 0,
@@ -236,6 +320,7 @@ export async function GET(request: Request) {
     newDonationsEuros: (newDonationsCents / 100).toFixed(0),
     newDonationsCount,
     newDonationsList: (newDonations || []).map(d => ({ name: d.donor_name, amount: (d.amount_cents / 100).toFixed(0), tier: d.tier })),
+    weeklyData: weeklyData || undefined,
   })
 
   // Build push body — only show what's new in last 24h
@@ -258,29 +343,32 @@ export async function GET(request: Request) {
 
   const pushBody = activityLine + deployLine
 
-  // Send push notification to admin subscribers
+  // Send push notification to admin subscribers (every day)
+  const pushTitle = isSunday ? 'Rapport hebdomadaire' : `Rapport ${period}`
   const pushResult = await sendPushNotifications({
     sessionId: session.id,
     role: 'admin',
     payload: {
-      title: `Rapport ${period}`,
+      title: pushTitle,
       body: pushBody,
       url: adminUrl,
     },
   })
 
-  // Send email
+  // Send email only on Sunday (comprehensive weekly report)
   let emailSent = false
-  try {
-    await getResend().emails.send({
-      from: FROM_EMAIL,
-      to: reportEmail,
-      subject,
-      html,
-    })
-    emailSent = true
-  } catch {
-    // Email sending failed
+  if (isSunday) {
+    try {
+      await getResend().emails.send({
+        from: FROM_EMAIL,
+        to: reportEmail,
+        subject,
+        html,
+      })
+      emailSent = true
+    } catch {
+      // Email sending failed
+    }
   }
 
   // Update last_report_sent_at

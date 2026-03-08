@@ -443,6 +443,7 @@ export function adminReportEmail({
   newDonationsEuros,
   newDonationsCount,
   newDonationsList,
+  weeklyData,
 }: {
   sessionName: string
   sessionStatus: string
@@ -472,6 +473,13 @@ export function adminReportEmail({
   newDonationsEuros?: string
   newDonationsCount?: number
   newDonationsList?: { name: string; amount: string; tier: string }[]
+  weeklyData?: {
+    topCandidates: { name: string; category: string; votes: number }[]
+    jurors: { name: string; role: string; logins: number; lastLogin: string | null; scoresCount: number }[]
+    totalJuryScores: number
+    dailyPageViews: { day: string; count: number }[]
+    dailyVotes: { day: string; count: number }[]
+  }
 }) {
   const subject = `Briefing ${period} — ${sessionName}`
   const safeSessionName = escapeHtml(sessionName)
@@ -766,6 +774,97 @@ export function adminReportEmail({
         </tr>`).join('')}
       </table>
     </div>
+    ` : ''}
+
+    ${weeklyData ? `
+    <!-- ===== SECTION: Top Candidats (votes) ===== -->
+    ${weeklyData.topCandidates.length > 0 ? `
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#e91e8c;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Top 10 — Votes publics</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${weeklyData.topCandidates.map((c, i) => {
+          const maxVotes = weeklyData!.topCandidates[0]?.votes || 1
+          const pct = Math.round(c.votes / maxVotes * 100)
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`
+          return `<tr>
+            <td style="padding:4px 0;color:#ffffff90;font-size:12px;width:24px;">${medal}</td>
+            <td style="padding:4px 0;color:#ffffff;font-size:12px;">${escapeHtml(c.name)} <span style="color:#ffffff40;font-size:10px;">${escapeHtml(c.category)}</span></td>
+            <td style="padding:4px 6px;width:35%;">${bar(pct, '#e91e8c')}</td>
+            <td style="padding:4px 0;color:#e91e8c;font-size:13px;font-weight:bold;text-align:right;width:40px;">${c.votes}</td>
+          </tr>`
+        }).join('')}
+      </table>
+    </div>` : ''}
+
+    <!-- ===== SECTION: Jury ===== -->
+    ${weeklyData.jurors.length > 0 ? `
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#f59e0b;font-size:13px;font-weight:bold;margin:0 0 4px 0;">Jury (${weeklyData.jurors.length} membres)</p>
+      <p style="color:#ffffff40;font-size:11px;margin:0 0 14px 0;">${weeklyData.totalJuryScores} note${weeklyData.totalJuryScores > 1 ? 's' : ''} attribuée${weeklyData.totalJuryScores > 1 ? 's' : ''} au total</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #2a2545;">
+          <th style="padding:6px 0;color:#ffffff50;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:1px;">Nom</th>
+          <th style="padding:6px 0;color:#ffffff50;font-size:10px;text-align:center;">Rôle</th>
+          <th style="padding:6px 0;color:#ffffff50;font-size:10px;text-align:center;">Connexions</th>
+          <th style="padding:6px 0;color:#ffffff50;font-size:10px;text-align:center;">Notes</th>
+          <th style="padding:6px 0;color:#ffffff50;font-size:10px;text-align:right;">Dernier accès</th>
+        </tr>
+        ${weeklyData.jurors.map(j => {
+          const roleColors: Record<string, string> = { online: '#3b82f6', semifinal: '#f59e0b', final: '#e91e8c' }
+          const roleLabels: Record<string, string> = { online: 'En ligne', semifinal: 'Demi', final: 'Finale' }
+          const lastLogin = j.lastLogin ? new Date(j.lastLogin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' }) : '—'
+          return `<tr style="border-bottom:1px solid #1e1744;">
+            <td style="padding:6px 0;color:#ffffff;font-size:12px;">${escapeHtml(j.name)}</td>
+            <td style="padding:6px 0;text-align:center;"><span style="color:${roleColors[j.role] || '#94a3b8'};font-size:10px;font-weight:bold;background:${roleColors[j.role] || '#94a3b8'}15;padding:2px 6px;border-radius:8px;">${roleLabels[j.role] || j.role}</span></td>
+            <td style="padding:6px 0;color:#ffffff80;font-size:12px;text-align:center;">${j.logins}</td>
+            <td style="padding:6px 0;color:${j.scoresCount > 0 ? '#7ec850' : '#ffffff30'};font-size:12px;text-align:center;font-weight:bold;">${j.scoresCount}</td>
+            <td style="padding:6px 0;color:#ffffff50;font-size:11px;text-align:right;">${lastLogin}</td>
+          </tr>`
+        }).join('')}
+      </table>
+    </div>` : ''}
+
+    <!-- ===== SECTION: Tendances semaine ===== -->
+    ${weeklyData.dailyVotes.length > 0 || weeklyData.dailyPageViews.length > 0 ? `
+    <div style="background:#161228;border:1px solid #2a2545;border-radius:16px;padding:20px;margin-bottom:12px;">
+      <p style="color:#8b5cf6;font-size:13px;font-weight:bold;margin:0 0 14px 0;">Tendances de la semaine</p>
+
+      ${weeklyData.dailyVotes.length > 0 ? `
+      <p style="color:#ffffff60;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 0;">Votes par jour</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        ${(() => {
+          const maxV = Math.max(...weeklyData!.dailyVotes.map(d => d.count), 1)
+          return weeklyData!.dailyVotes.map(d => {
+            const pct = Math.round(d.count / maxV * 100)
+            return `<tr>
+              <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:70px;">${d.day}</td>
+              <td style="padding:3px 0;">${bar(pct, '#3b82f6')}</td>
+              <td style="padding:3px 0;color:#3b82f6;font-size:12px;font-weight:bold;width:40px;text-align:right;">${d.count}</td>
+            </tr>`
+          }).join('')
+        })()}
+      </table>` : ''}
+
+      ${weeklyData.dailyPageViews.length > 0 ? `
+      <p style="color:#ffffff60;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 0;">Pages vues par jour</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${(() => {
+          const maxPV = Math.max(...weeklyData!.dailyPageViews.map(d => d.count), 1)
+          return weeklyData!.dailyPageViews.map(d => {
+            const pct = Math.round(d.count / maxPV * 100)
+            return `<tr>
+              <td style="padding:3px 0;color:#ffffffcc;font-size:12px;width:70px;">${d.day}</td>
+              <td style="padding:3px 0;">${bar(pct, '#8b5cf6')}</td>
+              <td style="padding:3px 0;color:#8b5cf6;font-size:12px;font-weight:bold;width:40px;text-align:right;">${d.count}</td>
+            </tr>`
+          }).join('')
+        })()}
+      </table>` : ''}
+
+      <p style="color:#ffffff30;font-size:10px;margin:12px 0 0 0;text-align:center;">
+        Total semaine : ${weeklyData.dailyVotes.reduce((s, d) => s + d.count, 0)} votes &bull; ${weeklyData.dailyPageViews.reduce((s, d) => s + d.count, 0)} pages vues
+      </p>
+    </div>` : ''}
     ` : ''}
 
     <!-- CTA -->
