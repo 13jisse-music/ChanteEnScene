@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import JuryScoring from '@/components/JuryScoring'
 import JuryExperience from '@/components/JuryExperience'
+import { trackJurorLogin } from '@/app/jury/actions'
 
 type Params = Promise<{ token: string }>
 
@@ -104,6 +105,9 @@ export default async function JuryPage({ params }: { params: Params }) {
       />
     )
   }
+
+  // Track login for in-person jurors (online jurors tracked in JuryExperience)
+  trackJurorLogin(juror.id, session.id).catch(() => {})
 
   // Semifinal/Final jurors get the standard layout (in-person, no dashboard needed)
   return (

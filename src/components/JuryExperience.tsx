@@ -67,7 +67,7 @@ export default function JuryExperience({ juror, session, candidates, existingSco
 
   // Track login on mount (fire-and-forget)
   useEffect(() => {
-    trackJurorLogin(juror.id).catch(() => {})
+    trackJurorLogin(juror.id, juror.session_id).catch(() => {})
   }, [juror.id])
 
   // Heartbeat every 30s for presence tracking

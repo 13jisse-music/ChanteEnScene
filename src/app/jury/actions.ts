@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPushNotifications } from '@/lib/push'
 import { redirect } from 'next/navigation'
 
 export async function loginJuror(email: string): Promise<{ error: string }> {
@@ -44,7 +45,7 @@ export async function loginJuror(email: string): Promise<{ error: string }> {
   redirect(`/jury/${juror.qr_token}`)
 }
 
-export async function trackJurorLogin(jurorId: string) {
+export async function trackJurorLogin(jurorId: string, sessionId?: string) {
   const supabase = createAdminClient()
 
   // Use the RPC function for atomic increment + timestamp
@@ -65,6 +66,38 @@ export async function trackJurorLogin(jurorId: string) {
         login_count: ((data?.login_count as number) || 0) + 1,
       })
       .eq('id', jurorId)
+  }
+
+  // Push notification to admin when jury connects
+  try {
+    const { data: juror } = await supabase
+      .from('jurors')
+      .select('first_name, last_name, role, session_id')
+      .eq('id', jurorId)
+      .single()
+
+    if (juror) {
+      const name = [juror.first_name, juror.last_name].filter(Boolean).join(' ')
+      const roleLabel: Record<string, string> = {
+        online: 'en ligne',
+        semifinal: 'demi-finale',
+        final: 'finale',
+      }
+      const label = roleLabel[juror.role] || juror.role
+
+      await sendPushNotifications({
+        sessionId: sessionId || juror.session_id,
+        role: 'admin',
+        payload: {
+          title: 'Jury connecté',
+          body: `${name} (jury ${label}) vient de se connecter`,
+          url: '/admin/jury',
+          tag: `jury-login-${jurorId}`,
+        },
+      })
+    }
+  } catch {
+    // Push failure should not block jury login
   }
 }
 
