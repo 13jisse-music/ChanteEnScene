@@ -90,7 +90,7 @@ export async function GET(request: Request) {
   const displayCandidates: Candidate[] = candidates.slice(0, 5)
 
   // Fix EXIF orientation for all photos in parallel
-  const photoSize = count === 1 ? 600 : count <= 2 ? 400 : count <= 3 ? 280 : 160
+  const photoSize = count === 1 ? 600 : count <= 2 ? 400 : count <= 3 ? 280 : 200
   await Promise.all(
     displayCandidates.map(async (c) => {
       if (c.photo_url) {
@@ -202,32 +202,32 @@ export async function GET(request: Request) {
       </div>
     )
   } else {
-    // ═══ 4+ — Compact row layout ═══
+    // ═══ 4+ — Larger compact row layout (less wasted space) ═══
     content = (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', flex: 1, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, justifyContent: 'center' }}>
         {displayCandidates.map((c, i) => {
           const name = c.stage_name || c.first_name
           return (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', background: 'rgba(10,8,20,0.65)',
               border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '22px', padding: '18px 28px', gap: '22px',
+              borderRadius: '24px', padding: '20px 32px', gap: '28px', flex: 1,
             }}>
               <div style={{
-                width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden',
+                width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden',
                 background: '#2a2545', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, border: '3px solid #e91e8c',
+                flexShrink: 0, border: '4px solid #e91e8c',
               }}>
                 {c.photoDataUri ? (
-                  <img src={c.photoDataUri} alt="" width={90} height={90} style={{ width: '90px', height: '90px', objectFit: 'cover' }} />
+                  <img src={c.photoDataUri} alt="" width={120} height={120} style={{ width: '120px', height: '120px', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ fontSize: '32px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
+                  <div style={{ fontSize: '42px', color: 'white', opacity: 0.3, display: 'flex' }}>🎤</div>
                 )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '6px' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px' }}>
+                <div style={{ fontSize: '34px', fontWeight: 700, color: 'white', display: 'flex' }}>{name}</div>
                 {c.song_title && (
-                  <div style={{ fontSize: '19px', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
+                  <div style={{ fontSize: '22px', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
                     {'\u00AB'} {c.song_title} {'\u00BB'}{c.song_artist ? ` \u2014 ${c.song_artist}` : ''}
                   </div>
                 )}
@@ -236,7 +236,7 @@ export async function GET(request: Request) {
           )
         })}
         {count > 5 && (
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '19px', display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '22px', display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
             + {count - 5} autre{count - 5 > 1 ? 's' : ''} candidat{count - 5 > 1 ? 's' : ''}
           </div>
         )}

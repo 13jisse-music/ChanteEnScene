@@ -87,7 +87,10 @@ function generatePosts(
     })
   }
 
-  // ── 1b. Portrait candidat spotlight (quand pas de nouvelle inscription) ──
+  // ── 1b. Portrait candidat spotlight (quand pas de nouveau candidat approuvé) ──
+  // Si l'admin n'a approuvé personne de nouveau, on met en avant un candidat déjà approuvé
+  // Priorité : celui avec le moins de votes, jamais présenté en spotlight
+  // Si tous ont été présentés, on recommence le cycle depuis le moins voté
   if (newCandidatesSinceYesterday.length === 0 && spotlightCandidate && totalCandidates > 0) {
     const name = spotlightCandidate.stage_name || spotlightCandidate.first_name
     const song = spotlightCandidate.song_title ? `\n🎵 « ${spotlightCandidate.song_title} »${spotlightCandidate.song_artist ? ` — ${spotlightCandidate.song_artist}` : ''}` : ''
@@ -299,7 +302,12 @@ export async function GET(request: Request) {
       .neq('image_social_consent', false)
       .order('likes_count', { ascending: true })
 
-    const spotlightCandidate = (spotlightCandidates || []).find(c => !portraitSlugs.has(c.slug)) || null
+    // Pick candidate never spotlighted yet; if all done, restart cycle from least votes
+    let spotlightCandidate = (spotlightCandidates || []).find(c => !portraitSlugs.has(c.slug)) || null
+    if (!spotlightCandidate && (spotlightCandidates || []).length > 0) {
+      // All candidates have been spotlighted — restart cycle from least votes
+      spotlightCandidate = spotlightCandidates![0] // already sorted by likes_count ASC
+    }
 
     const posts = generatePosts(
       { id: session.id, name: session.name, slug: session.slug, config, status: session.status },
