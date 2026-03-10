@@ -51,6 +51,12 @@ export default function CommentCaMarchePage() {
             <p className="text-white/60 text-xs">
               Après validation par l&apos;équipe, votre profil apparaît dans la galerie des candidats.
             </p>
+            <div className="bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-xl p-3 flex items-start gap-2 text-[#f5a623] text-xs">
+              <span>📍</span>
+              <span>
+                <strong>Concours sur scène à Aubagne (13).</strong> La sélection se fait sur vidéo, mais la présence physique à Aubagne est obligatoire à partir de la demi-finale (17 juin 2026) et pour la finale (16 juillet 2026).
+              </span>
+            </div>
             <CTA href={`/${SESSION_SLUG}/inscription`} label="Je m'inscris" />
           </div>
         </Feature>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, toggleImageSocialConsent, requestCorrection } from '@/app/admin/candidats/actions'
+import { getDistanceToAubagne, DISTANCE_COLORS } from '@/lib/city-distance'
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
@@ -416,7 +417,40 @@ export default function CandidatsTable({
                           {c.stage_name && <p><span className="text-white/30">Scène :</span> <span className="text-white">{c.stage_name}</span></p>}
                           <p><span className="text-white/30">Email :</span> <a href={`mailto:${c.email}`} className="text-[#e91e8c] hover:underline">{c.email}</a></p>
                           {c.phone && <p><span className="text-white/30">Tél :</span> <span className="text-white">{c.phone}</span></p>}
-                          {c.city && <p><span className="text-white/30">Ville :</span> <span className="text-white">{c.city}</span></p>}
+                          {c.city && (() => {
+                            const dist = getDistanceToAubagne(c.city)
+                            const colors = DISTANCE_COLORS[dist.badge]
+                            return (
+                              <p className="flex items-center gap-2 flex-wrap">
+                                <span className="text-white/30">Ville :</span>
+                                <span className="text-white">{c.city}</span>
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                  style={{ background: colors.bg, color: colors.text }}
+                                >
+                                  📍 {dist.label}
+                                </span>
+                                {dist.badge === 'red' && (
+                                  <a
+                                    href={`mailto:${c.email}?subject=${encodeURIComponent('ChanteEnScène Aubagne 2026 — Présence sur place')}&body=${encodeURIComponent(`Bonjour ${c.first_name},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nJe me permets de te contacter car j'ai vu que tu es de ${c.city}. Je voulais m'assurer que tu as bien noté que la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nLa sélection se fait sur vidéo, donc pas besoin de te déplacer pour l'instant. Mais si tu es retenu(e), il faudra être là en personne.\n\nEst-ce que ça te convient ?\n\nÀ bientôt,\nJisse — ChanteEnScène`)}`}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30 transition-colors"
+                                    title="Envoyer un email d'information sur la présence obligatoire"
+                                  >
+                                    ✉️ Informer
+                                  </a>
+                                )}
+                                {dist.badge === 'orange' && (
+                                  <a
+                                    href={`mailto:${c.email}?subject=${encodeURIComponent('ChanteEnScène Aubagne 2026 — Info pratique')}&body=${encodeURIComponent(`Bonjour ${c.first_name},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nPetit rappel pratique : la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nN'hésite pas si tu as des questions !\n\nÀ bientôt,\nJisse — ChanteEnScène`)}`}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30 transition-colors"
+                                    title="Envoyer un rappel sur la localisation"
+                                  >
+                                    ✉️ Rappeler
+                                  </a>
+                                )}
+                              </p>
+                            )
+                          })()}
                           <p><span className="text-white/30">Né(e) le :</span> <span className="text-white">{new Date(c.date_of_birth).toLocaleDateString('fr-FR')}</span></p>
                           {minor && (
                             <p>

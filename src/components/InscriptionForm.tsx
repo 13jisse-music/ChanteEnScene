@@ -238,6 +238,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (!dob) return 'Veuillez indiquer votre date de naissance.'
       if (!email.trim()) return 'Veuillez remplir votre email.'
       if (!category) return 'Votre âge ne correspond à aucune catégorie.'
+      if (!city.trim()) return 'Veuillez indiquer votre ville (la présence à Aubagne est requise à partir de la demi-finale).'
       return null
     }
     if (currentStep === 1) {
@@ -382,7 +383,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       fd.append('date_of_birth', dob)
       fd.append('email', email.trim().toLowerCase())
       if (phone.trim()) fd.append('phone', phone.trim())
-      if (city.trim()) fd.append('city', city.trim())
+      fd.append('city', city.trim())
       fd.append('category', category)
       fd.append('song_title', songTitle.trim())
       fd.append('song_artist', songArtist.trim())
@@ -616,8 +617,14 @@ export default function InscriptionForm({ session }: { session: Session }) {
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" className={INPUT} />
           </div>
           <div>
-            <label className={LABEL}>Ville <span className="text-[#6b5d85] text-xs">(optionnel)</span></label>
-            <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Votre ville" className={INPUT} />
+            <label className={LABEL}>Ville <span className="text-[#e91e8c]">*</span></label>
+            <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} placeholder="Votre ville" className={INPUT} />
+          </div>
+          <div className="bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-xl p-3 flex items-start gap-2 text-[#f5a623] text-xs">
+            <span>📍</span>
+            <span>
+              <strong>Concours sur scène à Aubagne (13).</strong> La sélection se fait sur vidéo, mais la présence physique à Aubagne est obligatoire à partir de la demi-finale (17 juin 2026) et pour la finale (16 juillet 2026).
+            </span>
           </div>
         </div>
       )}
