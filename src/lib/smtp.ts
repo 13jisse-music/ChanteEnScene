@@ -51,26 +51,30 @@ export async function sendSmtp({
   html: string
   headers?: Record<string, string>
 }): Promise<{ error?: string }> {
-  // Try SMTP first
-  try {
-    const host = process.env.SMTP_HOST || 'smtp.ionos.fr'
-    await warmDns(host)
-    const transporter = createTransporter()
-    await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      html,
-      headers,
-    })
-    transporter.close()
-    return {}
-  } catch (smtpErr) {
-    const smtpMsg = smtpErr instanceof Error ? smtpErr.message : 'Erreur SMTP'
-    console.warn('SMTP failed, falling back to Resend:', smtpMsg)
+  const isVercel = !!process.env.VERCEL
+
+  // On Vercel: skip SMTP entirely (DNS EBUSY), use Resend API directly
+  if (!isVercel) {
+    try {
+      const host = process.env.SMTP_HOST || 'smtp.ionos.fr'
+      await warmDns(host)
+      const transporter = createTransporter()
+      await transporter.sendMail({
+        from: SMTP_FROM,
+        to,
+        subject,
+        html,
+        headers,
+      })
+      transporter.close()
+      return {}
+    } catch (smtpErr) {
+      const smtpMsg = smtpErr instanceof Error ? smtpErr.message : 'Erreur SMTP'
+      console.warn('SMTP failed, falling back to Resend:', smtpMsg)
+    }
   }
 
-  // Fallback: Resend API (HTTPS, no DNS issues on serverless)
+  // Resend API (HTTPS — works everywhere including Vercel serverless)
   try {
     const resend = getResend()
     await resend.emails.send({
@@ -83,7 +87,7 @@ export async function sendSmtp({
     return {}
   } catch (resendErr) {
     const msg = resendErr instanceof Error ? resendErr.message : 'Erreur envoi email'
-    console.error('Resend fallback also failed:', msg)
+    console.error('Resend also failed:', msg)
     return { error: msg }
   }
 }
