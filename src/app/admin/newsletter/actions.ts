@@ -3,7 +3,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/security'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
-import { sendSmtp } from '@/lib/smtp'
 import { newsletterEmail } from '@/lib/emails'
 import { goUrl } from '@/lib/email-utils'
 import { revalidatePath } from 'next/cache'
@@ -135,98 +134,24 @@ export async function sendTestCampaign(campaignId: string) {
 
 export async function sendCampaign(campaignId: string) {
   await requireAdmin()
-  const supabase = createAdminClient()
 
-  const { data: campaign, error: campError } = await supabase
-    .from('email_campaigns')
-    .select('*')
-    .eq('id', campaignId)
-    .single()
-
-  if (campError || !campaign) return { error: 'Campagne introuvable' }
-  if (campaign.status === 'sent') return { error: 'Campagne deja envoyee' }
-  if (campaign.status === 'sending') return { error: 'Envoi en cours' }
-
-  // Build subscriber query based on target
-  let query = supabase
-    .from('email_subscribers')
-    .select('email, unsubscribe_token')
-    .eq('session_id', campaign.session_id)
-    .eq('is_active', true)
-
-  if (campaign.target === 'voluntary') {
-    query = query.neq('source', 'legacy_import')
-  } else if (campaign.target === 'legacy') {
-    query = query.eq('source', 'legacy_import')
-  }
-
-  const { data: subscribers, error: subError } = await query
-
-  if (subError) return { error: subError.message }
-  if (!subscribers || subscribers.length === 0) return { error: 'Aucun abonne actif' }
-
-  // Mark as sending
-  await supabase
-    .from('email_campaigns')
-    .update({ status: 'sending', total_recipients: subscribers.length })
-    .eq('id', campaignId)
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chantenscene.fr'
-  const campaignCtaUrl = goUrl(siteUrl, '/', 'newsletter')
-  let sent = 0
-  let errors = 0
-
-  for (const sub of subscribers) {
-    try {
-      const { html } = newsletterEmail({
-        subject: campaign.subject,
-        body: campaign.body,
-        imageUrl: campaign.image_url || undefined,
-        sections: campaign.sections || undefined,
-        introText: campaign.intro_text || undefined,
-        footerTagline: campaign.footer_tagline || undefined,
-        unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}`,
-        ctaUrl: campaignCtaUrl,
-        campaignId,
-        subscriberEmail: sub.email,
-      })
-
-      // Envoi via IONOS SMTP (pas de quota journalier comme Resend)
-      const { error: sendErr } = await sendSmtp({
-        to: sub.email,
-        subject: campaign.subject,
-        html,
-        headers: {
-          'List-Unsubscribe': `<${siteUrl}/api/unsubscribe?token=${sub.unsubscribe_token}>`,
-        },
-      })
-
-      if (sendErr) {
-        errors++
-      } else {
-        sent++
-      }
-
-      // Rate limit: 300ms entre chaque envoi (IONOS ~500 emails/h)
-      await new Promise((r) => setTimeout(r, 300))
-    } catch {
-      errors++
-    }
-  }
-
-  // Update campaign status
-  await supabase
-    .from('email_campaigns')
-    .update({
-      status: errors === subscribers.length ? 'failed' : 'sent',
-      total_sent: sent,
-      total_errors: errors,
-      sent_at: new Date().toISOString(),
+  // Délègue l'envoi à la route API /api/newsletter/send
+  // qui a un maxDuration=60s (les server actions timeout trop vite)
+  // et gère le SMTP directement
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chantenscene.fr'
+  try {
+    const res = await fetch(`${siteUrl}/api/newsletter/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId }),
     })
-    .eq('id', campaignId)
-
-  revalidatePath('/admin/newsletter')
-  return { success: true, sent, errors }
+    const data = await res.json()
+    if (!res.ok) return { error: data.error || 'Erreur envoi' }
+    revalidatePath('/admin/newsletter')
+    return { success: true, sent: data.sent, errors: data.errors }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Erreur réseau' }
+  }
 }
 
 export async function getCampaignStats(campaignId: string) {
