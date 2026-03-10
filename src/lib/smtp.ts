@@ -21,7 +21,7 @@ function createTransporter() {
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
-  })
+  } as nodemailer.TransportOptions)
 }
 
 /** Pre-resolve DNS to avoid EBUSY in serverless (Vercel) */
