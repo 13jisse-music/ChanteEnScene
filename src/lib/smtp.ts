@@ -1,6 +1,7 @@
 import * as nodemailer from 'nodemailer'
 import { resolve } from 'dns'
 import { promisify } from 'util'
+import { getResend } from './resend'
 
 const resolveDns = promisify(resolve)
 
@@ -36,8 +37,8 @@ async function warmDns(host: string, retries = 2): Promise<void> {
 }
 
 /**
- * Envoie un email via IONOS SMTP (pour les newsletters en masse).
- * Resend reste utilisé pour le transactionnel (1-2 emails).
+ * Envoie un email via IONOS SMTP, avec fallback Resend si SMTP échoue.
+ * Sur Vercel (serverless), SMTP peut échouer (DNS EBUSY) → Resend prend le relais.
  */
 export async function sendSmtp({
   to,
@@ -50,6 +51,7 @@ export async function sendSmtp({
   html: string
   headers?: Record<string, string>
 }): Promise<{ error?: string }> {
+  // Try SMTP first
   try {
     const host = process.env.SMTP_HOST || 'smtp.ionos.fr'
     await warmDns(host)
@@ -63,9 +65,25 @@ export async function sendSmtp({
     })
     transporter.close()
     return {}
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erreur SMTP'
-    console.error('SMTP error:', msg)
+  } catch (smtpErr) {
+    const smtpMsg = smtpErr instanceof Error ? smtpErr.message : 'Erreur SMTP'
+    console.warn('SMTP failed, falling back to Resend:', smtpMsg)
+  }
+
+  // Fallback: Resend API (HTTPS, no DNS issues on serverless)
+  try {
+    const resend = getResend()
+    await resend.emails.send({
+      from: SMTP_FROM,
+      to,
+      subject,
+      html,
+      headers,
+    })
+    return {}
+  } catch (resendErr) {
+    const msg = resendErr instanceof Error ? resendErr.message : 'Erreur envoi email'
+    console.error('Resend fallback also failed:', msg)
     return { error: msg }
   }
 }
