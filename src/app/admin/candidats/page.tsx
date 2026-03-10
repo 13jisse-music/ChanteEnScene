@@ -28,11 +28,17 @@ async function getCandidates() {
     .eq('session_id', session.id)
     .eq('event_type', 'online')
 
-  return { session, candidates: candidates || [], scores: scores || [] }
+  // Fetch distance email events (sent + opened)
+  const { data: distanceEvents } = await supabase
+    .from('email_events')
+    .select('campaign_id, subscriber_email, event_type, created_at')
+    .like('campaign_id', 'distance-%')
+
+  return { session, candidates: candidates || [], scores: scores || [], distanceEvents: distanceEvents || [] }
 }
 
 export default async function AdminCandidatsPage() {
-  const { session, candidates, scores } = await getCandidates()
+  const { session, candidates, scores, distanceEvents } = await getCandidates()
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -61,7 +67,7 @@ export default async function AdminCandidatsPage() {
         </div>
       </div>
 
-      <CandidatsTable candidates={candidates} juryScores={scores} />
+      <CandidatsTable candidates={candidates} juryScores={scores} distanceEvents={distanceEvents} />
     </div>
   )
 }

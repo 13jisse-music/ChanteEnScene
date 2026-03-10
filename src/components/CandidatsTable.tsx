@@ -1,8 +1,45 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, toggleImageSocialConsent, requestCorrection } from '@/app/admin/candidats/actions'
+import { useState, useEffect, useMemo } from 'react'
+import { updateCandidateStatus, deleteCandidate, toggleVideoPublic, toggleImageSocialConsent, requestCorrection, sendDistanceEmail } from '@/app/admin/candidats/actions'
 import { getDistanceToAubagne, DISTANCE_COLORS } from '@/lib/city-distance'
+
+interface DistanceEvent {
+  campaign_id: string
+  subscriber_email: string
+  event_type: string
+  created_at: string
+}
+
+interface EmailPreview {
+  candidateId: string
+  email: string
+  firstName: string
+  city: string
+  badge: 'red' | 'orange'
+  subject: string
+  body: string
+}
+
+function getDistanceEmailStatus(email: string, events: DistanceEvent[]): 'none' | 'sent' | 'read' {
+  const mine = events.filter(e => e.subscriber_email === email)
+  if (mine.some(e => e.event_type === 'open')) return 'read'
+  if (mine.some(e => e.event_type === 'send')) return 'sent'
+  return 'none'
+}
+
+function buildDistanceEmail(firstName: string, city: string, badge: 'red' | 'orange') {
+  if (badge === 'red') {
+    return {
+      subject: 'ChanteEnScène Aubagne 2026 — Présence sur place',
+      body: `Bonjour ${firstName},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nJe me permets de te contacter car j'ai vu que tu es de ${city}. Je voulais m'assurer que tu as bien noté que la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nLa sélection se fait sur vidéo, donc pas besoin de te déplacer pour l'instant. Mais si tu es retenu(e), il faudra être là en personne.\n\nEst-ce que ça te convient ?\n\nÀ bientôt,\nJisse — ChanteEnScène`,
+    }
+  }
+  return {
+    subject: 'ChanteEnScène Aubagne 2026 — Info pratique',
+    body: `Bonjour ${firstName},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nPetit rappel pratique : la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nN'hésite pas si tu as des questions !\n\nÀ bientôt,\nJisse — ChanteEnScène`,
+  }
+}
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/)
@@ -107,9 +144,11 @@ function getDecisionCounts(candidateId: string, juryScores: JuryScore[]) {
 export default function CandidatsTable({
   candidates: initialCandidates,
   juryScores = [],
+  distanceEvents: initialDistanceEvents = [],
 }: {
   candidates: Candidate[]
   juryScores?: JuryScore[]
+  distanceEvents?: DistanceEvent[]
 }) {
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -119,6 +158,10 @@ export default function CandidatsTable({
   const [correctionId, setCorrectionId] = useState<string | null>(null)
   const [correctionChecked, setCorrectionChecked] = useState<Record<string, boolean>>({})
   const [correctionLoading, setCorrectionLoading] = useState(false)
+  const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState<Record<string, boolean>>({})
+  const [distanceEvents, setDistanceEvents] = useState(initialDistanceEvents)
 
   const CATEGORY_ORDER = ['Enfant', 'Ado', 'Adulte']
 
@@ -430,24 +473,37 @@ export default function CandidatsTable({
                                 >
                                   📍 {dist.label}
                                 </span>
-                                {dist.badge === 'red' && (
-                                  <a
-                                    href={`mailto:${c.email}?subject=${encodeURIComponent('ChanteEnScène Aubagne 2026 — Présence sur place')}&body=${encodeURIComponent(`Bonjour ${c.first_name},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nJe me permets de te contacter car j'ai vu que tu es de ${c.city}. Je voulais m'assurer que tu as bien noté que la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nLa sélection se fait sur vidéo, donc pas besoin de te déplacer pour l'instant. Mais si tu es retenu(e), il faudra être là en personne.\n\nEst-ce que ça te convient ?\n\nÀ bientôt,\nJisse — ChanteEnScène`)}`}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30 transition-colors"
-                                    title="Envoyer un email d'information sur la présence obligatoire"
-                                  >
-                                    ✉️ Informer
-                                  </a>
-                                )}
-                                {dist.badge === 'orange' && (
-                                  <a
-                                    href={`mailto:${c.email}?subject=${encodeURIComponent('ChanteEnScène Aubagne 2026 — Info pratique')}&body=${encodeURIComponent(`Bonjour ${c.first_name},\n\nMerci pour ton inscription à ChanteEnScène Aubagne 2026 !\n\nPetit rappel pratique : la demi-finale (17 juin) et la finale (16 juillet 2026) se déroulent sur scène à Aubagne (13). La présence physique est obligatoire pour ces deux dates.\n\nN'hésite pas si tu as des questions !\n\nÀ bientôt,\nJisse — ChanteEnScène`)}`}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30 transition-colors"
-                                    title="Envoyer un rappel sur la localisation"
-                                  >
-                                    ✉️ Rappeler
-                                  </a>
-                                )}
+                                {(dist.badge === 'red' || dist.badge === 'orange') && (() => {
+                                  const status = getDistanceEmailStatus(c.email, distanceEvents)
+                                  const isRed = dist.badge === 'red'
+                                  const btnColor = isRed ? '#ef4444' : '#f59e0b'
+                                  const label = status === 'read' ? '✓ Lu' : status === 'sent' ? '✓ Envoyé' : isRed ? '✉️ Informer' : '✉️ Rappeler'
+                                  return (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        const { subject, body } = buildDistanceEmail(c.first_name, c.city!, dist.badge as 'red' | 'orange')
+                                        setEmailPreview({
+                                          candidateId: c.id,
+                                          email: c.email,
+                                          firstName: c.first_name,
+                                          city: c.city!,
+                                          badge: dist.badge as 'red' | 'orange',
+                                          subject,
+                                          body,
+                                        })
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
+                                      style={{
+                                        background: status === 'read' ? '#7ec85030' : status === 'sent' ? `${btnColor}30` : `${btnColor}20`,
+                                        color: status === 'read' ? '#7ec850' : btnColor,
+                                      }}
+                                      title={status === 'read' ? 'Email lu par le candidat' : status === 'sent' ? 'Email envoyé (pas encore lu)' : isRed ? 'Informer sur la présence obligatoire' : 'Rappeler la localisation'}
+                                    >
+                                      {label}
+                                    </button>
+                                  )
+                                })()}
                               </p>
                             )
                           })()}
@@ -682,6 +738,100 @@ export default function CandidatsTable({
                 className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium bg-[#f59e0b]/10 border border-[#f59e0b]/25 text-[#f59e0b] hover:bg-[#f59e0b]/20 disabled:opacity-40 transition-colors"
               >
                 {correctionLoading ? 'Envoi...' : 'Envoyer le lien'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email preview modal */}
+      {emailPreview && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={() => !emailSending && setEmailPreview(null)}>
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-5 border-b border-[#2a2545]">
+              <h3 className="font-bold text-white mb-1">Prévisualisation email</h3>
+              <p className="text-white/40 text-xs">
+                Envoi via <span className="text-[#e91e8c]">inscriptions@chantenscene.fr</span> (IONOS)
+              </p>
+            </div>
+
+            {/* Email meta */}
+            <div className="px-5 pt-4 space-y-2 text-sm">
+              <p><span className="text-white/30">À :</span> <span className="text-white">{emailPreview.email}</span></p>
+              <div>
+                <label className="text-white/30 block mb-1">Objet :</label>
+                <input
+                  type="text"
+                  value={emailPreview.subject}
+                  onChange={(e) => setEmailPreview({ ...emailPreview, subject: e.target.value })}
+                  className="w-full bg-[#0d0b1a] border border-[#2a2545] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#e91e8c]"
+                />
+              </div>
+            </div>
+
+            {/* Email body (editable) */}
+            <div className="px-5 pt-3 pb-2">
+              <label className="text-white/30 text-sm block mb-1">Message :</label>
+              <textarea
+                value={emailPreview.body}
+                onChange={(e) => setEmailPreview({ ...emailPreview, body: e.target.value })}
+                rows={10}
+                className="w-full bg-[#0d0b1a] border border-[#2a2545] rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-[#e91e8c] resize-y leading-relaxed"
+              />
+            </div>
+
+            {/* Preview render */}
+            <div className="px-5 pb-3">
+              <details className="group">
+                <summary className="text-[10px] text-white/25 cursor-pointer hover:text-white/40 transition-colors">
+                  Aperçu HTML
+                </summary>
+                <div className="mt-2 bg-[#0d0b1a] border border-[#2a2545] rounded-lg p-4 text-sm text-white/60 leading-relaxed">
+                  {emailPreview.body.split('\n').map((line, i) => (
+                    <p key={i} className={line.trim() ? '' : 'h-3'}>{line}</p>
+                  ))}
+                </div>
+              </details>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 p-5 border-t border-[#2a2545]">
+              <button
+                onClick={() => setEmailPreview(null)}
+                disabled={emailSending}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 disabled:opacity-40 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  setEmailSending(true)
+                  const result = await sendDistanceEmail(
+                    emailPreview.candidateId,
+                    emailPreview.badge,
+                    emailPreview.subject,
+                    emailPreview.body,
+                  )
+                  setEmailSending(false)
+                  if (result.error) {
+                    alert(`Erreur : ${result.error}`)
+                  } else {
+                    // Update local state
+                    setEmailSent(prev => ({ ...prev, [emailPreview.candidateId]: true }))
+                    setDistanceEvents(prev => [...prev, {
+                      campaign_id: result.trackingId || '',
+                      subscriber_email: emailPreview.email,
+                      event_type: 'send',
+                      created_at: new Date().toISOString(),
+                    }])
+                    setEmailPreview(null)
+                  }
+                }}
+                disabled={emailSending || !emailPreview.subject.trim() || !emailPreview.body.trim()}
+                className="flex-1 px-4 py-2.5 rounded-xl text-xs font-medium bg-[#e91e8c]/10 border border-[#e91e8c]/25 text-[#e91e8c] hover:bg-[#e91e8c]/20 disabled:opacity-40 transition-colors"
+              >
+                {emailSending ? 'Envoi en cours...' : '✉️ Envoyer'}
               </button>
             </div>
           </div>
