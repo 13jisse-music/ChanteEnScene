@@ -28,6 +28,12 @@ interface GeneratedPost {
   priority: number // Plus bas = plus prioritaire
 }
 
+/** Ajoute les paramètres UTM à une URL chantenscene.fr */
+function utmLink(url: string, campaign: string, content?: string): string {
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}utm_source=social&utm_medium=cron&utm_campaign=${campaign}${content ? `&utm_content=${content}` : ''}`
+}
+
 function daysUntil(dateStr: string): number {
   const target = new Date(dateStr)
   const now = new Date()
@@ -57,13 +63,14 @@ function generatePosts(
       const song = c.song_title ? ` — \u00AB ${c.song_title} \u00BB` : ''
       const artist = c.song_artist ? ` (${c.song_artist})` : ''
       const pronoun = count === 1 ? '' : ` pour ${name}`
-      return `🎙️ ${name}${song}${artist}\n🗳️ Votez${pronoun} → ${sessionUrl}/candidats/${c.slug}`
+      const voteUrl = utmLink(`${sessionUrl}/candidats/${c.slug}`, 'new_candidates', 'vote_link')
+      return `🎙️ ${name}${song}${artist}\n🗳️ Votez${pronoun} → ${voteUrl}`
     }).join('\n\n')
 
     // Footer message based on count
     let footerMsg = ''
     if (count <= 3) {
-      footerMsg = '💬 Il reste de la place, inscrivez-vous !\n👉 ' + sessionUrl + '/inscription'
+      footerMsg = '💬 Il reste de la place, inscrivez-vous !\n👉 ' + utmLink(sessionUrl + '/inscription', 'new_candidates', 'footer_inscription')
     } else if (count <= 5) {
       footerMsg = '🔥 La compétition s\'intensifie, qui sera le prochain ?'
     } else {
@@ -82,7 +89,7 @@ function generatePosts(
       type: count === 1 ? 'new_candidate_welcome' : count <= 5 ? 'new_candidates_welcome' : 'new_candidates_wave',
       priority: 1,
       message: `${title}\n\n${candidateLines}\n\n${footerMsg}\n\n#ChanteEnScène #ConcoursDeChant`,
-      link: count === 1 ? `${sessionUrl}/candidats/${displayCandidates[0].slug}` : `${sessionUrl}/candidats`,
+      link: count === 1 ? utmLink(`${sessionUrl}/candidats/${displayCandidates[0].slug}`, 'new_candidates') : utmLink(`${sessionUrl}/candidats`, 'new_candidates'),
       imageUrl,
     })
   }
@@ -99,8 +106,8 @@ function generatePosts(
     posts.push({
       type: 'candidate_portrait',
       priority: 1,
-      message: `🌟 Découvrez ${name}, candidat(e) à ${session.name} !${song}\n\nSoutenez ${name} en votant 🗳️\n👉 ${sessionUrl}/candidats/${spotlightCandidate.slug}\n\n#ChanteEnScène #ConcoursDeChant #VotezPourMoi`,
-      link: `${sessionUrl}/candidats/${spotlightCandidate.slug}`,
+      message: `🌟 Découvrez ${name}, candidat(e) à ${session.name} !${song}\n\nSoutenez ${name} en votant 🗳️\n👉 ${utmLink(`${sessionUrl}/candidats/${spotlightCandidate.slug}`, 'candidate_spotlight', 'vote_link')}\n\n#ChanteEnScène #ConcoursDeChant #VotezPourMoi`,
+      link: utmLink(`${sessionUrl}/candidats/${spotlightCandidate.slug}`, 'candidate_spotlight'),
       imageUrl,
     })
   }
@@ -112,8 +119,8 @@ function generatePosts(
       posts.push({
         type: 'countdown_registration_close',
         priority: 2,
-        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour s'inscrire à ${session.name} !\n\nNe manquez pas votre chance de monter sur scène ! 🎤\n\nInscription 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #DernièreChance`,
-        link: `${sessionUrl}/inscription`,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour s'inscrire à ${session.name} !\n\nNe manquez pas votre chance de monter sur scène ! 🎤\n\nInscription 👉 ${utmLink(`${sessionUrl}/inscription`, 'registration_countdown')}\n\n#ChanteEnScène #DernièreChance`,
+        link: utmLink(`${sessionUrl}/inscription`, 'registration_countdown'),
       })
     }
   }
@@ -125,8 +132,8 @@ function generatePosts(
       posts.push({
         type: 'countdown_semifinal',
         priority: 2,
-        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? 🎶\n\n${sessionUrl}/live\n\n#ChanteEnScène #DemiFinale`,
-        link: `${sessionUrl}/live`,
+        message: `🔥 Plus que ${days} jour${days > 1 ? 's' : ''} avant la demi-finale de ${session.name} !\n\nQui passera en finale ? 🎶\n\n${utmLink(`${sessionUrl}/live`, 'countdown_semifinal')}\n\n#ChanteEnScène #DemiFinale`,
+        link: utmLink(`${sessionUrl}/live`, 'countdown_semifinal'),
       })
     }
   }
@@ -138,8 +145,8 @@ function generatePosts(
       posts.push({
         type: 'countdown_final',
         priority: 2,
-        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? 🎤🔥\n\n${sessionUrl}/live\n\n#ChanteEnScène #Finale`,
-        link: `${sessionUrl}/live`,
+        message: `🏆 Plus que ${days} jour${days > 1 ? 's' : ''} avant la GRANDE FINALE de ${session.name} !\n\nQui sera le grand gagnant ? 🎤🔥\n\n${utmLink(`${sessionUrl}/live`, 'countdown_final')}\n\n#ChanteEnScène #Finale`,
+        link: utmLink(`${sessionUrl}/live`, 'countdown_final'),
       })
     }
   }
@@ -149,8 +156,8 @@ function generatePosts(
     posts.push({
       type: 'voting_reminder',
       priority: 3,
-      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #Votez`,
-      link: `${sessionUrl}/candidats`,
+      message: `🗳️ Avez-vous voté pour votre candidat préféré de ${session.name} ?\n\nChaque vote compte ! Soutenez vos favoris 👉 ${utmLink(`${sessionUrl}/candidats`, 'voting_reminder')}\n\n#ChanteEnScène #Votez`,
+      link: utmLink(`${sessionUrl}/candidats`, 'voting_reminder'),
     })
   }
 
@@ -161,8 +168,8 @@ function generatePosts(
       posts.push({
         type: 'countdown_voting_close',
         priority: 2,
-        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour voter à ${session.name} !\n\nFaites entendre votre voix 👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #DernierJourDeVote`,
-        link: `${sessionUrl}/candidats`,
+        message: `⏳ Plus que ${days} jour${days > 1 ? 's' : ''} pour voter à ${session.name} !\n\nFaites entendre votre voix 👉 ${utmLink(`${sessionUrl}/candidats`, 'voting_countdown')}\n\n#ChanteEnScène #DernierJourDeVote`,
+        link: utmLink(`${sessionUrl}/candidats`, 'voting_countdown'),
       })
     }
   }
@@ -172,8 +179,8 @@ function generatePosts(
     posts.push({
       type: 'referral_promo',
       priority: 4,
-      message: `🤝 Tu es candidat(e) à ${session.name} ? Parraine tes proches !\n\nVa sur "Mon profil" pour copier ton lien de parrainage unique et envoie-le à ceux qui aiment chanter ! Chaque filleul inscrit booste ta visibilité ⭐\n\n👉 ${sessionUrl}/comment-ca-marche\n\n#ChanteEnScène #Parrainage #ConcoursDeChant`,
-      link: `${siteUrl}/comment-ca-marche`,
+      message: `🤝 Tu es candidat(e) à ${session.name} ? Parraine tes proches !\n\nVa sur "Mon profil" pour copier ton lien de parrainage unique et envoie-le à ceux qui aiment chanter ! Chaque filleul inscrit booste ta visibilité ⭐\n\n👉 ${utmLink(`${sessionUrl}/comment-ca-marche`, 'referral_promo')}\n\n#ChanteEnScène #Parrainage #ConcoursDeChant`,
+      link: utmLink(`${siteUrl}/comment-ca-marche`, 'referral_promo'),
     })
   }
 
@@ -183,15 +190,15 @@ function generatePosts(
       posts.push({
         type: 'weekly_promo',
         priority: 4,
-        message: `🎵 Les inscriptions pour ${session.name} sont ouvertes !\n\nVous avez du talent ? Tentez votre chance et montez sur scène ! 🎤✨\n\nInscrivez-vous 👉 ${sessionUrl}/inscription\n\n#ChanteEnScène #ConcoursDeChant #LaSceneEstAToi`,
-        link: `${sessionUrl}/inscription`,
+        message: `🎵 Les inscriptions pour ${session.name} sont ouvertes !\n\nVous avez du talent ? Tentez votre chance et montez sur scène ! 🎤✨\n\nInscrivez-vous 👉 ${utmLink(`${sessionUrl}/inscription`, 'weekly_promo', 'inscription')}\n\n#ChanteEnScène #ConcoursDeChant #LaSceneEstAToi`,
+        link: utmLink(`${sessionUrl}/inscription`, 'weekly_promo', 'inscription'),
       })
     } else if (['registration_closed', 'semifinal', 'final'].includes(session.status)) {
       posts.push({
         type: 'weekly_promo',
         priority: 4,
-        message: `🎵 ${session.name} bat son plein ! ${totalCandidates} candidats en lice !\n\nSuivez la compétition et votez pour vos favoris 🗳️🎤\n\n👉 ${sessionUrl}/candidats\n\n#ChanteEnScène #ConcoursDeChant #VoteEnDirect`,
-        link: `${sessionUrl}/candidats`,
+        message: `🎵 ${session.name} bat son plein ! ${totalCandidates} candidats en lice !\n\nSuivez la compétition et votez pour vos favoris 🗳️🎤\n\n👉 ${utmLink(`${sessionUrl}/candidats`, 'weekly_promo', 'candidats')}\n\n#ChanteEnScène #ConcoursDeChant #VoteEnDirect`,
+        link: utmLink(`${sessionUrl}/candidats`, 'weekly_promo', 'candidats'),
       })
     }
   }

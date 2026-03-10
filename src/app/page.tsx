@@ -203,8 +203,53 @@ export default async function HomePage() {
     },
   ];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": "ChanteEnScène Aubagne 2026",
+    "description": "Concours de chant live avec musiciens, votes du public et jury professionnel. Ouvert à tous, toute la France.",
+    "startDate": "2026-06-15",
+    "endDate": "2026-07-16",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "location": {
+      "@type": "Place",
+      "name": "Espace Liberté",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Aubagne",
+        "addressRegion": "Bouches-du-Rhône",
+        "addressCountry": "FR"
+      }
+    },
+    "image": "https://www.chantenscene.fr/images/affiche-chantenscene-2026.png",
+    "url": "https://www.chantenscene.fr",
+    "organizer": {
+      "@type": "Person",
+      "name": "Jean Christophe Martinez",
+      "url": "https://www.chantenscene.fr"
+    },
+    "performer": {
+      "@type": "PerformingGroup",
+      "name": "Candidats ChanteEnScène 2026"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock",
+      "url": "https://www.chantenscene.fr/aubagne-2026/inscription",
+      "name": "Inscription gratuite"
+    },
+    "inLanguage": "fr"
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {session && <PageTracker sessionId={session.id} pagePath="/" />}
       <FloatingNotes />
 
