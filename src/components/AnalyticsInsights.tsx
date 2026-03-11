@@ -22,6 +22,112 @@ interface StaticInsight {
   color: string
 }
 
+const SECTION_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
+  'résumé': { icon: '📋', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)' },
+  'corrélations': { icon: '🔗', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
+  'tendances': { icon: '📈', color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+  'points d\'attention': { icon: '⚠️', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
+  'recommandations': { icon: '🎯', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+  'projection': { icon: '🔮', color: '#ec4899', bg: 'rgba(236,72,153,0.08)' },
+}
+
+function matchSection(title: string): { icon: string; color: string; bg: string } {
+  const lower = title.toLowerCase()
+  for (const [key, config] of Object.entries(SECTION_CONFIG)) {
+    if (lower.includes(key)) return config
+  }
+  return { icon: '💡', color: '#6366f1', bg: 'rgba(99,102,241,0.08)' }
+}
+
+function parseAiSections(text: string): { title: string; content: string }[] {
+  const sections: { title: string; content: string }[] = []
+  // Split by numbered sections (1. **Title** or ## Title)
+  const lines = text.split('\n')
+  let currentTitle = ''
+  let currentContent: string[] = []
+
+  for (const line of lines) {
+    // Match "1. **Résumé**" or "## Résumé" or "**Résumé**"
+    const match = line.match(/^(?:\d+\.\s*)?(?:\*\*|##\s*)(.*?)(?:\*\*|)\s*:?\s*$/) ||
+                  line.match(/^(?:\d+\.\s*)\*\*(.*?)\*\*\s*:?\s*(.*)$/)
+    if (match) {
+      if (currentTitle) {
+        sections.push({ title: currentTitle, content: currentContent.join('\n').trim() })
+      }
+      currentTitle = match[1].replace(/\*\*/g, '').trim()
+      // If there's content after the title on the same line
+      const afterTitle = match[2]?.trim()
+      currentContent = afterTitle ? [afterTitle] : []
+    } else if (currentTitle) {
+      currentContent.push(line)
+    } else {
+      // Content before first section
+      if (line.trim()) {
+        if (!currentTitle) currentTitle = 'Résumé'
+        currentContent.push(line)
+      }
+    }
+  }
+  if (currentTitle) {
+    sections.push({ title: currentTitle, content: currentContent.join('\n').trim() })
+  }
+
+  return sections
+}
+
+function formatContent(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+    .replace(/^\* (.*$)/gm, '<li>$1</li>')
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul class="space-y-1.5 my-2">${match}</ul>`)
+    .replace(/\n\n/g, '</p><p class="mt-2">')
+    .replace(/\n/g, '<br/>')
+}
+
+function AiAnalysisCards({ text }: { text: string }) {
+  const sections = parseAiSections(text)
+
+  if (sections.length <= 1) {
+    // Fallback: if parsing failed, show as single formatted block
+    return (
+      <div className="p-4">
+        <div
+          className="text-sm text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5"
+          dangerouslySetInnerHTML={{ __html: formatContent(text) }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 grid gap-3 sm:grid-cols-2">
+      {sections.map((section, i) => {
+        const config = matchSection(section.title)
+        const isRecommandations = section.title.toLowerCase().includes('recommandation')
+        return (
+          <div
+            key={i}
+            className={`rounded-xl border border-[#2a2545] p-4 ${isRecommandations ? 'sm:col-span-2' : ''}`}
+            style={{ backgroundColor: config.bg }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{config.icon}</span>
+              <h3 className="text-sm font-bold" style={{ color: config.color }}>
+                {section.title}
+              </h3>
+            </div>
+            <div
+              className="text-xs text-white/60 leading-relaxed [&_strong]:text-white/90 [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:py-0.5"
+              dangerouslySetInnerHTML={{ __html: formatContent(section.content) }}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function computeStaticInsights(days: DayBucket[]): StaticInsight[] {
   if (!days.length) return []
   const insights: StaticInsight[] = []
@@ -228,23 +334,7 @@ export default function AnalyticsInsights({ days, sessionName }: { days: DayBuck
         )}
 
         {aiAnalysis && !loading && (
-          <div className="p-4">
-            <div
-              className="prose prose-invert prose-sm max-w-none text-white/70 [&_strong]:text-white [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h2]:text-[#f59e0b] [&_h3]:text-[#f59e0b] [&_li]:marker:text-[#f59e0b] [&_ul]:space-y-1"
-              dangerouslySetInnerHTML={{
-                __html: aiAnalysis
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-                  .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-                  .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-                  .replace(/^- (.*$)/gm, '<li>$1</li>')
-                  .replace(/^(\d+)\. (.*$)/gm, '<li>$1. $2</li>')
-                  .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
-                  .replace(/\n\n/g, '<br/><br/>')
-                  .replace(/\n/g, '<br/>'),
-              }}
-            />
-          </div>
+          <AiAnalysisCards text={aiAnalysis} />
         )}
 
         {!aiAnalysis && !loading && !error && (
