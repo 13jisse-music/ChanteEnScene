@@ -40,12 +40,12 @@ async function getStats() {
     { count: totalPwaInstalls },
     { count: totalPushSubscriptions },
     { count: emailSubscribers },
-    { data: visitorsData },
+    , // visitorsData: paginated below
     { data: installsData },
     { data: pushData },
     { data: donationsData },
     { count: totalPageViews },
-    { data: dailyViewsRaw },
+    , // dailyViewsRaw: paginated below
     { data: onlineJurors },
     { count: totalJurors },
   ] = await Promise.all([
