@@ -330,21 +330,31 @@ export async function GET(request: Request) {
     const postToPublish = posts[0]
     if (postToPublish) {
       try {
-        // Si l'image est une URL social-card dynamique, la convertir en image statique
-        // Instagram exige une URL d'image statique (pas un endpoint dynamique)
+        // Utiliser l'URL dynamique directement pour Facebook (qui accepte les redirections)
+        // Pour Instagram, on upload une copie statique dans Storage
         let finalImageUrl = postToPublish.imageUrl
         if (finalImageUrl?.includes('/api/social-card') || finalImageUrl?.includes('/api/candidate-portrait')) {
           try {
-            const imgRes = await fetch(finalImageUrl)
-            if (imgRes.ok) {
-              const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
-              const filename = `social/cron-${Date.now()}.png`
-              const { error: uploadErr } = await supabase.storage
-                .from('photos')
-                .upload(filename, imgBuffer, { contentType: 'image/png', upsert: true })
-              if (!uploadErr) {
-                const { data: publicUrl } = supabase.storage.from('photos').getPublicUrl(filename)
-                finalImageUrl = publicUrl.publicUrl
+            // Vérifier si une image statique existe déjà pour ces paramètres
+            const urlHash = Buffer.from(finalImageUrl).toString('base64url').slice(0, 32)
+            const filename = `social/cron-${urlHash}.png`
+            const { data: existing } = supabase.storage.from('photos').getPublicUrl(filename)
+            // Vérifier si le fichier existe
+            const { data: fileCheck } = await supabase.storage.from('photos').list('social', { search: `cron-${urlHash}.png` })
+            if (fileCheck && fileCheck.length > 0) {
+              // Image déjà générée, réutiliser l'URL statique
+              finalImageUrl = existing.publicUrl
+            } else {
+              // Générer et uploader une seule fois
+              const imgRes = await fetch(finalImageUrl)
+              if (imgRes.ok) {
+                const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
+                const { error: uploadErr } = await supabase.storage
+                  .from('photos')
+                  .upload(filename, imgBuffer, { contentType: 'image/png', upsert: true })
+                if (!uploadErr) {
+                  finalImageUrl = existing.publicUrl
+                }
               }
             }
           } catch {

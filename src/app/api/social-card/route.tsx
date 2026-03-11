@@ -5,7 +5,8 @@ import sharp from 'sharp'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-export const dynamic = 'force-dynamic'
+// Cache pendant 7 jours — les mêmes paramètres = la même image
+export const revalidate = 604800
 
 // Load background image as base64 (cached at module level)
 let bgDataUri = ''
@@ -244,7 +245,7 @@ export async function GET(request: Request) {
     )
   }
 
-  return new ImageResponse(
+  const imageResponse = new ImageResponse(
     (
       <div
         style={{
@@ -281,4 +282,14 @@ export async function GET(request: Request) {
       height: 1080,
     }
   )
+
+  // Ajouter des headers de cache pour réduire la bande passante CDN
+  const response = new Response(imageResponse.body, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400',
+      'CDN-Cache-Control': 'public, max-age=604800',
+    },
+  })
+  return response
 }

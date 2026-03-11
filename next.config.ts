@@ -26,6 +26,20 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
         ],
       },
+      {
+        source: "/api/social-card",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400" },
+          { key: "CDN-Cache-Control", value: "public, max-age=604800" },
+        ],
+      },
+      {
+        source: "/api/candidate-portrait",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400" },
+          { key: "CDN-Cache-Control", value: "public, max-age=604800" },
+        ],
+      },
     ];
   },
 };
