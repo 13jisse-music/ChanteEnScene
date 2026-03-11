@@ -11,9 +11,6 @@ export async function POST(request: Request) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Clé Gemini non configurée' }, { status: 500 })
-  }
 
   // Build a compact summary for the AI (avoid sending huge payloads)
   const totalViews = days.reduce((s: number, d: { pageViews: number }) => s + d.pageViews, 0)
@@ -133,8 +130,36 @@ Sois direct et concret, pas de blabla marketing générique.`
     }
   }
 
+  // 3. Fallback: OpenAI GPT-4o-mini (~0.01$)
+  if (!text && process.env.OPENAI_API_KEY) {
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        text = data?.choices?.[0]?.message?.content || null
+        if (text) provider = 'OpenAI GPT-4o-mini'
+      } else {
+        console.warn('OpenAI error:', res.status, await res.text())
+      }
+    } catch (err) {
+      console.warn('OpenAI failed:', err)
+    }
+  }
+
   if (!text) {
-    return NextResponse.json({ error: 'Aucune IA disponible (Gemini et Groq en erreur)' }, { status: 502 })
+    return NextResponse.json({ error: 'Aucune IA disponible (Gemini, Groq et OpenAI en erreur)' }, { status: 502 })
   }
 
   return NextResponse.json({ analysis: text, provider })
