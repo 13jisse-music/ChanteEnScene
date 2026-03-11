@@ -76,27 +76,31 @@ async function getStats() {
 
   const config = (activeSession.config || {}) as Record<string, unknown>
 
-  // Paginate page_views queries (Supabase server max = 1000 rows)
-  async function paginateQuery(query: () => ReturnType<ReturnType<typeof supabase.from>['select']>) {
-    const all: Record<string, unknown>[] = []
+  // Paginate page_views: visitors (Supabase server max = 1000 rows)
+  const visitorsData: { fingerprint: string; user_agent: string | null }[] = []
+  {
     let from = 0
     while (true) {
-      const { data } = await query().range(from, from + 999)
+      const { data } = await supabase.from('page_views').select('fingerprint, user_agent').eq('session_id', sid).not('fingerprint', 'is', null).range(from, from + 999)
       if (!data || data.length === 0) break
-      all.push(...(data as Record<string, unknown>[]))
+      visitorsData.push(...data)
       if (data.length < 1000) break
       from += 1000
     }
-    return all
   }
 
-  const visitorsData = await paginateQuery(() =>
-    supabase.from('page_views').select('fingerprint, user_agent').eq('session_id', sid).not('fingerprint', 'is', null)
-  ) as { fingerprint: string; user_agent: string | null }[]
-
-  const dailyViewsRaw = await paginateQuery(() =>
-    supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo)
-  ) as { fingerprint: string; created_at: string }[]
+  // Paginate page_views: last 7 days
+  const dailyViewsRaw: { fingerprint: string; created_at: string }[] = []
+  {
+    let from = 0
+    while (true) {
+      const { data } = await supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo).range(from, from + 999)
+      if (!data || data.length === 0) break
+      dailyViewsRaw.push(...data)
+      if (data.length < 1000) break
+      from += 1000
+    }
+  }
 
   // Unique visitors with device classification
   const visitorsByDevice = { android: 0, ios: 0, desktop: 0 }
