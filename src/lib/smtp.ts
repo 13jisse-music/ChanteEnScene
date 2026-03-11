@@ -1,4 +1,5 @@
 import * as nodemailer from 'nodemailer'
+import type SMTPTransport from 'nodemailer/lib/smtp-transport'
 import { resolve } from 'dns'
 import { promisify } from 'util'
 import { getResend } from './resend'
@@ -9,7 +10,7 @@ const SMTP_FROM = process.env.SMTP_FROM || 'ChanteEnScène <inscriptions@chanten
 
 /** Create a fresh transporter per invocation (avoids stale connections in serverless) */
 function createTransporter() {
-  return nodemailer.createTransport({
+  const opts: SMTPTransport.Options = {
     host: process.env.SMTP_HOST || 'smtp.ionos.fr',
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false,
@@ -21,7 +22,8 @@ function createTransporter() {
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
-  } as nodemailer.TransportOptions)
+  }
+  return nodemailer.createTransport(opts)
 }
 
 /** Pre-resolve DNS to avoid EBUSY in serverless (Vercel) */
