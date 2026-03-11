@@ -44,33 +44,55 @@ export async function POST(request: Request) {
     return { ...ev, avgBefore: Math.round(before), avgAfter: Math.round(after) }
   })
 
-  const prompt = `Tu es un expert en marketing digital et analytics pour un concours de chant amateur en France (ChanteEnScène, chantenscene.fr). Analyse ces données de trafic et donne des recommandations concrètes.
+  // Format dates in French for the prompt
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso)
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  }
 
-DONNÉES :
+  const prompt = `Tu es un expert en marketing digital pour un concours de chant amateur en France (ChanteEnScène, chantenscene.fr).
+
+CONTEXTE IMPORTANT — Ce qui est DÉJÀ automatisé :
+- Publication automatique Facebook + Instagram tous les mercredis (cron job, social card avec photo candidat)
+- Newsletter envoyée manuellement via l'admin (Resend, 86 abonnés)
+- Le site est référencé sur Google mais pas encore de campagne SEO/SEA active
+- Pas encore de Google Analytics (tracking interne uniquement via fingerprint)
+- L'organisateur est seul (auto-entrepreneur), pas une grosse équipe marketing
+
+DONNÉES DE TRAFIC :
 - Session : ${sessionName}
-- Période : ${days[0].date} → ${days[days.length - 1].date} (${days.length} jours)
-- Pages vues totales : ${totalViews}
-- Visiteurs uniques totaux : ${totalVisitors}
-- Jours avec trafic : ${activeDays.length}/${days.length}
-- Pic : ${peakDay.pageViews} pages vues le ${peakDay.date}
+- Du ${fmtDate(days[0].date)} au ${fmtDate(days[days.length - 1].date)} (${days.length} jours)
+- **${totalViews.toLocaleString('fr-FR')}** pages vues totales
+- **${totalVisitors.toLocaleString('fr-FR')}** visiteurs uniques
+- ${activeDays.length} jours actifs sur ${days.length}
+- Pic : **${peakDay.pageViews}** pages vues le ${fmtDate(peakDay.date)}
 
-ÉVOLUTION HEBDOMADAIRE :
-${weeks.map(w => `${w.week} : ${w.views} vues, ${w.visitors} visiteurs`).join('\n')}
+ÉVOLUTION PAR SEMAINE :
+${weeks.map(w => `Semaine du ${fmtDate(w.week)} : ${w.views} vues, ${w.visitors} visiteurs`).join('\n')}
 
-ACTIONS ET IMPACT SUR LE TRAFIC :
+ACTIONS ET LEUR IMPACT :
 ${eventImpact.map((e: { date: string; type: string; label: string; avgBefore: number; avgAfter: number }) =>
-  `${e.date} [${e.type}] "${e.label}" — moy. avant: ${e.avgBefore}/j, moy. après: ${e.avgAfter}/j`
+  `Le ${fmtDate(e.date)} — ${e.type === 'newsletter' ? 'Newsletter' : e.type === 'facebook' ? 'Post Facebook' : e.type === 'instagram' ? 'Post Instagram' : e.type === 'inscription' ? 'Inscription' : 'Post social'} : "${e.label}" → trafic moyen avant : ${e.avgBefore}/j, après : ${e.avgAfter}/j`
 ).join('\n')}
 
-Réponds en français avec cette structure :
-1. **Résumé** (3-4 lignes)
-2. **Corrélations actions/trafic** — quelles actions ont généré le plus de trafic ?
-3. **Tendances** — le trafic monte, descend, stagne ?
-4. **Points d'attention** — jours sans activité, baisses inexpliquées
-5. **Recommandations concrètes** (5-7 actions prioritaires avec timing)
-6. **Projection** — si on applique les recommandations, quel trafic attendre ?
+RÈGLES DE FORMATAGE (OBLIGATOIRE) :
+- Utilise TOUJOURS des dates en français lisibles (ex: "le mardi 3 mars", "il y a 8 jours", "la semaine dernière")
+- JAMAIS de format ISO (2026-03-03)
+- Mets les chiffres importants en **gras**
+- Utilise des tirets - pour les listes (pas d'astérisques *)
+- Chaque point de liste = une idée, une ligne
+- Saute une ligne entre chaque paragraphe
+- Sois concis : 2-3 phrases max par section (sauf recommandations)
 
-Sois direct et concret, pas de blabla marketing générique.`
+STRUCTURE :
+1. **Résumé**
+2. **Corrélations actions/trafic**
+3. **Tendances**
+4. **Points d'attention**
+5. **Recommandations concrètes** — 5-7 actions NOUVELLES (ne pas répéter ce qui est déjà automatisé). Précise le timing (cette semaine, dans 15 jours, etc.)
+6. **Projection**
+
+Sois direct, concret, adapté à un organisateur solo. Pas de blabla marketing générique.`
 
   // Cascade: Gemini (free) → Groq (free)
   let text: string | null = null

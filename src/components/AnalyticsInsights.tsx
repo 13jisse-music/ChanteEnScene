@@ -77,11 +77,19 @@ function parseAiSections(text: string): { title: string; content: string }[] {
 
 function formatContent(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-    .replace(/^\* (.*$)/gm, '<li>$1</li>')
-    .replace(/^- (.*$)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul class="space-y-1.5 my-2">${match}</ul>`)
-    .replace(/\n\n/g, '</p><p class="mt-2">')
+    // Bold → white highlighted text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    // Numbers that look like stats → highlight
+    .replace(/(\d[\d\s,.]*)\s*(pages?\s*vues?|visiteurs?\s*uniques?|visiteurs?|vues?|inscriptions?|%)/gi,
+      '<strong class="text-white font-semibold">$1</strong> $2')
+    // List items (- or * or numbered)
+    .replace(/^\* (.*$)/gm, '<li class="py-1">$1</li>')
+    .replace(/^- (.*$)/gm, '<li class="py-1">$1</li>')
+    .replace(/^(\d+)\.\s+(.*$)/gm, '<li class="py-1">$2</li>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/(<li[^>]*>.*<\/li>\n?)+/g, (match) => `<ul class="space-y-1 my-3 ml-1">${match}</ul>`)
+    // Paragraphs
+    .replace(/\n\n/g, '</p><p class="mt-3">')
     .replace(/\n/g, '<br/>')
 }
 
@@ -89,11 +97,10 @@ function AiAnalysisCards({ text }: { text: string }) {
   const sections = parseAiSections(text)
 
   if (sections.length <= 1) {
-    // Fallback: if parsing failed, show as single formatted block
     return (
-      <div className="p-4">
+      <div className="p-6">
         <div
-          className="text-base text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5"
+          className="text-[15px] text-white/70 leading-7 [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6"
           dangerouslySetInnerHTML={{ __html: formatContent(text) }}
         />
       </div>
@@ -101,24 +108,25 @@ function AiAnalysisCards({ text }: { text: string }) {
   }
 
   return (
-    <div className="p-4 grid gap-4 sm:grid-cols-2">
+    <div className="p-5 grid gap-5 sm:grid-cols-2">
       {sections.map((section, i) => {
         const config = matchSection(section.title)
-        const isRecommandations = section.title.toLowerCase().includes('recommandation')
+        const isWide = section.title.toLowerCase().includes('recommandation') ||
+                       section.title.toLowerCase().includes('projection')
         return (
           <div
             key={i}
-            className={`rounded-xl border border-[#2a2545] p-5 ${isRecommandations ? 'sm:col-span-2' : ''}`}
+            className={`rounded-xl border border-[#2a2545] p-6 ${isWide ? 'sm:col-span-2' : ''}`}
             style={{ backgroundColor: config.bg }}
           >
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="text-xl">{config.icon}</span>
-              <h3 className="text-base font-bold" style={{ color: config.color }}>
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/5">
+              <span className="text-2xl">{config.icon}</span>
+              <h3 className="text-lg font-bold" style={{ color: config.color }}>
                 {section.title}
               </h3>
             </div>
             <div
-              className="text-sm text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:py-0.5"
+              className="text-[15px] text-white/70 leading-7 [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:py-1"
               dangerouslySetInnerHTML={{ __html: formatContent(section.content) }}
             />
           </div>
