@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import AnalyticsChart from '@/components/AnalyticsChart'
+import AnalyticsInsights from '@/components/AnalyticsInsights'
 
 interface DayBucket {
   date: string
@@ -195,6 +196,9 @@ export default async function AnalyticsPage() {
 
       {/* Chart */}
       <AnalyticsChart days={JSON.parse(JSON.stringify(days))} />
+
+      {/* Insights + AI analysis */}
+      <AnalyticsInsights days={JSON.parse(JSON.stringify(days))} sessionName={session?.name || ''} />
     </div>
   )
 }

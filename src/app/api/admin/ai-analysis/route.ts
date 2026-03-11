@@ -1,0 +1,113 @@
+export const dynamic = 'force-dynamic'
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NextResponse } from 'next/server'
+
+export async function POST(request: Request) {
+  // Verify admin auth
+  const supabase = createAdminClient()
+
+  const body = await request.json()
+  const { days, sessionName } = body
+
+  if (!days?.length) {
+    return NextResponse.json({ error: 'Pas de données' }, { status: 400 })
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Clé Gemini non configurée' }, { status: 500 })
+  }
+
+  // Build a compact summary for the AI (avoid sending huge payloads)
+  const totalViews = days.reduce((s: number, d: { pageViews: number }) => s + d.pageViews, 0)
+  const totalVisitors = days.reduce((s: number, d: { uniqueVisitors: number }) => s + d.uniqueVisitors, 0)
+  const activeDays = days.filter((d: { pageViews: number }) => d.pageViews > 0)
+  const peakDay = days.reduce((max: { pageViews: number; date: string }, d: { pageViews: number; date: string }) =>
+    d.pageViews > max.pageViews ? d : max, days[0])
+
+  // Collect events
+  const events = days.flatMap((d: { date: string; events: { type: string; label: string; count?: number }[] }) =>
+    d.events.map((ev: { type: string; label: string; count?: number }) => ({ date: d.date, ...ev }))
+  )
+
+  // Weekly averages
+  const weeks: { week: string; views: number; visitors: number }[] = []
+  for (let i = 0; i < days.length; i += 7) {
+    const slice = days.slice(i, i + 7)
+    const weekStart = slice[0].date
+    weeks.push({
+      week: weekStart,
+      views: slice.reduce((s: number, d: { pageViews: number }) => s + d.pageViews, 0),
+      visitors: slice.reduce((s: number, d: { uniqueVisitors: number }) => s + d.uniqueVisitors, 0),
+    })
+  }
+
+  // Days around events (before/after traffic)
+  const eventImpact = events.map((ev: { date: string; type: string; label: string }) => {
+    const idx = days.findIndex((d: { date: string }) => d.date === ev.date)
+    const before = idx > 0 ? days.slice(Math.max(0, idx - 2), idx).reduce((s: number, d: { pageViews: number }) => s + d.pageViews, 0) / Math.min(idx, 2) : 0
+    const after = idx < days.length - 1 ? days.slice(idx, Math.min(days.length, idx + 3)).reduce((s: number, d: { pageViews: number }) => s + d.pageViews, 0) / Math.min(3, days.length - idx) : 0
+    return { ...ev, avgBefore: Math.round(before), avgAfter: Math.round(after) }
+  })
+
+  const prompt = `Tu es un expert en marketing digital et analytics pour un concours de chant amateur en France (ChanteEnScène, chantenscene.fr). Analyse ces données de trafic et donne des recommandations concrètes.
+
+DONNÉES :
+- Session : ${sessionName}
+- Période : ${days[0].date} → ${days[days.length - 1].date} (${days.length} jours)
+- Pages vues totales : ${totalViews}
+- Visiteurs uniques totaux : ${totalVisitors}
+- Jours avec trafic : ${activeDays.length}/${days.length}
+- Pic : ${peakDay.pageViews} pages vues le ${peakDay.date}
+
+ÉVOLUTION HEBDOMADAIRE :
+${weeks.map(w => `${w.week} : ${w.views} vues, ${w.visitors} visiteurs`).join('\n')}
+
+ACTIONS ET IMPACT SUR LE TRAFIC :
+${eventImpact.map((e: { date: string; type: string; label: string; avgBefore: number; avgAfter: number }) =>
+  `${e.date} [${e.type}] "${e.label}" — moy. avant: ${e.avgBefore}/j, moy. après: ${e.avgAfter}/j`
+).join('\n')}
+
+Réponds en français avec cette structure :
+1. **Résumé** (3-4 lignes)
+2. **Corrélations actions/trafic** — quelles actions ont généré le plus de trafic ?
+3. **Tendances** — le trafic monte, descend, stagne ?
+4. **Points d'attention** — jours sans activité, baisses inexpliquées
+5. **Recommandations concrètes** (5-7 actions prioritaires avec timing)
+6. **Projection** — si on applique les recommandations, quel trafic attendre ?
+
+Sois direct et concret, pas de blabla marketing générique.`
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('Gemini error:', errText)
+      return NextResponse.json({ error: `Gemini API error: ${res.status}` }, { status: 502 })
+    }
+
+    const data = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!text) {
+      return NextResponse.json({ error: 'Réponse vide de Gemini' }, { status: 502 })
+    }
+
+    return NextResponse.json({ analysis: text })
+  } catch (err) {
+    console.error('AI analysis error:', err)
+    return NextResponse.json({ error: 'Erreur lors de l\'analyse IA' }, { status: 500 })
+  }
+}
