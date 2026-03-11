@@ -29,12 +29,22 @@ async function getAnalyticsData() {
   if (!sessions?.length) return { session: null, days: [] }
   const session = sessions[0]
 
-  // Fetch ALL page views for this session
-  const { data: pageViews } = await supabase
-    .from('page_views')
-    .select('fingerprint, created_at')
-    .eq('session_id', session.id)
-    .order('created_at', { ascending: true })
+  // Fetch ALL page views for this session (paginate — Supabase returns max 1000 per request)
+  const pageViews: { fingerprint: string; created_at: string }[] = []
+  let from = 0
+  const PAGE_SIZE = 1000
+  while (true) {
+    const { data: batch } = await supabase
+      .from('page_views')
+      .select('fingerprint, created_at')
+      .eq('session_id', session.id)
+      .order('created_at', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (!batch || batch.length === 0) break
+    pageViews.push(...batch)
+    if (batch.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
 
   // Fetch newsletter campaigns (sent only)
   const { data: newsletters } = await supabase
@@ -151,8 +161,6 @@ export default async function AnalyticsPage() {
   // Compute totals
   const totalViews = days.reduce((s, d) => s + d.pageViews, 0)
   const totalEvents = days.reduce((s, d) => s + d.events.length, 0)
-  const allFingerprints = new Set<string>()
-  // Approximate total unique from daily (not exact but close enough for display)
   const peakDay = days.reduce((max, d) => (d.pageViews > max.pageViews ? d : max), days[0] || { date: '', pageViews: 0, uniqueVisitors: 0, events: [] })
 
   return (
