@@ -93,7 +93,7 @@ function AiAnalysisCards({ text }: { text: string }) {
     return (
       <div className="p-4">
         <div
-          className="text-sm text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5"
+          className="text-base text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5"
           dangerouslySetInnerHTML={{ __html: formatContent(text) }}
         />
       </div>
@@ -101,24 +101,24 @@ function AiAnalysisCards({ text }: { text: string }) {
   }
 
   return (
-    <div className="p-4 grid gap-3 sm:grid-cols-2">
+    <div className="p-4 grid gap-4 sm:grid-cols-2">
       {sections.map((section, i) => {
         const config = matchSection(section.title)
         const isRecommandations = section.title.toLowerCase().includes('recommandation')
         return (
           <div
             key={i}
-            className={`rounded-xl border border-[#2a2545] p-4 ${isRecommandations ? 'sm:col-span-2' : ''}`}
+            className={`rounded-xl border border-[#2a2545] p-5 ${isRecommandations ? 'sm:col-span-2' : ''}`}
             style={{ backgroundColor: config.bg }}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">{config.icon}</span>
-              <h3 className="text-sm font-bold" style={{ color: config.color }}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <span className="text-xl">{config.icon}</span>
+              <h3 className="text-base font-bold" style={{ color: config.color }}>
                 {section.title}
               </h3>
             </div>
             <div
-              className="text-xs text-white/60 leading-relaxed [&_strong]:text-white/90 [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:py-0.5"
+              className="text-sm text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-1 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:py-0.5"
               dangerouslySetInnerHTML={{ __html: formatContent(section.content) }}
             />
           </div>
@@ -293,12 +293,12 @@ export default function AnalyticsInsights({ days, sessionName }: { days: DayBuck
           {insights.map((ins, i) => (
             <div
               key={i}
-              className="flex gap-3 p-3 rounded-xl border border-[#2a2545] bg-[#0d0b1a]/50"
+              className="flex gap-3 p-4 rounded-xl border border-[#2a2545] bg-[#0d0b1a]/50"
             >
-              <span className="text-xl shrink-0">{ins.icon}</span>
+              <span className="text-2xl shrink-0">{ins.icon}</span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold" style={{ color: ins.color }}>{ins.title}</p>
-                <p className="text-xs text-white/60 mt-0.5 leading-relaxed">{ins.text}</p>
+                <p className="text-sm font-semibold" style={{ color: ins.color }}>{ins.title}</p>
+                <p className="text-sm text-white/60 mt-1 leading-relaxed">{ins.text}</p>
               </div>
             </div>
           ))}
