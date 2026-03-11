@@ -85,7 +85,7 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-export default function AnalyticsChart({ days }: { days: DayBucket[] }) {
+export default function AnalyticsChart({ days, children }: { days: DayBucket[]; children?: React.ReactNode }) {
   const [period, setPeriod] = useState<string>('all')
   const [showEvents, setShowEvents] = useState(true)
 
@@ -242,6 +242,9 @@ export default function AnalyticsChart({ days }: { days: DayBucket[] }) {
           ))}
         </div>
       )}
+
+      {/* Insights slot (between chart and timeline) */}
+      {children}
 
       {/* Events timeline */}
       {showEvents && allEvents.length > 0 && (

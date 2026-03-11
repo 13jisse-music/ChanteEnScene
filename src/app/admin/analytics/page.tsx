@@ -194,11 +194,10 @@ export default async function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Chart */}
-      <AnalyticsChart days={JSON.parse(JSON.stringify(days))} />
-
-      {/* Insights + AI analysis */}
-      <AnalyticsInsights days={JSON.parse(JSON.stringify(days))} sessionName={session?.name || ''} />
+      {/* Chart + Insights (insights inserted between chart and event timeline) */}
+      <AnalyticsChart days={JSON.parse(JSON.stringify(days))}>
+        <AnalyticsInsights days={JSON.parse(JSON.stringify(days))} sessionName={session?.name || ''} />
+      </AnalyticsChart>
     </div>
   )
 }
