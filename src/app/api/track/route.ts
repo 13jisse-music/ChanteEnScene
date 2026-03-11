@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
     const ip = ipHeader?.split(',')[0]?.trim() || null
     const userAgent = request.headers.get('user-agent') || null
 
+    // Vercel geo headers (free, automatic)
+    const city = request.headers.get('x-vercel-ip-city') || null
+    const region = request.headers.get('x-vercel-ip-region') || null
+    const country = request.headers.get('x-vercel-ip-country') || null
+
     if (duration && duration > 0) {
       // Update existing page view with duration
       const { error } = await supabase
@@ -38,6 +43,7 @@ export async function POST(request: NextRequest) {
           user_agent: userAgent,
           referrer: referrer || null,
           duration_seconds: Math.round(duration),
+          city, region, country,
         })
       }
     } else {
@@ -51,6 +57,7 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         referrer: referrer || null,
         duration_seconds: 0,
+        city, region, country,
       })
     }
 

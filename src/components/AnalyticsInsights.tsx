@@ -83,9 +83,9 @@ function formatContent(text: string): string {
     .replace(/(\d[\d\s,.]*)\s*(pages?\s*vues?|visiteurs?\s*uniques?|visiteurs?|vues?|inscriptions?|%)/gi,
       '<strong class="text-white font-semibold">$1</strong> $2')
     // List items (- or * or numbered)
-    .replace(/^\* (.*$)/gm, '<li class="py-1">$1</li>')
-    .replace(/^- (.*$)/gm, '<li class="py-1">$1</li>')
-    .replace(/^(\d+)\.\s+(.*$)/gm, '<li class="py-1">$2</li>')
+    .replace(/^\* (.*$)/gm, '<li class="py-0.5">$1</li>')
+    .replace(/^- (.*$)/gm, '<li class="py-0.5">$1</li>')
+    .replace(/^(\d+)\.\s+(.*$)/gm, '<li class="py-0.5">$2</li>')
     // Wrap consecutive <li> in <ul>
     .replace(/(<li[^>]*>.*<\/li>\n?)+/g, (match) => `<ul class="space-y-1 my-3 ml-1">${match}</ul>`)
     // Paragraphs
@@ -100,7 +100,7 @@ function AiAnalysisCards({ text }: { text: string }) {
     return (
       <div className="p-6">
         <div
-          className="text-[15px] text-white/70 leading-7 [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6"
+          className="text-base text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6"
           dangerouslySetInnerHTML={{ __html: formatContent(text) }}
         />
       </div>
@@ -108,7 +108,7 @@ function AiAnalysisCards({ text }: { text: string }) {
   }
 
   return (
-    <div className="p-5 grid gap-5 sm:grid-cols-2">
+    <div className="p-5 grid gap-4 sm:grid-cols-2">
       {sections.map((section, i) => {
         const config = matchSection(section.title)
         const isWide = section.title.toLowerCase().includes('recommandation') ||
@@ -126,7 +126,7 @@ function AiAnalysisCards({ text }: { text: string }) {
               </h3>
             </div>
             <div
-              className="text-[15px] text-white/70 leading-7 [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:py-1"
+              className="text-base text-white/70 leading-relaxed [&_strong]:text-white [&_li]:pl-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:py-0.5"
               dangerouslySetInnerHTML={{ __html: formatContent(section.content) }}
             />
           </div>
@@ -306,7 +306,7 @@ export default function AnalyticsInsights({ days, sessionName }: { days: DayBuck
               <span className="text-2xl shrink-0">{ins.icon}</span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold" style={{ color: ins.color }}>{ins.title}</p>
-                <p className="text-sm text-white/60 mt-1 leading-relaxed">{ins.text}</p>
+                <p className="text-base text-white/60 mt-1 leading-relaxed">{ins.text}</p>
               </div>
             </div>
           ))}
