@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AnalyticsChart from '@/components/AnalyticsChart'
 import AnalyticsInsights from '@/components/AnalyticsInsights'
+import GeoAnalyticsMap from '@/components/GeoAnalyticsMap'
 
 interface DayBucket {
   date: string
@@ -27,7 +28,7 @@ async function getAnalyticsData() {
     .order('year', { ascending: false })
     .limit(1)
 
-  if (!sessions?.length) return { session: null, days: [] }
+  if (!sessions?.length) return { session: null, days: [], geoData: [] }
   const session = sessions[0]
 
   // Fetch ALL page views for this session (paginate — Supabase returns max 1000 per request)
@@ -140,6 +141,38 @@ async function getAnalyticsData() {
   // Sort by date and fill gaps
   const days = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date))
 
+  // Fetch geo data grouped by city (with coordinates)
+  const geoData: { city: string; region: string | null; country: string | null; lat: number; lng: number; count: number }[] = []
+  const { data: geoRows } = await supabase
+    .from('page_views')
+    .select('city, region, country, latitude, longitude')
+    .eq('session_id', session.id)
+    .not('city', 'is', null)
+
+  if (geoRows?.length) {
+    // Group by city, use average lat/lng
+    const geoMap = new Map<string, { region: string | null; country: string | null; lats: number[]; lngs: number[]; count: number }>()
+    for (const row of geoRows) {
+      if (!row.city) continue
+      const decodedCity = decodeURIComponent(row.city)
+      if (!geoMap.has(decodedCity)) {
+        geoMap.set(decodedCity, { region: row.region, country: row.country, lats: [], lngs: [], count: 0 })
+      }
+      const entry = geoMap.get(decodedCity)!
+      entry.count++
+      if (row.latitude && row.longitude) {
+        entry.lats.push(row.latitude)
+        entry.lngs.push(row.longitude)
+      }
+    }
+    for (const [city, data] of geoMap) {
+      if (data.lats.length === 0) continue
+      const lat = data.lats.reduce((s, v) => s + v, 0) / data.lats.length
+      const lng = data.lngs.reduce((s, v) => s + v, 0) / data.lngs.length
+      geoData.push({ city, region: data.region, country: data.country, lat, lng, count: data.count })
+    }
+  }
+
   // Fill missing days between first and last
   if (days.length > 1) {
     const filled: DayBucket[] = []
@@ -150,14 +183,14 @@ async function getAnalyticsData() {
       const existing = days.find(x => x.date === iso)
       filled.push(existing || { date: iso, pageViews: 0, uniqueVisitors: 0, events: [] })
     }
-    return { session, days: filled }
+    return { session, days: filled, geoData }
   }
 
-  return { session, days }
+  return { session, days, geoData }
 }
 
 export default async function AnalyticsPage() {
-  const { session, days } = await getAnalyticsData()
+  const { session, days, geoData } = await getAnalyticsData()
 
   // Compute totals
   const totalViews = days.reduce((s, d) => s + d.pageViews, 0)
@@ -192,6 +225,11 @@ export default async function AnalyticsPage() {
           <p className="text-white/40 text-xs">Actions trackees</p>
           <p className="text-2xl font-bold text-white mt-1">{totalEvents}</p>
         </div>
+      </div>
+
+      {/* Geo map */}
+      <div className="mb-6">
+        <GeoAnalyticsMap geoData={JSON.parse(JSON.stringify(geoData))} />
       </div>
 
       {/* Chart + Insights (insights inserted between chart and event timeline) */}

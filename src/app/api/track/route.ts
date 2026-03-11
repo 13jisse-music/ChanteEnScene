@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     const city = request.headers.get('x-vercel-ip-city') || null
     const region = request.headers.get('x-vercel-ip-region') || null
     const country = request.headers.get('x-vercel-ip-country') || null
+    const latitude = request.headers.get('x-vercel-ip-latitude') ? parseFloat(request.headers.get('x-vercel-ip-latitude')!) : null
+    const longitude = request.headers.get('x-vercel-ip-longitude') ? parseFloat(request.headers.get('x-vercel-ip-longitude')!) : null
 
     if (duration && duration > 0) {
       // Update existing page view with duration
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
           user_agent: userAgent,
           referrer: referrer || null,
           duration_seconds: Math.round(duration),
-          city, region, country,
+          city, region, country, latitude, longitude,
         })
       }
     } else {
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         referrer: referrer || null,
         duration_seconds: 0,
-        city, region, country,
+        city, region, country, latitude, longitude,
       })
     }
 
