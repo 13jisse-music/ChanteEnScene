@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 const NAV_ITEMS: { href: string; label: string; icon: string; section?: string; external?: boolean }[] = [
   // Préparation
   { href: '/admin', label: 'Dashboard', icon: '📊', section: 'Préparation' },
+  { href: '/admin/analytics', label: 'Analyse trafic', icon: '📈' },
   { href: '/admin/config', label: 'Configuration', icon: '⚙️' },
   { href: '/admin/sessions', label: 'Sessions', icon: '📁' },
   { href: '/admin/jury', label: 'Jury', icon: '⭐' },
