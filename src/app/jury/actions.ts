@@ -1,12 +1,11 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPushNotifications } from '@/lib/push'
 import { redirect } from 'next/navigation'
 
 export async function loginJuror(email: string): Promise<{ error: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Find the active session
   const { data: session } = await supabase

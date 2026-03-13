@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import JuryScoring from '@/components/JuryScoring'
 import JuryExperience from '@/components/JuryExperience'
@@ -12,7 +12,7 @@ export async function generateMetadata() {
 
 export default async function JuryPage({ params }: { params: Params }) {
   const { token } = await params
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Find juror by token
   const { data: juror } = await supabase
