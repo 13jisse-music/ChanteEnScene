@@ -205,8 +205,8 @@ Réponds UNIQUEMENT en JSON valide :
       "body": "Paragraphe 1\\n\\nParagraphe 2",
       "imagePrompt": "A vibrant concert scene with...",
       "color": "#e91e8c",
-      "ctaText": "Texte bouton" ou null,
-      "ctaUrl": "https://chantenscene.fr/..." ou null
+      "ctaText": "Texte bouton",
+      "ctaUrl": "https://chantenscene.fr/..."
     }
   ]
 }`;
@@ -415,14 +415,23 @@ async function callOpenAI(prompt: string): Promise<Record<string, unknown> | nul
 
 function extractText(data: Record<string, unknown>): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const parts = (data as any)?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  // Gemini 2.5 returns thinking parts (thought:true) — skip them
+  const textPart = parts.find((p: Record<string, unknown>) => !p.thought && typeof p.text === "string");
+  return textPart?.text || parts[parts.length - 1]?.text || "";
 }
 
 function extractJSON(text: string) {
   // Remove markdown code fences
-  const cleaned = text
+  let cleaned = text
     .replace(/^```json?\n?/gm, "")
-    .replace(/```$/gm, "")
+    .replace(/```\s*$/gm, "")
     .trim();
+  // If text has extra content around JSON, extract the JSON object/array
+  const objMatch = cleaned.match(/(\{[\s\S]*\})\s*$/);
+  const arrMatch = cleaned.match(/(\[[\s\S]*\])\s*$/);
+  if (objMatch) cleaned = objMatch[1];
+  else if (arrMatch) cleaned = arrMatch[1];
   return JSON.parse(cleaned);
 }
