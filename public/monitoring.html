@@ -97,18 +97,11 @@
 <div class="refresh-info" id="refresh-info">Derniere mise a jour : --</div>
 
 <script>
-const PAT = 'sbp_2060957d5fb7d39f95cf8f8608518b4b5bc2711d';
-const PROJECT_REF = 'xarrchsokuhobwqvcnkg';
-const API_BASE = 'https://api.supabase.com/v1/projects/' + PROJECT_REF;
+// Fetches data from our own API route (no token exposed, no CORS issues)
+const SITE = 'https://www.chantenscene.fr';
+const API_URL = SITE + '/api/monitoring';
 const BW_LIMIT_GB = 5.5;
 const REFRESH_MS = 5 * 60 * 1000; // 5 min
-
-async function fetchAPI(endpoint) {
-  const res = await fetch(API_BASE + endpoint, {
-    headers: { 'Authorization': 'Bearer ' + PAT }
-  });
-  return res.json();
-}
 
 function colorForPercent(pct) {
   if (pct < 70) return 'green';
@@ -121,19 +114,17 @@ async function refresh() {
   errorEl.style.display = 'none';
 
   try {
-    // 1. API counts (1day = hourly for last 24h)
-    const hourly = await fetchAPI('/analytics/endpoints/usage.api-counts?interval=1day');
-    // 2. API counts (7day = hourly for last 7 days)
-    const weekly = await fetchAPI('/analytics/endpoints/usage.api-counts?interval=7day');
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
 
-    if (!hourly.result || !weekly.result) {
-      throw new Error('API returned no results');
-    }
+    const hourly = data.hourly || [];
+    const days = data.days || {};
 
     // -- Today's totals --
     const today = new Date().toISOString().substring(0, 10);
     let todayStorage = 0, todayRest = 0;
-    hourly.result.forEach(r => {
+    hourly.forEach(r => {
       if (r.timestamp.startsWith(today)) {
         todayStorage += r.total_storage_requests || 0;
         todayRest += r.total_rest_requests || 0;
@@ -145,19 +136,16 @@ async function refresh() {
 
     // Compare with yesterday
     const yesterday = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
-    let ydayStorage = 0;
-    weekly.result.forEach(r => {
-      if (r.timestamp.startsWith(yesterday)) ydayStorage += r.total_storage_requests || 0;
-    });
+    const ydayStorage = days[yesterday]?.storage || 0;
     const diff = todayStorage - ydayStorage;
-    const arrow = diff < 0 ? '↓' : diff > 0 ? '↑' : '→';
+    const arrow = diff < 0 ? '\u2193' : diff > 0 ? '\u2191' : '\u2192';
     const diffColor = diff <= 0 ? 'green' : 'orange';
     document.getElementById('storage-sub').innerHTML =
       `vs hier : <span class="${diffColor}">${arrow} ${Math.abs(diff).toLocaleString('fr-FR')}</span> (${ydayStorage.toLocaleString('fr-FR')} hier)`;
-    document.getElementById('rest-sub').textContent = todayRest > 50000 ? 'Elevé' : 'Normal';
+    document.getElementById('rest-sub').textContent = todayRest > 50000 ? 'Eleve' : 'Normal';
 
     // -- Hourly chart (last 24h) --
-    const last24 = hourly.result.slice(-24);
+    const last24 = hourly.slice(-24);
     const maxStorage = Math.max(...last24.map(r => r.total_storage_requests || 0), 1);
     const chartEl = document.getElementById('chart-storage');
     chartEl.innerHTML = '';
@@ -168,19 +156,11 @@ async function refresh() {
       const bar = document.createElement('div');
       bar.className = 'chart-bar';
       bar.style.height = Math.max(pct, 2) + '%';
-      bar.innerHTML = `<div class="tip">${hour} — ${val} req</div>`;
+      bar.innerHTML = `<div class="tip">${hour} \u2014 ${val} req</div>`;
       chartEl.appendChild(bar);
     });
 
     // -- Daily table (7 days) --
-    const days = {};
-    weekly.result.forEach(r => {
-      const day = r.timestamp.substring(0, 10);
-      if (!days[day]) days[day] = { rest: 0, storage: 0, auth: 0 };
-      days[day].rest += r.total_rest_requests || 0;
-      days[day].storage += r.total_storage_requests || 0;
-      days[day].auth += r.total_auth_requests || 0;
-    });
     const sortedDays = Object.entries(days).sort().reverse();
     const tableEl = document.getElementById('daily-table');
     tableEl.innerHTML = '';
@@ -189,7 +169,7 @@ async function refresh() {
       let trend = '--';
       if (prev) {
         const d = v.storage - prev[1].storage;
-        const a = d < 0 ? '↓' : d > 0 ? '↑' : '→';
+        const a = d < 0 ? '\u2193' : d > 0 ? '\u2191' : '\u2192';
         const c = d <= 0 ? 'green' : 'orange';
         trend = `<span class="${c}">${a} ${Math.abs(d).toLocaleString('fr-FR')}</span>`;
       }
@@ -199,12 +179,8 @@ async function refresh() {
     });
 
     // -- Bandwidth estimate --
-    // Estimate: avg bytes per storage request * total requests this month
-    // We know ~500MB storage, 33.5GB over ~13 days with ~90k requests
-    // That's ~380KB per request average
     const totalStorageMonth = Object.values(days).reduce((s, v) => s + v.storage, 0);
-    // Rough estimate based on previous data: 33.5GB / 90k requests = ~390KB/req
-    const estBwGB = (totalStorageMonth * 0.00039) / 1; // ~390KB per request → GB
+    const estBwGB = (totalStorageMonth * 0.00039);
     const pct = ((estBwGB / BW_LIMIT_GB) * 100).toFixed(0);
     const col = colorForPercent(pct);
     document.getElementById('bw-value').innerHTML = `<span class="${col}">${estBwGB.toFixed(1)} <small>/ ${BW_LIMIT_GB} GB</small></span>`;
@@ -221,7 +197,7 @@ async function refresh() {
   // -- Site status check --
   try {
     const start = Date.now();
-    const res = await fetch('https://www.chantenscene.fr', { mode: 'no-cors' });
+    await fetch(SITE, { mode: 'no-cors' });
     const ms = Date.now() - start;
     document.getElementById('site-status').innerHTML =
       `<span class="status-badge status-ok">En ligne</span>`;
@@ -233,7 +209,7 @@ async function refresh() {
   }
 
   document.getElementById('refresh-info').textContent =
-    'Derniere mise a jour : ' + new Date().toLocaleTimeString('fr-FR') + ' — rafraichissement toutes les 5 min';
+    'Derniere mise a jour : ' + new Date().toLocaleTimeString('fr-FR') + ' \u2014 rafraichissement toutes les 5 min';
 }
 
 refresh();
