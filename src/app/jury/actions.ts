@@ -48,54 +48,45 @@ export async function loginJuror(email: string): Promise<{ error: string }> {
 export async function trackJurorLogin(jurorId: string, sessionId?: string) {
   const supabase = createAdminClient()
 
-  // Use the RPC function for atomic increment + timestamp
+  // Direct update: increment login_count + set last_login_at
+  const { data } = await supabase
+    .from('jurors')
+    .select('login_count, first_name, last_name, role, session_id')
+    .eq('id', jurorId)
+    .single()
+
+  if (!data) return
+
+  await supabase
+    .from('jurors')
+    .update({
+      last_login_at: new Date().toISOString(),
+      login_count: ((data.login_count as number) || 0) + 1,
+    })
+    .eq('id', jurorId)
+
+  // Push notification to admin (non-blocking, 5s timeout)
   try {
-    await supabase.rpc('increment_juror_login', { juror_id: jurorId })
-  } catch {
-    // Fallback: simple update if RPC not available
-    const { data } = await supabase
-      .from('jurors')
-      .select('login_count')
-      .eq('id', jurorId)
-      .single()
-
-    await supabase
-      .from('jurors')
-      .update({
-        last_login_at: new Date().toISOString(),
-        login_count: ((data?.login_count as number) || 0) + 1,
-      })
-      .eq('id', jurorId)
-  }
-
-  // Push notification to admin when jury connects
-  try {
-    const { data: juror } = await supabase
-      .from('jurors')
-      .select('first_name, last_name, role, session_id')
-      .eq('id', jurorId)
-      .single()
-
-    if (juror) {
-      const name = [juror.first_name, juror.last_name].filter(Boolean).join(' ')
-      const roleLabel: Record<string, string> = {
-        online: 'en ligne',
-        semifinal: 'demi-finale',
-        final: 'finale',
-      }
-      const label = roleLabel[juror.role] || juror.role
-
-      await sendPushNotifications({
-        sessionId: sessionId || juror.session_id,
-        role: 'admin',
-        payload: {
-          title: 'Jury connecté',
-          body: `${name} (jury ${label}) vient de se connecter`,
-          url: '/admin/jury',
-          tag: `jury-login-${jurorId}`,
-        },
-      })
+    const name = [data.first_name, data.last_name].filter(Boolean).join(' ')
+    const roleLabel: Record<string, string> = {
+      online: 'en ligne',
+      semifinal: 'demi-finale',
+      final: 'finale',
     }
+    const label = roleLabel[data.role] || data.role
+
+    const pushPromise = sendPushNotifications({
+      sessionId: sessionId || data.session_id,
+      role: 'admin',
+      payload: {
+        title: 'Jury connecté',
+        body: `${name} (jury ${label}) vient de se connecter`,
+        url: '/admin/jury',
+        tag: `jury-login-${jurorId}`,
+      },
+    })
+    const timeout = new Promise<void>(r => setTimeout(r, 5000))
+    await Promise.race([pushPromise, timeout])
   } catch {
     // Push failure should not block jury login
   }
