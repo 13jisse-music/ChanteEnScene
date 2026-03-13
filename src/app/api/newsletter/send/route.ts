@@ -9,10 +9,15 @@ import { goUrl } from '@/lib/email-utils'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  try {
-    await requireAdmin()
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Auth: either admin cookie OR internal secret (from server action)
+  const authHeader = req.headers.get('x-internal-secret')
+  const isInternal = authHeader === process.env.CRON_SECRET
+  if (!isInternal) {
+    try {
+      await requireAdmin()
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   const { campaignId } = await req.json()

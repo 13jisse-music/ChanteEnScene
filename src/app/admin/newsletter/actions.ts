@@ -142,7 +142,10 @@ export async function sendCampaign(campaignId: string) {
   try {
     const res = await fetch(`${siteUrl}/api/newsletter/send`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.CRON_SECRET || '',
+      },
       body: JSON.stringify({ campaignId }),
     })
     const data = await res.json()
