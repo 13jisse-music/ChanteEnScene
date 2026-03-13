@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import LogoRing from '@/components/LogoRing'
 
 interface Props {
@@ -35,10 +36,12 @@ export default function CandidateMedia({ photoUrl, displayName, videoUrl, embedU
         ) : (
           <>
             {photoUrl ? (
-              <img
+              <Image
                 src={photoUrl}
                 alt={displayName}
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-8xl text-white/20">

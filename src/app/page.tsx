@@ -585,10 +585,12 @@ export default async function HomePage() {
                           />
                           <div className="absolute inset-[4px] rounded-full overflow-hidden bg-[#1a1232]">
                             {c.photo_url ? (
-                              <img
+                              <Image
                                 src={c.photo_url}
                                 alt={name}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="128px"
+                                className="object-cover"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-3xl text-white/20">

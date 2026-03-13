@@ -52,12 +52,18 @@ export async function POST(request: Request) {
     // Upload photo if file provided
     let photo_url: string | null = fields.photo_url || null
     if (photoFile && photoFile.size > 0) {
-      const photoBuffer = Buffer.from(await photoFile.arrayBuffer())
+      const sharp = (await import('sharp')).default
+      const rawBuffer = Buffer.from(await photoFile.arrayBuffer())
+      const photoBuffer = await sharp(rawBuffer)
+        .rotate() // auto-orient EXIF
+        .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer()
       const { error: photoError } = await supabase.storage
         .from('candidates')
         .upload(`${basePath}/photo`, photoBuffer, {
           upsert: true,
-          contentType: photoFile.type || 'image/jpeg',
+          contentType: 'image/jpeg',
         })
       if (photoError) {
         return NextResponse.json({ error: `Erreur upload photo: ${photoError.message}` }, { status: 500 })

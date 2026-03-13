@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
@@ -188,9 +189,9 @@ function FeedPost({
       <div className="flex items-center gap-3 p-4 pb-3">
         {/* Avatar */}
         <Link href={`/${sessionSlug}/candidats/${candidate.slug}`} className="shrink-0">
-          <div className="w-11 h-11 rounded-full overflow-hidden border-2 hover:scale-105 transition-transform" style={{ borderColor: accent }}>
+          <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 hover:scale-105 transition-transform" style={{ borderColor: accent }}>
             {candidate.photo_url ? (
-              <img src={candidate.photo_url} alt={displayName} className="w-full h-full object-cover" />
+              <Image src={candidate.photo_url} alt={displayName} fill sizes="44px" className="object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-[#0d0b1a] text-lg">🎤</div>
             )}
@@ -284,10 +285,12 @@ function FeedPost({
           <Link href={`/${sessionSlug}/candidats/${candidate.slug}`} className="block">
             <div className="relative aspect-[4/3] overflow-hidden">
               {candidate.photo_url ? (
-                <img
+                <Image
                   src={candidate.photo_url}
                   alt={displayName}
-                  className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 650px"
+                  className="object-cover hover:scale-[1.02] transition-transform duration-500"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[#0d0b1a] text-7xl text-white/10">

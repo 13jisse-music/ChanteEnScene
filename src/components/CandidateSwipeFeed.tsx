@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
@@ -219,10 +220,13 @@ function SwipeSlide({
           />
         </>
       ) : candidate.photo_url ? (
-        <img
+        <Image
           src={candidate.photo_url}
           alt={displayName}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
         />
       ) : (
         <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-[#0d0b1a] text-8xl text-white/10">

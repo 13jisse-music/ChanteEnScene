@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { getFingerprint } from '@/lib/fingerprint'
 
@@ -106,10 +107,12 @@ export default function CandidateCard({ candidate, sessionId, isSemifinalist }: 
       {/* Photo */}
       <Link href={`/${sessionSlug}/candidats/${candidate.slug}`} className="block relative aspect-[3/4] overflow-hidden bg-[#1a1232] cursor-pointer">
         {candidate.photo_url ? (
-          <img
+          <Image
             src={candidate.photo_url}
             alt={displayName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-6xl text-white/20">

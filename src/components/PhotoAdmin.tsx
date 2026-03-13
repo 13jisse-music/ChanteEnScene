@@ -49,20 +49,28 @@ function applyWatermark(file: File): Promise<Blob> {
     function draw() {
       if (!imgLoaded || !logoLoaded) return
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      // Resize: max 1920px on longest side
+      const MAX = 1920
+      let w = img.width
+      let h = img.height
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+        else { w = Math.round(w * MAX / h); h = MAX }
+      }
+      canvas.width = w
+      canvas.height = h
       const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0)
+      ctx.drawImage(img, 0, 0, w, h)
 
       // Logo size: ~15% of the shortest side
-      const logoSize = Math.min(img.width, img.height) * 0.15
+      const logoSize = Math.min(w, h) * 0.15
       const ratio = logo.width / logo.height
       const lw = ratio >= 1 ? logoSize : logoSize * ratio
       const lh = ratio >= 1 ? logoSize / ratio : logoSize
       const margin = logoSize * 0.3
 
       ctx.globalAlpha = 0.35
-      ctx.drawImage(logo, img.width - lw - margin, img.height - lh - margin, lw, lh)
+      ctx.drawImage(logo, w - lw - margin, h - lh - margin, lw, lh)
       ctx.globalAlpha = 1.0
 
       canvas.toBlob(
