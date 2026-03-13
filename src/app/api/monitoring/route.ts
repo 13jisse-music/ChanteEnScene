@@ -23,6 +23,12 @@ async function fetchAnalytics(interval: string): Promise<HourlyData[]> {
   return data.result || []
 }
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET' },
+  })
+}
+
 export async function GET() {
   if (!PAT) {
     return NextResponse.json({ error: 'Missing SUPABASE_ACCESS_TOKEN' }, { status: 500 })
@@ -43,12 +49,10 @@ export async function GET() {
     days[day].auth += r.total_auth_requests || 0
   }
 
-  return NextResponse.json({
-    hourly,
-    days,
-  }, {
-    headers: {
-      'Cache-Control': 'public, max-age=120, s-maxage=120',
-    },
-  })
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'public, max-age=120, s-maxage=120',
+  }
+
+  return NextResponse.json({ hourly, days }, { headers: corsHeaders })
 }
