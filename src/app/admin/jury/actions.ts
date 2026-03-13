@@ -37,6 +37,15 @@ export async function addJuror(sessionId: string, firstName: string, lastName: s
     }
   }
 
+  // Auto-subscribe juror to newsletter (fire-and-forget)
+  if (cleanEmail) {
+    supabase.from('email_subscribers').upsert({
+      session_id: sessionId,
+      email: cleanEmail,
+      source: 'inscription',
+    }, { onConflict: 'session_id,email', ignoreDuplicates: true }).then(() => {})
+  }
+
   revalidatePath('/admin/jury')
   return { success: true, juror: data, emailSent }
 }

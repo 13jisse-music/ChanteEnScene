@@ -134,6 +134,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Auto-subscribe to newsletter (fire-and-forget)
+    supabase.from('email_subscribers').upsert({
+      session_id,
+      email: email.trim().toLowerCase(),
+      source: 'inscription',
+    }, { onConflict: 'session_id,email', ignoreDuplicates: true }).then(() => {})
+
     return NextResponse.json({ success: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur serveur'
