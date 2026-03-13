@@ -67,6 +67,19 @@
     <div class="bar-bg"><div class="bar-fill" id="bw-bar" style="width:0%"></div></div>
   </div>
   <div class="card">
+    <h2>Cumul bandwidth jour par jour</h2>
+    <div class="chart" id="chart-cumul" style="height:100px"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px">
+      <span class="sub" id="cumul-start"></span>
+      <span class="sub" id="cumul-end"></span>
+    </div>
+    <div class="bar-bg" style="margin-top:4px;position:relative">
+      <div class="bar-fill bar-red" id="cumul-limit" style="width:100%;opacity:0.15;position:absolute"></div>
+      <div class="bar-fill" id="cumul-bar" style="width:0%"></div>
+    </div>
+    <div class="sub" id="cumul-sub"></div>
+  </div>
+  <div class="card">
     <h2>Requetes Storage aujourd'hui</h2>
     <div class="metric" id="storage-today">--</div>
     <div class="sub" id="storage-sub">Chargement...</div>
@@ -201,6 +214,54 @@ function renderHistory(history) {
     tr.innerHTML = `<td>${snap.date}</td><td>${totalStorage.toLocaleString('fr-FR')}</td><td>${totalRest.toLocaleString('fr-FR')}</td><td>${totalAuth.toLocaleString('fr-FR')}</td>`;
     el.appendChild(tr);
   });
+}
+
+// --- Cumulative bandwidth chart ---
+function renderCumul(days) {
+  const GB_PER_REQ = 0.00039; // estimation moyenne par requête storage
+  const sortedDays = Object.entries(days).sort();
+  const chartEl = document.getElementById('chart-cumul');
+  chartEl.innerHTML = '';
+
+  // Calcul cumulatif
+  let cumul = 0;
+  const points = [];
+  sortedDays.forEach(([day, v]) => {
+    cumul += (v.storage || 0) * GB_PER_REQ;
+    points.push({ day, cumul, storage: v.storage || 0 });
+  });
+
+  const maxVal = Math.max(cumul, BW_LIMIT_GB); // la limite comme plafond visuel
+  const limitPct = (BW_LIMIT_GB / maxVal * 100).toFixed(0);
+
+  points.forEach((p, i) => {
+    const pct = (p.cumul / maxVal * 100).toFixed(1);
+    const bar = document.createElement('div');
+    const isOver = p.cumul >= BW_LIMIT_GB;
+    bar.className = 'chart-bar';
+    bar.style.height = Math.max(pct, 3) + '%';
+    bar.style.background = isOver ? '#ef4444' : p.cumul >= BW_LIMIT_GB * 0.7 ? '#f5a623' : '#22c55e';
+    bar.innerHTML = `<div class="tip">${p.day}<br>${p.cumul.toFixed(2)} GB cumul<br>${p.storage.toLocaleString('fr-FR')} req storage</div>`;
+    chartEl.appendChild(bar);
+  });
+
+  // Ligne de limite (trait rouge en fond)
+  document.getElementById('cumul-limit').style.width = limitPct + '%';
+
+  // Labels
+  if (points.length) {
+    document.getElementById('cumul-start').textContent = points[0].day.substring(5);
+    document.getElementById('cumul-end').textContent = points[points.length - 1].day.substring(5);
+  }
+
+  // Barre de progression cumul vs limite
+  const pctUsed = (cumul / BW_LIMIT_GB * 100);
+  const col = colorForPercent(pctUsed);
+  document.getElementById('cumul-bar').style.width = Math.min(pctUsed, 100) + '%';
+  document.getElementById('cumul-bar').className = 'bar-fill bar-' + col;
+  document.getElementById('cumul-sub').innerHTML =
+    `<span class="${col}">${cumul.toFixed(2)} GB</span> / ${BW_LIMIT_GB} GB — ` +
+    `projection fin de mois : <strong class="${colorForPercent(pctUsed * 30 / Math.max(points.length, 1))}">${(cumul * 30 / Math.max(points.length, 1)).toFixed(1)} GB</strong>`;
 }
 
 // --- Analysis rendering ---
@@ -371,6 +432,7 @@ async function refresh() {
     barEl.className = 'bar-fill bar-' + col;
 
     // -- Analysis --
+    renderCumul(days);
     renderAnalysis(hourly, days);
 
   } catch (err) {
