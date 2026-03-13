@@ -21,6 +21,7 @@
   .green { color: #22c55e; }
   .orange { color: #f5a623; }
   .red { color: #ef4444; }
+  .cyan { color: #06b6d4; }
   .bar-green { background: #22c55e; }
   .bar-orange { background: #f5a623; }
   .bar-red { background: #ef4444; }
@@ -28,8 +29,8 @@
   th { text-align: left; color: #6b5d85; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #2e2555; }
   td { padding: 6px 8px; border-bottom: 1px solid #1a1232; }
   .chart { height: 120px; display: flex; align-items: flex-end; gap: 2px; }
-  .chart-bar { flex: 1; background: #3b2d6b; border-radius: 2px 2px 0 0; min-width: 4px; position: relative; transition: height 0.3s; }
-  .chart-bar:hover { background: #f5a623; }
+  .chart-bar { flex: 1; border-radius: 2px 2px 0 0; min-width: 4px; position: relative; transition: height 0.3s; cursor: pointer; }
+  .chart-bar:hover { opacity: 0.8; }
   .chart-bar .tip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0d0b1a; border: 1px solid #2e2555; padding: 4px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 10; }
   .chart-bar:hover .tip { display: block; }
   .refresh-info { font-size: 11px; color: #6b5d85; text-align: right; margin-top: 8px; }
@@ -38,6 +39,18 @@
   .status-warn { background: #f5a62320; color: #f5a623; border: 1px solid #f5a62340; }
   .status-crit { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
   .error-msg { background: #ef444415; border: 1px solid #ef444430; padding: 12px; border-radius: 8px; color: #ef4444; font-size: 13px; margin-bottom: 12px; display: none; }
+  .hbar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; margin: 8px 0; }
+  .hbar > div { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; min-width: 30px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; margin-top: 8px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot-s { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .peak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+  .peak-card { background: #2e2555; border-radius: 8px; padding: 10px; text-align: center; }
+  .peak-card .val { font-size: 20px; font-weight: 700; color: #f5a623; }
+  .peak-card .lbl { font-size: 11px; color: #6b5d85; margin-top: 2px; }
+  .btn-small { background: #2e2555; border: 1px solid #3b2d6b; color: #e0d8f0; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .btn-small:hover { background: #3b2d6b; }
+  .section-title { font-size: 14px; color: #f5a623; margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
 </style>
 </head>
 <body>
@@ -47,22 +60,17 @@
 <div id="error" class="error-msg"></div>
 
 <div class="grid">
-  <!-- Bandwidth gauge -->
   <div class="card">
     <h2>Bandwidth Supabase (mois en cours)</h2>
     <div class="metric" id="bw-value">--</div>
     <div class="sub" id="bw-sub">Chargement...</div>
     <div class="bar-bg"><div class="bar-fill" id="bw-bar" style="width:0%"></div></div>
   </div>
-
-  <!-- Storage requests today -->
   <div class="card">
     <h2>Requetes Storage aujourd'hui</h2>
     <div class="metric" id="storage-today">--</div>
     <div class="sub" id="storage-sub">Chargement...</div>
   </div>
-
-  <!-- Site status -->
   <div class="card">
     <h2>Statut du site</h2>
     <div id="site-status" style="margin-top:8px">
@@ -70,8 +78,6 @@
     </div>
     <div class="sub" id="site-sub" style="margin-top:8px"></div>
   </div>
-
-  <!-- REST requests today -->
   <div class="card">
     <h2>Requetes REST aujourd'hui</h2>
     <div class="metric" id="rest-today">--</div>
@@ -94,14 +100,184 @@
   </table>
 </div>
 
+<!-- ANALYSE SECTION -->
+<div class="section-title">Analyse du trafic</div>
+
+<div class="grid">
+  <!-- Répartition par type -->
+  <div class="card">
+    <h2>Repartition des requetes (7 jours)</h2>
+    <div class="hbar" id="type-bar"></div>
+    <div class="legend" id="type-legend"></div>
+  </div>
+
+  <!-- Heures de pointe -->
+  <div class="card">
+    <h2>Heures de pointe (dernieres 24h)</h2>
+    <div class="peak-grid" id="peak-hours"></div>
+  </div>
+</div>
+
+<!-- Stacked chart: Storage vs REST par jour -->
+<div class="card" style="margin-bottom:16px">
+  <h2>Storage vs REST — evolution quotidienne</h2>
+  <div class="chart" id="chart-compare" style="height:140px"></div>
+  <div class="legend" style="justify-content:center; margin-top:8px">
+    <span><span class="dot-s" style="background:#8b5cf6"></span> Storage</span>
+    <span><span class="dot-s" style="background:#06b6d4"></span> REST</span>
+    <span><span class="dot-s" style="background:#f5a623"></span> Auth</span>
+  </div>
+</div>
+
+<!-- Historique stocké -->
+<div class="card" style="margin-bottom:16px">
+  <h2>Historique enregistre (localStorage) <button class="btn-small" onclick="clearHistory()" style="float:right">Vider</button></h2>
+  <div class="sub" id="history-info" style="margin-bottom:8px"></div>
+  <table>
+    <thead><tr><th>Date collecte</th><th>Storage (jour)</th><th>REST (jour)</th><th>Auth (jour)</th></tr></thead>
+    <tbody id="history-table"><tr><td colspan="4" style="color:#6b5d85">Aucune donnee</td></tr></tbody>
+  </table>
+</div>
+
 <div class="refresh-info" id="refresh-info">Derniere mise a jour : --</div>
 
 <script>
-// Fetches data from our own API route (no token exposed, no CORS issues)
 const SITE = 'https://www.chantenscene.fr';
 const API_URL = SITE + '/api/monitoring';
 const BW_LIMIT_GB = 5.5;
-const REFRESH_MS = 5 * 60 * 1000; // 5 min
+const REFRESH_MS = 5 * 60 * 1000;
+const STORAGE_KEY = 'chantenscene_monitoring_history';
+
+// --- localStorage persistence ---
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveSnapshot(days) {
+  const history = loadHistory();
+  const now = new Date().toISOString();
+  const today = now.substring(0, 10);
+
+  // Ne sauvegarder qu'un snapshot par jour (le dernier)
+  const idx = history.findIndex(h => h.date === today);
+  const snapshot = { date: today, collected: now, days: { ...days } };
+  if (idx >= 0) history[idx] = snapshot;
+  else history.push(snapshot);
+
+  // Garder 90 jours max
+  while (history.length > 90) history.shift();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  return history;
+}
+
+function clearHistory() {
+  if (confirm('Vider tout l\'historique enregistre ?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderHistory([]);
+  }
+}
+
+function renderHistory(history) {
+  const el = document.getElementById('history-table');
+  const info = document.getElementById('history-info');
+
+  if (!history.length) {
+    el.innerHTML = '<tr><td colspan="4" style="color:#6b5d85">Aucune donnee enregistree</td></tr>';
+    info.textContent = '0 snapshots';
+    return;
+  }
+
+  info.textContent = `${history.length} snapshot(s) — du ${history[0].date} au ${history[history.length - 1].date}`;
+
+  // Montrer les 30 derniers jours (plus récent en haut)
+  const recent = [...history].reverse().slice(0, 30);
+  el.innerHTML = '';
+  recent.forEach(snap => {
+    const totalStorage = Object.values(snap.days).reduce((s, v) => s + (v.storage || 0), 0);
+    const totalRest = Object.values(snap.days).reduce((s, v) => s + (v.rest || 0), 0);
+    const totalAuth = Object.values(snap.days).reduce((s, v) => s + (v.auth || 0), 0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${snap.date}</td><td>${totalStorage.toLocaleString('fr-FR')}</td><td>${totalRest.toLocaleString('fr-FR')}</td><td>${totalAuth.toLocaleString('fr-FR')}</td>`;
+    el.appendChild(tr);
+  });
+}
+
+// --- Analysis rendering ---
+function renderAnalysis(hourly, days) {
+  // Répartition par type
+  const totalStorage = Object.values(days).reduce((s, v) => s + (v.storage || 0), 0);
+  const totalRest = Object.values(days).reduce((s, v) => s + (v.rest || 0), 0);
+  const totalAuth = Object.values(days).reduce((s, v) => s + (v.auth || 0), 0);
+  const total = totalStorage + totalRest + totalAuth || 1;
+
+  const pctStorage = (totalStorage / total * 100).toFixed(1);
+  const pctRest = (totalRest / total * 100).toFixed(1);
+  const pctAuth = (totalAuth / total * 100).toFixed(1);
+
+  document.getElementById('type-bar').innerHTML =
+    `<div style="width:${pctStorage}%;background:#8b5cf6">${pctStorage}%</div>` +
+    `<div style="width:${pctRest}%;background:#06b6d4">${pctRest}%</div>` +
+    `<div style="width:${Math.max(pctAuth, 1)}%;background:#f5a623">${pctAuth > 3 ? pctAuth + '%' : ''}</div>`;
+
+  document.getElementById('type-legend').innerHTML =
+    `<span><span class="dot-s" style="background:#8b5cf6"></span> Storage : ${totalStorage.toLocaleString('fr-FR')}</span>` +
+    `<span><span class="dot-s" style="background:#06b6d4"></span> REST : ${totalRest.toLocaleString('fr-FR')}</span>` +
+    `<span><span class="dot-s" style="background:#f5a623"></span> Auth : ${totalAuth.toLocaleString('fr-FR')}</span>`;
+
+  // Heures de pointe
+  const last24 = hourly.slice(-24);
+  let peakStorage = { hour: '--', val: 0 };
+  let peakRest = { hour: '--', val: 0 };
+  let quietest = { hour: '--', val: Infinity };
+  let totalReqs = 0;
+
+  last24.forEach(r => {
+    const s = r.total_storage_requests || 0;
+    const re = r.total_rest_requests || 0;
+    const all = s + re;
+    const h = r.timestamp.substring(11, 16);
+    totalReqs += all;
+    if (s > peakStorage.val) peakStorage = { hour: h, val: s };
+    if (re > peakRest.val) peakRest = { hour: h, val: re };
+    if (all < quietest.val) quietest = { hour: h, val: all };
+  });
+
+  document.getElementById('peak-hours').innerHTML =
+    `<div class="peak-card"><div class="val">${peakStorage.hour}</div><div class="lbl">Pic Storage (${peakStorage.val.toLocaleString('fr-FR')})</div></div>` +
+    `<div class="peak-card"><div class="val">${peakRest.hour}</div><div class="lbl">Pic REST (${peakRest.val.toLocaleString('fr-FR')})</div></div>` +
+    `<div class="peak-card"><div class="val">${quietest.hour}</div><div class="lbl">+ calme (${quietest.val.toLocaleString('fr-FR')})</div></div>` +
+    `<div class="peak-card"><div class="val">${Math.round(totalReqs / Math.max(last24.length, 1))}</div><div class="lbl">Moy / heure</div></div>`;
+
+  // Stacked bar chart: Storage vs REST par jour
+  const sortedDays = Object.entries(days).sort();
+  const maxDay = Math.max(...sortedDays.map(([, v]) => (v.storage || 0) + (v.rest || 0) + (v.auth || 0)), 1);
+  const chartEl = document.getElementById('chart-compare');
+  chartEl.innerHTML = '';
+
+  sortedDays.forEach(([day, v]) => {
+    const s = v.storage || 0, re = v.rest || 0, a = v.auth || 0;
+    const tot = s + re + a;
+    const pct = (tot / maxDay * 100).toFixed(0);
+    const pctS = tot ? (s / tot * 100).toFixed(0) : 0;
+    const pctR = tot ? (re / tot * 100).toFixed(0) : 0;
+
+    const bar = document.createElement('div');
+    bar.style.cssText = `flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative;cursor:pointer`;
+    bar.innerHTML =
+      `<div style="height:${pct}%;display:flex;flex-direction:column;border-radius:2px 2px 0 0;overflow:hidden">` +
+        `<div style="flex:${pctS};background:#8b5cf6"></div>` +
+        `<div style="flex:${pctR};background:#06b6d4"></div>` +
+        `<div style="flex:${100 - pctS - pctR};background:#f5a623;min-height:0"></div>` +
+      `</div>` +
+      `<div class="tip" style="display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#0d0b1a;border:1px solid #2e2555;padding:6px 10px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:10">` +
+        `${day}<br>Storage: ${s.toLocaleString('fr-FR')}<br>REST: ${re.toLocaleString('fr-FR')}<br>Auth: ${a.toLocaleString('fr-FR')}` +
+      `</div>`;
+    bar.onmouseenter = () => bar.querySelector('.tip').style.display = 'block';
+    bar.onmouseleave = () => bar.querySelector('.tip').style.display = 'none';
+    chartEl.appendChild(bar);
+  });
+}
 
 function colorForPercent(pct) {
   if (pct < 70) return 'green';
@@ -120,6 +296,10 @@ async function refresh() {
 
     const hourly = data.hourly || [];
     const days = data.days || {};
+
+    // -- Sauvegarder le snapshot --
+    const history = saveSnapshot(days);
+    renderHistory(history);
 
     // -- Today's totals --
     const today = new Date().toISOString().substring(0, 10);
@@ -156,7 +336,8 @@ async function refresh() {
       const bar = document.createElement('div');
       bar.className = 'chart-bar';
       bar.style.height = Math.max(pct, 2) + '%';
-      bar.innerHTML = `<div class="tip">${hour} \u2014 ${val} req</div>`;
+      bar.style.background = '#3b2d6b';
+      bar.innerHTML = `<div class="tip">${hour} \u2014 ${val.toLocaleString('fr-FR')} req</div>`;
       chartEl.appendChild(bar);
     });
 
@@ -189,6 +370,9 @@ async function refresh() {
     barEl.style.width = Math.min(pct, 100) + '%';
     barEl.className = 'bar-fill bar-' + col;
 
+    // -- Analysis --
+    renderAnalysis(hourly, days);
+
   } catch (err) {
     errorEl.textContent = 'Erreur API : ' + err.message;
     errorEl.style.display = 'block';
@@ -212,6 +396,8 @@ async function refresh() {
     'Derniere mise a jour : ' + new Date().toLocaleTimeString('fr-FR') + ' \u2014 rafraichissement toutes les 5 min';
 }
 
+// Charger l'historique existant au démarrage
+renderHistory(loadHistory());
 refresh();
 setInterval(refresh, REFRESH_MS);
 </script>
