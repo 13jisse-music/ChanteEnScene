@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChanteEnScene — Monitoring</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d0b1a; color: #e0d8f0; font-family: -apple-system, 'Segoe UI', sans-serif; padding: 20px; min-height: 100vh; }
+  h1 { font-size: 18px; color: #f5a623; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .card { background: #1a1232; border: 1px solid #2e2555; border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b5d85; margin-bottom: 12px; }
+  .metric { font-size: 32px; font-weight: 700; line-height: 1; }
+  .metric small { font-size: 14px; font-weight: 400; color: #6b5d85; }
+  .sub { font-size: 12px; color: #6b5d85; margin-top: 6px; }
+  .bar-bg { height: 8px; background: #2e2555; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .green { color: #22c55e; }
+  .orange { color: #f5a623; }
+  .red { color: #ef4444; }
+  .bar-green { background: #22c55e; }
+  .bar-orange { background: #f5a623; }
+  .bar-red { background: #ef4444; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: #6b5d85; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #2e2555; }
+  td { padding: 6px 8px; border-bottom: 1px solid #1a1232; }
+  .chart { height: 120px; display: flex; align-items: flex-end; gap: 2px; }
+  .chart-bar { flex: 1; background: #3b2d6b; border-radius: 2px 2px 0 0; min-width: 4px; position: relative; transition: height 0.3s; }
+  .chart-bar:hover { background: #f5a623; }
+  .chart-bar .tip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0d0b1a; border: 1px solid #2e2555; padding: 4px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap; z-index: 10; }
+  .chart-bar:hover .tip { display: block; }
+  .refresh-info { font-size: 11px; color: #6b5d85; text-align: right; margin-top: 8px; }
+  .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .status-ok { background: #22c55e20; color: #22c55e; border: 1px solid #22c55e40; }
+  .status-warn { background: #f5a62320; color: #f5a623; border: 1px solid #f5a62340; }
+  .status-crit { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+  .error-msg { background: #ef444415; border: 1px solid #ef444430; padding: 12px; border-radius: 8px; color: #ef4444; font-size: 13px; margin-bottom: 12px; display: none; }
+</style>
+</head>
+<body>
+
+<h1><span class="dot"></span> ChanteEnScene — Monitoring</h1>
+
+<div id="error" class="error-msg"></div>
+
+<div class="grid">
+  <!-- Bandwidth gauge -->
+  <div class="card">
+    <h2>Bandwidth Supabase (mois en cours)</h2>
+    <div class="metric" id="bw-value">--</div>
+    <div class="sub" id="bw-sub">Chargement...</div>
+    <div class="bar-bg"><div class="bar-fill" id="bw-bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- Storage requests today -->
+  <div class="card">
+    <h2>Requetes Storage aujourd'hui</h2>
+    <div class="metric" id="storage-today">--</div>
+    <div class="sub" id="storage-sub">Chargement...</div>
+  </div>
+
+  <!-- Site status -->
+  <div class="card">
+    <h2>Statut du site</h2>
+    <div id="site-status" style="margin-top:8px">
+      <span class="status-badge status-ok">Verification...</span>
+    </div>
+    <div class="sub" id="site-sub" style="margin-top:8px"></div>
+  </div>
+
+  <!-- REST requests today -->
+  <div class="card">
+    <h2>Requetes REST aujourd'hui</h2>
+    <div class="metric" id="rest-today">--</div>
+    <div class="sub" id="rest-sub"></div>
+  </div>
+</div>
+
+<!-- Chart: Storage requests per hour (24h) -->
+<div class="card" style="margin-bottom:16px">
+  <h2>Requetes Storage — 24 dernieres heures</h2>
+  <div class="chart" id="chart-storage"></div>
+</div>
+
+<!-- Table: Daily breakdown -->
+<div class="card" style="margin-bottom:16px">
+  <h2>Historique par jour (7 derniers jours)</h2>
+  <table>
+    <thead><tr><th>Date</th><th>REST</th><th>Storage</th><th>Auth</th><th>Tendance</th></tr></thead>
+    <tbody id="daily-table"><tr><td colspan="5" style="color:#6b5d85">Chargement...</td></tr></tbody>
+  </table>
+</div>
+
+<div class="refresh-info" id="refresh-info">Derniere mise a jour : --</div>
+
+<script>
+const PAT = 'sbp_2060957d5fb7d39f95cf8f8608518b4b5bc2711d';
+const PROJECT_REF = 'xarrchsokuhobwqvcnkg';
+const API_BASE = 'https://api.supabase.com/v1/projects/' + PROJECT_REF;
+const BW_LIMIT_GB = 5.5;
+const REFRESH_MS = 5 * 60 * 1000; // 5 min
+
+async function fetchAPI(endpoint) {
+  const res = await fetch(API_BASE + endpoint, {
+    headers: { 'Authorization': 'Bearer ' + PAT }
+  });
+  return res.json();
+}
+
+function colorForPercent(pct) {
+  if (pct < 70) return 'green';
+  if (pct < 100) return 'orange';
+  return 'red';
+}
+
+async function refresh() {
+  const errorEl = document.getElementById('error');
+  errorEl.style.display = 'none';
+
+  try {
+    // 1. API counts (1day = hourly for last 24h)
+    const hourly = await fetchAPI('/analytics/endpoints/usage.api-counts?interval=1day');
+    // 2. API counts (7day = hourly for last 7 days)
+    const weekly = await fetchAPI('/analytics/endpoints/usage.api-counts?interval=7day');
+
+    if (!hourly.result || !weekly.result) {
+      throw new Error('API returned no results');
+    }
+
+    // -- Today's totals --
+    const today = new Date().toISOString().substring(0, 10);
+    let todayStorage = 0, todayRest = 0;
+    hourly.result.forEach(r => {
+      if (r.timestamp.startsWith(today)) {
+        todayStorage += r.total_storage_requests || 0;
+        todayRest += r.total_rest_requests || 0;
+      }
+    });
+
+    document.getElementById('storage-today').textContent = todayStorage.toLocaleString('fr-FR');
+    document.getElementById('rest-today').textContent = todayRest.toLocaleString('fr-FR');
+
+    // Compare with yesterday
+    const yesterday = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+    let ydayStorage = 0;
+    weekly.result.forEach(r => {
+      if (r.timestamp.startsWith(yesterday)) ydayStorage += r.total_storage_requests || 0;
+    });
+    const diff = todayStorage - ydayStorage;
+    const arrow = diff < 0 ? '↓' : diff > 0 ? '↑' : '→';
+    const diffColor = diff <= 0 ? 'green' : 'orange';
+    document.getElementById('storage-sub').innerHTML =
+      `vs hier : <span class="${diffColor}">${arrow} ${Math.abs(diff).toLocaleString('fr-FR')}</span> (${ydayStorage.toLocaleString('fr-FR')} hier)`;
+    document.getElementById('rest-sub').textContent = todayRest > 50000 ? 'Elevé' : 'Normal';
+
+    // -- Hourly chart (last 24h) --
+    const last24 = hourly.result.slice(-24);
+    const maxStorage = Math.max(...last24.map(r => r.total_storage_requests || 0), 1);
+    const chartEl = document.getElementById('chart-storage');
+    chartEl.innerHTML = '';
+    last24.forEach(r => {
+      const val = r.total_storage_requests || 0;
+      const pct = (val / maxStorage * 100).toFixed(0);
+      const hour = r.timestamp.substring(11, 16);
+      const bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      bar.style.height = Math.max(pct, 2) + '%';
+      bar.innerHTML = `<div class="tip">${hour} — ${val} req</div>`;
+      chartEl.appendChild(bar);
+    });
+
+    // -- Daily table (7 days) --
+    const days = {};
+    weekly.result.forEach(r => {
+      const day = r.timestamp.substring(0, 10);
+      if (!days[day]) days[day] = { rest: 0, storage: 0, auth: 0 };
+      days[day].rest += r.total_rest_requests || 0;
+      days[day].storage += r.total_storage_requests || 0;
+      days[day].auth += r.total_auth_requests || 0;
+    });
+    const sortedDays = Object.entries(days).sort().reverse();
+    const tableEl = document.getElementById('daily-table');
+    tableEl.innerHTML = '';
+    sortedDays.forEach(([day, v], idx) => {
+      const prev = sortedDays[idx + 1];
+      let trend = '--';
+      if (prev) {
+        const d = v.storage - prev[1].storage;
+        const a = d < 0 ? '↓' : d > 0 ? '↑' : '→';
+        const c = d <= 0 ? 'green' : 'orange';
+        trend = `<span class="${c}">${a} ${Math.abs(d).toLocaleString('fr-FR')}</span>`;
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${day}</td><td>${v.rest.toLocaleString('fr-FR')}</td><td>${v.storage.toLocaleString('fr-FR')}</td><td>${v.auth.toLocaleString('fr-FR')}</td><td>${trend}</td>`;
+      tableEl.appendChild(tr);
+    });
+
+    // -- Bandwidth estimate --
+    // Estimate: avg bytes per storage request * total requests this month
+    // We know ~500MB storage, 33.5GB over ~13 days with ~90k requests
+    // That's ~380KB per request average
+    const totalStorageMonth = Object.values(days).reduce((s, v) => s + v.storage, 0);
+    // Rough estimate based on previous data: 33.5GB / 90k requests = ~390KB/req
+    const estBwGB = (totalStorageMonth * 0.00039) / 1; // ~390KB per request → GB
+    const pct = ((estBwGB / BW_LIMIT_GB) * 100).toFixed(0);
+    const col = colorForPercent(pct);
+    document.getElementById('bw-value').innerHTML = `<span class="${col}">${estBwGB.toFixed(1)} <small>/ ${BW_LIMIT_GB} GB</small></span>`;
+    document.getElementById('bw-sub').textContent = `~${pct}% utilise (estimation basee sur ${totalStorageMonth.toLocaleString('fr-FR')} requetes)`;
+    const barEl = document.getElementById('bw-bar');
+    barEl.style.width = Math.min(pct, 100) + '%';
+    barEl.className = 'bar-fill bar-' + col;
+
+  } catch (err) {
+    errorEl.textContent = 'Erreur API : ' + err.message;
+    errorEl.style.display = 'block';
+  }
+
+  // -- Site status check --
+  try {
+    const start = Date.now();
+    const res = await fetch('https://www.chantenscene.fr', { mode: 'no-cors' });
+    const ms = Date.now() - start;
+    document.getElementById('site-status').innerHTML =
+      `<span class="status-badge status-ok">En ligne</span>`;
+    document.getElementById('site-sub').textContent = `Temps de reponse : ${ms}ms`;
+  } catch {
+    document.getElementById('site-status').innerHTML =
+      `<span class="status-badge status-crit">Hors ligne / Erreur</span>`;
+    document.getElementById('site-sub').textContent = '';
+  }
+
+  document.getElementById('refresh-info').textContent =
+    'Derniere mise a jour : ' + new Date().toLocaleTimeString('fr-FR') + ' — rafraichissement toutes les 5 min';
+}
+
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
