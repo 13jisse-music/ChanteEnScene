@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publishEverywhere } from '@/lib/social'
 
@@ -356,7 +357,7 @@ export async function GET(request: Request) {
         if (finalImageUrl?.includes('/api/social-card') || finalImageUrl?.includes('/api/candidate-portrait')) {
           try {
             // Vérifier si une image statique existe déjà pour ces paramètres
-            const urlHash = Buffer.from(finalImageUrl).toString('base64url').slice(0, 32)
+            const urlHash = createHash('sha256').update(finalImageUrl).digest('hex').slice(0, 16)
             const filename = `social/cron-${urlHash}.png`
             const { data: existing } = supabase.storage.from('photos').getPublicUrl(filename)
             // Vérifier si le fichier existe
