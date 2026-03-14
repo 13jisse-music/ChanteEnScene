@@ -312,6 +312,85 @@ export default function RegieEnLigne({ session, candidates, juryScores, jurors, 
         <StatCard icon="⭐" label="Approuvés" value={totalSelected} color="#8b5cf6" />
       </div>
 
+      {/* Podiums — 1ers et 2nds par catégorie */}
+      {categoryData.some(({ rankings }) => rankings.length > 0 && rankings[0].total > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Podium 1ers */}
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5">
+            <h3 className="font-[family-name:var(--font-montserrat)] font-bold text-sm mb-4 flex items-center gap-2">
+              <span className="text-lg">🏆</span> Premiers par catégorie
+            </h3>
+            <div className="space-y-3">
+              {categoryData.map(({ category, rankings }) => {
+                const r = rankings[0]
+                if (!r || r.total === 0) return (
+                  <div key={category} className="flex items-center gap-3 opacity-40">
+                    <span className="text-xs font-bold w-16 text-white/50">{category}</span>
+                    <span className="text-xs text-white/30">Pas encore de votes</span>
+                  </div>
+                )
+                const c = r.candidate
+                const score = Math.round(r.ouiPercent * 60 + (c.likes_count || 0) / Math.max(1, ...categoryData.find(cd => cd.category === category)!.rankings.map(x => x.candidate.likes_count || 0)) * 30 + (r.verdict === 'favorable' ? 10 : 0))
+                return (
+                  <div key={category} className="flex items-center gap-3 bg-gradient-to-r from-[#f5a623]/10 to-transparent rounded-lg px-3 py-2 border border-[#f5a623]/20">
+                    <span className="text-lg">🥇</span>
+                    {c.photo_url && <img src={c.photo_url} alt="" className="w-8 h-8 rounded-full object-cover border border-[#f5a623]/40" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#f5a623] w-14">{category}</span>
+                        <span className="text-sm font-semibold truncate">{displayName(c)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-white/50">
+                        <span>👍 {r.oui}/{r.total}</span>
+                        <span>❤️ {c.likes_count || 0}</span>
+                        <span className="font-bold text-[#f5a623]">{score}/100</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Podium 2nds */}
+          <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-5">
+            <h3 className="font-[family-name:var(--font-montserrat)] font-bold text-sm mb-4 flex items-center gap-2">
+              <span className="text-lg">🎖️</span> Seconds par catégorie
+            </h3>
+            <div className="space-y-3">
+              {categoryData.map(({ category, rankings }) => {
+                const r = rankings[1]
+                if (!r || r.total === 0) return (
+                  <div key={category} className="flex items-center gap-3 opacity-40">
+                    <span className="text-xs font-bold w-16 text-white/50">{category}</span>
+                    <span className="text-xs text-white/30">{rankings.length < 2 ? 'Pas assez de candidats' : 'Pas encore de votes'}</span>
+                  </div>
+                )
+                const c = r.candidate
+                const score = Math.round(r.ouiPercent * 60 + (c.likes_count || 0) / Math.max(1, ...categoryData.find(cd => cd.category === category)!.rankings.map(x => x.candidate.likes_count || 0)) * 30 + (r.verdict === 'favorable' ? 10 : 0))
+                return (
+                  <div key={category} className="flex items-center gap-3 bg-gradient-to-r from-[#c0c0c0]/10 to-transparent rounded-lg px-3 py-2 border border-[#c0c0c0]/20">
+                    <span className="text-lg">🥈</span>
+                    {c.photo_url && <img src={c.photo_url} alt="" className="w-8 h-8 rounded-full object-cover border border-[#c0c0c0]/40" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#c0c0c0] w-14">{category}</span>
+                        <span className="text-sm font-semibold truncate">{displayName(c)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-white/50">
+                        <span>👍 {r.oui}/{r.total}</span>
+                        <span>❤️ {c.likes_count || 0}</span>
+                        <span className="font-bold text-[#c0c0c0]">{score}/100</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Per-category sections */}
       {categoryData.map(({ category, rankings, selected, favorableApproved }) => (
         <div key={category} className="bg-[#161228] border border-[#2a2545] rounded-2xl overflow-hidden">
