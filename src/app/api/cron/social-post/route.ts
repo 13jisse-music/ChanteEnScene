@@ -300,6 +300,26 @@ export async function GET(request: Request) {
       }
     }
 
+    // Also track recently spotlighted (last 48h) to avoid consecutive posts
+    const twoDaysAgo = new Date()
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+    const { data: recentPortraits } = await supabase
+      .from('social_posts_log')
+      .select('message')
+      .eq('source', 'cron')
+      .eq('post_type', 'candidate_portrait')
+      .gte('created_at', twoDaysAgo.toISOString())
+
+    const recentSlugs = new Set<string>()
+    if (recentPortraits) {
+      for (const post of recentPortraits) {
+        const matches = (post.message || '').matchAll(/\/candidats\/([a-z0-9-]+)/g)
+        for (const match of matches) {
+          recentSlugs.add(match[1])
+        }
+      }
+    }
+
     // Get approved candidates sorted by fewest votes, pick one without a portrait yet
     const { data: spotlightCandidates } = await supabase
       .from('candidates')
@@ -309,11 +329,11 @@ export async function GET(request: Request) {
       .neq('image_social_consent', false)
       .order('likes_count', { ascending: true })
 
-    // Pick candidate never spotlighted yet; if all done, restart cycle from least votes
+    // Pick candidate: 1) never spotlighted, 2) not recently posted (48h), 3) least votes
     let spotlightCandidate = (spotlightCandidates || []).find(c => !portraitSlugs.has(c.slug)) || null
     if (!spotlightCandidate && (spotlightCandidates || []).length > 0) {
-      // All candidates have been spotlighted — restart cycle from least votes
-      spotlightCandidate = spotlightCandidates![0] // already sorted by likes_count ASC
+      // All spotlighted — restart cycle but skip recently posted candidates
+      spotlightCandidate = (spotlightCandidates || []).find(c => !recentSlugs.has(c.slug)) || null
     }
 
     const posts = generatePosts(
