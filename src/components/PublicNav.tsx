@@ -19,6 +19,7 @@ const RIGHT_LINKS = [
   { href: `/${SESSION_SLUG}/live`, label: 'Live / Votes' },
   { href: '/palmares', label: 'Palmarès' },
   { href: '/editions', label: 'Editions' },
+  { href: '/blog', label: 'Blog' },
 ]
 
 const ALL_LINKS = [...LEFT_LINKS, ...RIGHT_LINKS]
