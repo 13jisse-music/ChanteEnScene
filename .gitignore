@@ -79,6 +79,10 @@ supabase/.temp/
 # windows
 nul
 
+# youtube OAuth tokens
+scripts/client_secret.json
+scripts/youtube-token.json
+
 # claude code
 .claude/
 
