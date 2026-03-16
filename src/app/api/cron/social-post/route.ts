@@ -291,15 +291,22 @@ export async function GET(request: Request) {
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
 
-    // Candidats approuvés jamais annoncés (slug absent des posts cron précédents)
+    // Candidats approuvés récemment (48h) et jamais annoncés
+    // Les candidats approuvés plus anciennement seront mis en avant via le spotlight
+    const recentCutoff = new Date()
+    recentCutoff.setDate(recentCutoff.getDate() - 2)
+
     const { data: allApproved } = await supabase
       .from('candidates')
-      .select('first_name, last_name, stage_name, slug, song_title, song_artist, photo_url')
+      .select('first_name, last_name, stage_name, slug, song_title, song_artist, photo_url, updated_at')
       .eq('session_id', session.id)
       .in('status', ['approved', 'semifinalist', 'finalist'])
       .neq('image_social_consent', false)
 
-    const newCandidates = (allApproved || []).filter(c => !announcedSlugs.has(c.slug))
+    const newCandidates = (allApproved || []).filter(c =>
+      !announcedSlugs.has(c.slug) &&
+      c.updated_at && new Date(c.updated_at) >= recentCutoff
+    )
 
     // Find spotlight candidate: approved, never had a portrait post, fewest votes first
     const { data: pastPortraits } = await supabase
