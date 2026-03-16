@@ -5,7 +5,7 @@ export const metadata = {
   description: 'Dossier de presse, photos HD et ressources médias du concours ChanteEnScène.',
 }
 
-const PHOTOS_BASE = 'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/photos/photos'
+const PHOTOS_BASE = 'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/photos/photos'
 const SESSION_2025 = 'a0000000-0000-0000-0000-000000002025'
 
 const pressPhotos = [

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadToR2 } from '@/lib/r2'
 
 export const maxDuration = 60
 
@@ -47,9 +48,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
     }
 
-    const basePath = `${session_id}/${slug}`
+    const r2BasePath = `candidates/${slug}`
 
-    // Upload photo if file provided
+    // Upload photo to R2 if file provided
     let photo_url: string | null = fields.photo_url || null
     if (photoFile && photoFile.size > 0) {
       const sharp = (await import('sharp')).default
@@ -59,38 +60,22 @@ export async function POST(request: Request) {
         .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 85 })
         .toBuffer()
-      const { error: photoError } = await supabase.storage
-        .from('candidates')
-        .upload(`${basePath}/photo`, photoBuffer, {
-          upsert: true,
-          contentType: 'image/jpeg',
-        })
-      if (photoError) {
-        return NextResponse.json({ error: `Erreur upload photo: ${photoError.message}` }, { status: 500 })
-      }
-      const { data: photoData } = supabase.storage.from('candidates').getPublicUrl(`${basePath}/photo`)
-      photo_url = photoData.publicUrl
+      photo_url = await uploadToR2(`${r2BasePath}/photo`, photoBuffer, 'image/jpeg')
     }
 
     if (!photo_url) {
       return NextResponse.json({ error: 'Photo obligatoire' }, { status: 400 })
     }
 
-    // Upload consent if file provided
+    // Upload consent to R2 if file provided
     let consent_url: string | null = fields.consent_url || null
     if (consentFile && consentFile.size > 0) {
       const consentBuffer = Buffer.from(await consentFile.arrayBuffer())
-      const { error: consentError } = await supabase.storage
-        .from('candidates')
-        .upload(`${basePath}/consent`, consentBuffer, {
-          upsert: true,
-          contentType: consentFile.type || 'application/pdf',
-        })
-      if (consentError) {
-        return NextResponse.json({ error: `Erreur upload autorisation: ${consentError.message}` }, { status: 500 })
-      }
-      const { data: consentData } = supabase.storage.from('candidates').getPublicUrl(`${basePath}/consent`)
-      consent_url = consentData.publicUrl
+      consent_url = await uploadToR2(
+        `${r2BasePath}/consent`,
+        consentBuffer,
+        consentFile.type || 'application/pdf'
+      )
     }
 
     // Insert candidate

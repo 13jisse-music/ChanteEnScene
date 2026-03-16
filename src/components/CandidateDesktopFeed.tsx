@@ -74,8 +74,9 @@ function FeedPost({
   const [voting, setVoting] = useState(false)
   const [heartPop, setHeartPop] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const isYouTube = candidate.video_url ? !!getYouTubeId(candidate.video_url) : false
-  const [showVideo, setShowVideo] = useState(candidate.video_public && !!candidate.video_url && !isYouTube)
+  const youTubeId = candidate.video_url ? getYouTubeId(candidate.video_url) : null
+  const isYouTube = !!youTubeId
+  const [showVideo, setShowVideo] = useState(candidate.video_public && !!candidate.video_url)
   const [muted, setMuted] = useState(true)
   const [isPlaying, setIsPlaying] = useState(false)
 
@@ -237,7 +238,16 @@ function FeedPost({
 
       {/* Media */}
       <div className="relative bg-black">
-        {showVideo && candidate.video_url ? (
+        {showVideo && candidate.video_url && isYouTube ? (
+          <div className="relative aspect-video">
+            <iframe
+              src={`https://www.youtube.com/embed/${youTubeId}?autoplay=0&mute=1&loop=1&playlist=${youTubeId}&playsinline=1&modestbranding=1&rel=0`}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          </div>
+        ) : showVideo && candidate.video_url ? (
           <div className="relative aspect-video">
             <video
               ref={videoRef}

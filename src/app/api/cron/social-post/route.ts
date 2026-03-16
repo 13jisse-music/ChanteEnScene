@@ -5,6 +5,23 @@ import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publishEverywhere } from '@/lib/social'
 
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
+const TELEGRAM_CHAT_ID = '8064044229'
+
+async function sendTelegram(text: string): Promise<boolean> {
+  if (!TELEGRAM_TOKEN) return false
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
@@ -405,6 +422,15 @@ export async function GET(request: Request) {
           instagram_post_id: result.instagram && 'id' in result.instagram ? result.instagram.id : null,
           error: fbError || (result.instagram && 'error' in result.instagram ? result.instagram.error : null),
         }).then(() => {})
+
+        // Notification Telegram
+        const igOk = result.instagram && 'id' in result.instagram
+        const igError = result.instagram && 'error' in result.instagram ? result.instagram.error : undefined
+        const statusFb = fbOk ? '✅ FB' : `❌ FB: ${fbError}`
+        const statusIg = igOk ? '✅ IG' : (igError ? `❌ IG: ${igError}` : '⏭️ IG: pas d\'image')
+        const preview = postToPublish.message.substring(0, 200) + (postToPublish.message.length > 200 ? '...' : '')
+        const tgMsg = `📣 *Post social publié*\n\n🏷️ Type: ${postToPublish.type}\n${statusFb}\n${statusIg}\n\n${preview}`
+        await sendTelegram(tgMsg)
       } catch (err) {
         sessionResults.push({
           type: postToPublish.type,

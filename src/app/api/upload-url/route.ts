@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getR2UploadUrl } from '@/lib/r2'
 
 /**
- * Generates a signed upload URL for a file.
+ * Generates a signed upload URL for a file on Cloudflare R2.
  * The client can then PUT the file directly to this URL.
  * This bypasses RLS and works in ALL browsers (even Facebook WebView)
  * because it's a simple PUT to a unique URL, not a REST API call.
@@ -20,23 +20,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
     }
 
-    const supabase = createAdminClient()
+    // R2 key: candidates/{slug}/video, candidates/{slug}/photo, etc.
+    const r2Key = `${bucket}/${path}`
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .createSignedUploadUrl(path)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    // Also return the public URL for after upload
-    const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path)
+    const { signedUrl, publicUrl } = await getR2UploadUrl(r2Key)
 
     return NextResponse.json({
-      signedUrl: data.signedUrl,
-      token: data.token,
-      publicUrl: publicData.publicUrl,
+      signedUrl,
+      token: 'r2',
+      publicUrl,
     })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

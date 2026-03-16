@@ -89,8 +89,10 @@ function SwipeSlide({
 
   const displayName = candidate.stage_name || candidate.first_name
   const accent = candidate.accent_color || '#e91e8c'
-  const isYouTube = candidate.video_url ? !!getYouTubeId(candidate.video_url) : false
+  const youTubeId = candidate.video_url ? getYouTubeId(candidate.video_url) : null
+  const isYouTube = !!youTubeId
   const showVideo = candidate.video_public && candidate.video_url && !isYouTube
+  const showYouTube = candidate.video_public && isYouTube
 
   // Check existing vote
   useEffect(() => {
@@ -219,6 +221,13 @@ function SwipeSlide({
             className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
           />
         </>
+      ) : showYouTube ? (
+        <iframe
+          src={`https://www.youtube.com/embed/${youTubeId}?autoplay=${isActive ? 1 : 0}&mute=${globalMuted ? 1 : 0}&loop=1&playlist=${youTubeId}&playsinline=1&controls=0&modestbranding=1&rel=0`}
+          className="absolute inset-0 w-full h-full"
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
       ) : candidate.photo_url ? (
         <Image
           src={candidate.photo_url}
