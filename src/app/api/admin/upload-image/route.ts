@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadToR2, listR2Objects } from '@/lib/r2'
 
 export async function GET() {
   const supabase = await createClient()
@@ -19,32 +19,21 @@ export async function GET() {
     return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
-  const admin = createAdminClient()
-  const { data: socialFiles } = await admin.storage.from('photos').list('social', {
-    limit: 50,
-    sortBy: { column: 'created_at', order: 'desc' },
-  })
-  const { data: rootFiles } = await admin.storage.from('photos').list('', {
-    limit: 100,
-    sortBy: { column: 'created_at', order: 'desc' },
-  })
-
-  const baseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos`
-
-  const images = [
-    ...(socialFiles || [])
-      .filter((f) => f.name.match(/\.(jpg|jpeg|png|webp)$/i))
-      .map((f) => ({ name: f.name, url: `${baseUrl}/social/${f.name}`, folder: 'social' })),
-    ...(rootFiles || [])
-      .filter((f) => f.name.match(/\.(jpg|jpeg|png|webp)$/i))
-      .map((f) => ({ name: f.name, url: `${baseUrl}/${f.name}`, folder: '' })),
-  ]
+  // List images from R2
+  const r2Files = await listR2Objects('social/', 50)
+  const images = r2Files
+    .filter(f => f.key.match(/\.(jpg|jpeg|png|webp)$/i))
+    .sort((a, b) => (b.lastModified?.getTime() || 0) - (a.lastModified?.getTime() || 0))
+    .map(f => ({
+      name: f.key.replace('social/', ''),
+      url: f.url,
+      folder: 'social',
+    }))
 
   return NextResponse.json({ images })
 }
 
 export async function POST(request: Request) {
-  // Vérifier que l'utilisateur est admin
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
@@ -70,22 +59,12 @@ export async function POST(request: Request) {
     }
 
     const ext = file.name.split('.').pop() || 'jpg'
-    const fileName = `social/${Date.now()}.${ext}`
+    const key = `social/${Date.now()}.${ext}`
 
-    const admin = createAdminClient()
-    const { error } = await admin.storage
-      .from('photos')
-      .upload(fileName, file, { contentType: file.type })
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const publicUrl = await uploadToR2(key, buffer, file.type || 'image/jpeg')
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    const { data: urlData } = admin.storage
-      .from('photos')
-      .getPublicUrl(fileName)
-
-    return NextResponse.json({ url: urlData.publicUrl })
+    return NextResponse.json({ url: publicUrl })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }

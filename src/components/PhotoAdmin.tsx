@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { uploadPhoto, updatePhoto, deletePhoto, togglePhotoPublished, bulkTogglePublished } from '@/app/admin/photos/actions'
 
 interface Photo {
@@ -118,13 +117,12 @@ export default function PhotoAdmin({ sessionId, photos: initialPhotos, candidate
 
     setUploading(true)
     setError(null)
-    const supabase = createClient()
     let successCount = 0
     let lastError: string | null = null
 
     for (const file of Array.from(files)) {
       const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-      const path = `photos/${sessionId}/${fileName}`
+      const key = `photos/${sessionId}/${fileName}`
 
       let blob: Blob
       try {
@@ -133,16 +131,17 @@ export default function PhotoAdmin({ sessionId, photos: initialPhotos, candidate
         blob = file
       }
 
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(path, blob, { contentType: 'image/jpeg' })
-
-      if (uploadError) {
-        lastError = `Erreur upload ${file.name}: ${uploadError.message}`
+      // Upload to R2 via API
+      const uploadForm = new FormData()
+      uploadForm.append('file', blob, fileName)
+      uploadForm.append('key', key)
+      const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}))
+        lastError = `Erreur upload ${file.name}: ${errData.error || 'Upload failed'}`
         continue
       }
-
-      const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
+      const { publicUrl } = await uploadRes.json()
 
       const result = await uploadPhoto(sessionId, publicUrl, '', 'general', null, null)
       if (result.error) {

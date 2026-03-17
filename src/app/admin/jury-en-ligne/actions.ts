@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getResend, FROM_EMAIL } from '@/lib/resend'
+import { uploadToR2 } from '@/lib/r2'
 import { requireAdmin } from '@/lib/security'
 
 export async function promoteToSemifinalist(candidateId: string) {
@@ -224,22 +225,16 @@ export async function adminUploadMp3(candidateId: string, formData: FormData) {
 
   if (!candidate) return { error: 'Candidat introuvable.' }
 
-  const path = `${candidate.session_id}/${candidate.slug}/mp3`
+  const key = `candidates/${candidate.session_id}/${candidate.slug}/mp3`
   const buffer = Buffer.from(await file.arrayBuffer())
 
-  // Upload via admin client (bypasses RLS)
-  const { error: uploadError } = await supabase.storage
-    .from('candidates')
-    .upload(path, buffer, {
-      upsert: true,
-      contentType: 'audio/mpeg',
-    })
-
-  if (uploadError) return { error: `Upload échoué: ${uploadError.message}` }
-
-  // Get public URL and save
-  const { data } = supabase.storage.from('candidates').getPublicUrl(path)
-  const mp3Url = data.publicUrl
+  // Upload to R2
+  let mp3Url: string
+  try {
+    mp3Url = await uploadToR2(key, buffer, 'audio/mpeg')
+  } catch (err) {
+    return { error: `Upload échoué: ${err instanceof Error ? err.message : 'R2 error'}` }
+  }
 
   const { error: updateError } = await supabase
     .from('candidates')

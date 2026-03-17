@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { updateWinner, updateWinnerPhoto } from '@/app/admin/palmares/actions'
 
 interface Winner {
@@ -109,23 +108,22 @@ function WinnerCard({ winner }: { winner: Winner }) {
 
     setUploading(true)
     try {
-      const supabase = createClient()
-      const storagePath = `${winner.session_id}/${winner.slug}/photo`
+      const key = `candidates/${winner.session_id}/${winner.slug}/photo`
 
-      const { error: uploadError } = await supabase.storage
-        .from('candidates')
-        .upload(storagePath, file, { contentType: file.type, upsert: true })
-
-      if (uploadError) {
-        showToast(`Erreur upload: ${uploadError.message}`)
+      const uploadForm = new FormData()
+      uploadForm.append('file', file, 'photo')
+      uploadForm.append('key', key)
+      const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}))
+        showToast(`Erreur upload: ${errData.error || 'Upload failed'}`)
         setUploading(false)
         return
       }
+      const { publicUrl } = await uploadRes.json()
+      const newUrl = `${publicUrl}?t=${Date.now()}`
 
-      const { data: urlData } = supabase.storage.from('candidates').getPublicUrl(storagePath)
-      const newUrl = `${urlData.publicUrl}?t=${Date.now()}`
-
-      const res = await updateWinnerPhoto(winner.id, urlData.publicUrl)
+      const res = await updateWinnerPhoto(winner.id, publicUrl)
       if (res.error) {
         showToast(`Erreur: ${res.error}`)
       } else {

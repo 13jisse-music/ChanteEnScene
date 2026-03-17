@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!
@@ -37,4 +37,32 @@ export async function uploadToR2(key: string, body: Buffer | Uint8Array, content
   })
   await r2Client.send(command)
   return `${R2_PUBLIC_URL}/${key}`
+}
+
+export function getR2PublicUrl(key: string) {
+  return `${R2_PUBLIC_URL}/${key}`
+}
+
+export async function listR2Objects(prefix: string, maxKeys = 100) {
+  const command = new ListObjectsV2Command({
+    Bucket: R2_BUCKET,
+    Prefix: prefix,
+    MaxKeys: maxKeys,
+  })
+  const result = await r2Client.send(command)
+  return (result.Contents || []).map(obj => ({
+    key: obj.Key!,
+    url: `${R2_PUBLIC_URL}/${obj.Key}`,
+    size: obj.Size,
+    lastModified: obj.LastModified,
+  }))
+}
+
+export async function deleteR2Objects(keys: string[]) {
+  if (keys.length === 0) return
+  const command = new DeleteObjectsCommand({
+    Bucket: R2_BUCKET,
+    Delete: { Objects: keys.map(Key => ({ Key })) },
+  })
+  await r2Client.send(command)
 }

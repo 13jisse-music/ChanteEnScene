@@ -121,22 +121,20 @@ export default function LivePhotoCapture({ sessionId, liveEventId, currentCandid
       // Compress image
       const blob = await compressImage(file)
 
-      // Upload to storage
+      // Upload to R2 via API
       const fileName = `crowd_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-      const path = `photos/${sessionId}/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(path, blob, { contentType: 'image/jpeg' })
-
-      if (uploadError) throw new Error(uploadError.message)
-
-      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+      const key = `photos/${sessionId}/${fileName}`
+      const uploadForm = new FormData()
+      uploadForm.append('file', blob, fileName)
+      uploadForm.append('key', key)
+      const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+      if (!uploadRes.ok) throw new Error('Upload failed')
+      const { publicUrl } = await uploadRes.json()
 
       // Insert into photos table
       const { error: insertError } = await supabase.from('photos').insert({
         session_id: sessionId,
-        photo_url: urlData.publicUrl,
+        photo_url: publicUrl,
         caption: currentCandidateName ? `Photo prise pendant la performance de ${currentCandidateName}` : null,
         tag_type: 'event',
         tag_event: 'final',

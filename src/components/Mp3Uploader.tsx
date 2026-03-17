@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { saveMp3Url } from '@/app/admin/resultats/actions'
 
 interface Props {
@@ -47,18 +46,19 @@ export default function Mp3Uploader({ candidateId, sessionId, slug, existingMp3U
     setProgress('Upload en cours...')
 
     try {
-      const supabase = createClient()
-      const path = `${sessionId}/${slug}/mp3`
+      const key = `candidates/${sessionId}/${slug}/mp3`
 
-      const { error: uploadError } = await supabase.storage
-        .from('candidates')
-        .upload(path, file, { upsert: true })
-
-      if (uploadError) throw new Error(`Upload échoué: ${uploadError.message}`)
+      const uploadForm = new FormData()
+      uploadForm.append('file', file, 'audio.mp3')
+      uploadForm.append('key', key)
+      const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}))
+        throw new Error(`Upload échoué: ${errData.error || 'Upload failed'}`)
+      }
 
       setProgress('Enregistrement...')
-      const { data } = supabase.storage.from('candidates').getPublicUrl(path)
-      const url = data.publicUrl
+      const { publicUrl: url } = await uploadRes.json()
 
       const result = await saveMp3Url(candidateId, url)
       if ('error' in result && result.error) throw new Error(result.error)

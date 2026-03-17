@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import {
   createSponsor,
   updateSponsor,
@@ -73,21 +72,20 @@ export default function SponsorAdmin({ sessionId, sponsors: initialSponsors }: P
   ) {
     setUploading(true)
     setError(null)
-    const supabase = createClient()
     const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-    const path = `sponsors/${sessionId}/${fileName}`
+    const key = `sponsors/${sessionId}/${fileName}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('photos')
-      .upload(path, file, { contentType: file.type })
-
-    if (uploadError) {
-      setError(`Erreur upload: ${uploadError.message}`)
+    const uploadForm = new FormData()
+    uploadForm.append('file', file, fileName)
+    uploadForm.append('key', key)
+    const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.json().catch(() => ({}))
+      setError(`Erreur upload: ${errData.error || 'Upload failed'}`)
       setUploading(false)
       return
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
+    const { publicUrl } = await uploadRes.json()
     setUrl(publicUrl)
     setUploading(false)
   }

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publishEverywhere } from '@/lib/social'
+import { uploadToR2, getR2PublicUrl } from '@/lib/r2'
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = '8064044229'
@@ -380,26 +381,20 @@ export async function GET(request: Request) {
         let finalImageUrl = postToPublish.imageUrl
         if (finalImageUrl?.includes('/api/social-card') || finalImageUrl?.includes('/api/candidate-portrait')) {
           try {
-            // Vérifier si une image statique existe déjà pour ces paramètres
+            // Upload image statique sur R2 pour réseaux sociaux
             const urlHash = createHash('sha256').update(finalImageUrl).digest('hex').slice(0, 16)
             const filename = `social/cron-${urlHash}.png`
-            const { data: existing } = supabase.storage.from('photos').getPublicUrl(filename)
-            // Vérifier si le fichier existe
-            const { data: fileCheck } = await supabase.storage.from('photos').list('social', { search: `cron-${urlHash}.png` })
-            if (fileCheck && fileCheck.length > 0) {
-              // Image déjà générée, réutiliser l'URL statique
-              finalImageUrl = existing.publicUrl
+            const r2Url = getR2PublicUrl(filename)
+            // Vérifier si le fichier existe déjà sur R2 (HEAD request)
+            const headRes = await fetch(r2Url, { method: 'HEAD' }).catch(() => null)
+            if (headRes && headRes.ok) {
+              finalImageUrl = r2Url
             } else {
-              // Générer et uploader une seule fois
+              // Générer et uploader sur R2 une seule fois
               const imgRes = await fetch(finalImageUrl)
               if (imgRes.ok) {
                 const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
-                const { error: uploadErr } = await supabase.storage
-                  .from('photos')
-                  .upload(filename, imgBuffer, { contentType: 'image/png', upsert: true })
-                if (!uploadErr) {
-                  finalImageUrl = existing.publicUrl
-                }
+                finalImageUrl = await uploadToR2(filename, imgBuffer, 'image/png')
               }
             }
           } catch {

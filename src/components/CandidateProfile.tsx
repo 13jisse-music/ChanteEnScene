@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { updateCandidateProfile, updateCandidatePhoto, updateFinaleSongs } from '@/app/[slug]/mon-profil/actions'
 import type { FinaleSong } from '@/app/[slug]/mon-profil/actions'
 
@@ -160,21 +159,20 @@ export default function CandidateProfile({ candidate, sessionSlug, referralCount
     if (!file) return
 
     setUploading(true)
-    const supabase = createClient()
     const ext = file.name.split('.').pop()
-    const path = `candidates/${candidate.id}/photo.${ext}`
+    const key = `candidates/${candidate.id}/photo.${ext}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('photos')
-      .upload(path, file, { upsert: true })
-
-    if (uploadError) {
-      setMessage({ type: 'error', text: `Erreur upload: ${uploadError.message}` })
+    const uploadForm = new FormData()
+    uploadForm.append('file', file, `photo.${ext}`)
+    uploadForm.append('key', key)
+    const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.json().catch(() => ({}))
+      setMessage({ type: 'error', text: `Erreur upload: ${errData.error || 'Upload failed'}` })
       setUploading(false)
       return
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(path)
+    const { publicUrl } = await uploadRes.json()
 
     const result = await updateCandidatePhoto(candidate.id, candidate.slug, publicUrl)
     if (result.error) {

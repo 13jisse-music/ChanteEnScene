@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadToR2, listR2Objects, deleteR2Objects } from '@/lib/r2'
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -57,48 +58,36 @@ export async function GET(request: Request) {
 
     if (data && data.length > 0) {
       const json = JSON.stringify(data, null, 2)
-      const filePath = `${timestamp}/${table}.json`
+      const key = `backups/${timestamp}/${table}.json`
 
-      const { error: uploadError } = await supabase.storage
-        .from('backups')
-        .upload(filePath, json, {
-          contentType: 'application/json',
-          upsert: true,
-        })
-
-      if (uploadError) {
-        errors.push(`${table} upload: ${uploadError.message}`)
+      try {
+        await uploadToR2(key, Buffer.from(json), 'application/json')
+      } catch (err) {
+        errors.push(`${table} upload: ${err instanceof Error ? err.message : 'R2 error'}`)
       }
     }
   }
 
-  // Upload summary
+  // Upload summary to R2
   const summaryData = JSON.stringify({ timestamp, tables: summary, errors }, null, 2)
-  await supabase.storage
-    .from('backups')
-    .upload(`${timestamp}/_summary.json`, summaryData, {
-      contentType: 'application/json',
-      upsert: true,
-    })
+  try {
+    await uploadToR2(`backups/${timestamp}/_summary.json`, Buffer.from(summaryData), 'application/json')
+  } catch { /* ignore */ }
 
-  // Clean old backups (keep last 8 weeks)
-  const { data: folders } = await supabase.storage
-    .from('backups')
-    .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } })
-
-  if (folders && folders.length > 8) {
-    const toDelete = folders.slice(0, folders.length - 8)
-    for (const folder of toDelete) {
-      const { data: files } = await supabase.storage
-        .from('backups')
-        .list(folder.name)
-      if (files) {
-        await supabase.storage
-          .from('backups')
-          .remove(files.map(f => `${folder.name}/${f.name}`))
-      }
+  // Clean old backups (keep last 8)
+  try {
+    const allBackups = await listR2Objects('backups/', 1000)
+    // Get unique timestamp prefixes
+    const timestamps = [...new Set(allBackups.map(f => f.key.split('/')[1]).filter(Boolean))]
+    timestamps.sort()
+    if (timestamps.length > 8) {
+      const toDelete = timestamps.slice(0, timestamps.length - 8)
+      const keysToDelete = allBackups
+        .filter(f => toDelete.some(ts => f.key.startsWith(`backups/${ts}/`)))
+        .map(f => f.key)
+      await deleteR2Objects(keysToDelete)
     }
-  }
+  } catch { /* ignore cleanup errors */ }
 
   const totalRows = Object.values(summary).reduce((a, b) => a + b, 0)
 
