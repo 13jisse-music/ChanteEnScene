@@ -158,6 +158,7 @@ async function checkSites() {
   const sites = [
     { name: 'ChanteEnScene', url: 'https://www.chantenscene.fr' },
     { name: 'JCM PNL', url: 'https://jeanchristophemartinez.fr' },
+    { name: 'LCDP Ecole', url: 'https://lechantdespossible.fr' },
     { name: 'ToutEnMel', url: 'https://toutenmel.fr' },
   ]
   return Promise.all(sites.map(async (s) => {
