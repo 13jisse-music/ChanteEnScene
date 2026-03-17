@@ -6,7 +6,7 @@ const PAT = process.env.SUPABASE_ACCESS_TOKEN || ''
 const PROJECT_REF = 'xarrchsokuhobwqvcnkg'
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = '8064044229'
-const BW_LIMIT_GB = 5.5
+const BW_LIMIT_GB = 250 // Pro plan (25€/mois)
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -88,19 +88,14 @@ export async function GET(request: Request) {
   const todayData = days[today] || { rest: 0, storage: 0, auth: 0 }
   const ydayData = days[yesterday] || { rest: 0, storage: 0, auth: 0 }
 
-  // Trend
+  // Trend (factual, no anxiety)
   const storageDiff = todayData.storage - ydayData.storage
   const trendArrow = storageDiff < 0 ? '↓' : storageDiff > 0 ? '↑' : '→'
-  const trendEmoji = storageDiff <= 0 ? '✅' : '⚠️'
 
   // Bandwidth estimate (based on ~390KB average per storage request)
   const totalStorageWeek = Object.values(days).reduce((s, d) => s + d.storage, 0)
   const estBwGB = (totalStorageWeek * 0.00039)
-  const bwPct = (estBwGB / BW_LIMIT_GB * 100).toFixed(0)
-  const bwEmoji = Number(bwPct) < 70 ? '✅' : Number(bwPct) < 100 ? '⚠️' : '🔴'
-
-  // Site status
-  const siteEmoji = site.up ? '✅' : '🔴'
+  const bwPct = (estBwGB / BW_LIMIT_GB * 100).toFixed(1)
 
   // Current hour for the report label
   const hour = new Date().toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' })
@@ -112,19 +107,28 @@ export async function GET(request: Request) {
     return `${d}: S:${v.storage} R:${v.rest}`
   })
 
+  // Status: factual, one word
+  const status = !site.up ? 'ACTION REQUISE' : Number(bwPct) > 80 ? 'A surveiller' : 'Tout va bien'
+
+  // Cost analysis: is Pro worth it?
+  const proWorth = estBwGB > 5.5 ? 'Pro necessaire' : 'Pro non rentable (< 5.5 GB free tier)'
+
   const message = [
-    `📊 *ChanteEnScene — Rapport ${hour}*`,
+    `*ChanteEnScene — ${hour}*`,
     ``,
-    `${siteEmoji} Site: ${site.up ? 'En ligne' : 'HORS LIGNE'} (${site.ms}ms)`,
+    `*Statut :* ${status}`,
+    `Site : ${site.up ? 'en ligne' : 'HORS LIGNE'} (${site.ms}ms)`,
+    `Bandwidth : ${estBwGB.toFixed(1)} GB / ${BW_LIMIT_GB} GB (${bwPct}%)`,
     ``,
-    `${bwEmoji} *Bandwidth estimé: ~${estBwGB.toFixed(1)} GB / ${BW_LIMIT_GB} GB* (${bwPct}%)`,
+    `*Aujourd'hui*`,
+    `Storage : ${todayData.storage.toLocaleString('fr-FR')} req (${trendArrow} ${Math.abs(storageDiff).toLocaleString('fr-FR')} vs hier)`,
+    `REST : ${todayData.rest.toLocaleString('fr-FR')} req`,
+    `Auth : ${todayData.auth.toLocaleString('fr-FR')} req`,
     ``,
-    `📦 Storage aujourd'hui: ${todayData.storage.toLocaleString('fr-FR')} req`,
-    `${trendEmoji} vs hier: ${trendArrow} ${Math.abs(storageDiff).toLocaleString('fr-FR')} (hier: ${ydayData.storage.toLocaleString('fr-FR')})`,
-    `🔗 REST aujourd'hui: ${todayData.rest.toLocaleString('fr-FR')} req`,
-    ``,
-    `📅 *Historique (5j):*`,
+    `*7 derniers jours :*`,
     ...historyLines.map(l => `\`${l}\``),
+    ``,
+    `_Plan Pro 25€/mois — ${proWorth}_`,
   ].join('\n')
 
   const sent = await sendTelegram(message)
