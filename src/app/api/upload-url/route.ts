@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
-import { getR2UploadUrl } from '@/lib/r2'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 /**
- * Generates a signed upload URL for a file on Cloudflare R2.
+ * Generates a signed upload URL via Supabase Storage.
  * The client can then PUT the file directly to this URL.
- * This bypasses RLS and works in ALL browsers (even Facebook WebView)
- * because it's a simple PUT to a unique URL, not a REST API call.
+ * Supabase handles CORS correctly (Access-Control-Allow-Origin: *).
+ * Files are stored on Supabase first, then migrated to R2 when validated.
  */
 export async function POST(request: Request) {
   try {
@@ -20,15 +25,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
     }
 
-    // R2 key: candidates/{slug}/video, candidates/{slug}/photo, etc.
-    const r2Key = `${bucket}/${path}`
+    const filePath = path
 
-    const { signedUrl, publicUrl } = await getR2UploadUrl(r2Key)
+    // Create a signed upload URL using Supabase service role (bypasses RLS)
+    const { data, error } = await supabaseAdmin.storage
+      .from(bucket)
+      .createSignedUploadUrl(filePath)
+
+    if (error || !data) {
+      console.error('Signed URL error:', error?.message)
+      return NextResponse.json({ error: 'Erreur préparation upload' }, { status: 500 })
+    }
+
+    // Public URL for reading after upload
+    const { data: publicData } = supabaseAdmin.storage
+      .from(bucket)
+      .getPublicUrl(filePath)
 
     return NextResponse.json({
-      signedUrl,
-      token: 'r2',
-      publicUrl,
+      signedUrl: data.signedUrl,
+      token: 'supabase',
+      publicUrl: publicData.publicUrl,
     })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

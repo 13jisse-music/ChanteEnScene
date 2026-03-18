@@ -292,11 +292,14 @@ export default function InscriptionForm({ session }: { session: Session }) {
       let fingerprint: string | null = null
       try { fingerprint = await getFingerprint() } catch {}
 
-      // === STEP 1: Upload video via signed URL ===
+      // === STEP 1: Upload video via signed URL (Supabase Storage) ===
       let resolvedVideoUrl = ''
       if (videoFile) {
         setUploadStep('Vidéo...')
-        // Get a signed upload URL from our server
+        const sizeMb = Math.round(videoFile.size / 1024 / 1024)
+        if (sizeMb > 50) {
+          throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). La taille maximum est de 50 Mo. Essayez de filmer en qualité standard (720p), de raccourcir la vidéo, ou de la compresser avant de l'envoyer.`)
+        }
         const urlRes = await fetch('/api/upload-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -305,7 +308,6 @@ export default function InscriptionForm({ session }: { session: Session }) {
         const urlData = await urlRes.json()
         if (!urlRes.ok) throw new Error(urlData.error || 'Erreur préparation vidéo')
 
-        // Upload directly to the signed URL (works in all browsers)
         let uploadRes: Response
         try {
           uploadRes = await fetch(urlData.signedUrl, {
@@ -314,27 +316,18 @@ export default function InscriptionForm({ session }: { session: Session }) {
             body: videoFile,
           })
         } catch {
-          throw new Error(`La vidéo n'a pas pu être envoyée. Vérifiez votre connexion internet et réessayez. (${Math.round(videoFile.size / 1024 / 1024)} Mo)`)
+          throw new Error(`La vidéo n'a pas pu être envoyée. Vérifiez votre connexion internet et réessayez. (${sizeMb} Mo)`)
         }
         if (!uploadRes.ok) {
-          const sizeMb = Math.round(videoFile.size / 1024 / 1024)
-          // Supabase returns status 400 with body {"statusCode":"413"} when file exceeds limit
-          let isPayloadTooLarge = uploadRes.status === 413 || sizeMb > 50
-          if (uploadRes.status === 400) {
-            try {
-              const errBody = await uploadRes.clone().text()
-              if (errBody.includes('Payload too large') || errBody.includes('413')) isPayloadTooLarge = true
-            } catch {}
-          }
-          if (isPayloadTooLarge) {
-            throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). La taille maximum est de 50 Mo. Essayez de filmer en qualité standard (720p), de raccourcir la vidéo, ou de la compresser avant de l'envoyer.`)
+          if (uploadRes.status === 413 || sizeMb > 50) {
+            throw new Error(`La vidéo est trop volumineuse (${sizeMb} Mo). La taille maximum est de 50 Mo.`)
           }
           throw new Error(`Erreur lors de l'envoi de la vidéo (${uploadRes.status}). Veuillez réessayer.`)
         }
         resolvedVideoUrl = urlData.publicUrl
       }
 
-      // === STEP 2: Upload photo via signed URL (bypasses Vercel 4.5MB limit) ===
+      // === STEP 2: Upload photo via signed URL (Supabase Storage) ===
       setUploadStep('Photo...')
       let photoUrl = ''
       {
