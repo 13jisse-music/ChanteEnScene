@@ -10,14 +10,6 @@
     },
     {
       "path": "/api/cron/bandwidth-report",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/bandwidth-report",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/bandwidth-report",
       "schedule": "0 20 * * *"
     }
   ]
