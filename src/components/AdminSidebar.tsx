@@ -18,6 +18,7 @@ const NAV_ITEMS: { href: string; label: string; icon: string; section?: string; 
   { href: '/admin/jury-en-ligne', label: 'Régie En Ligne', icon: '📱', section: 'Phase En Ligne' },
   { href: '/admin/stats-en-ligne', label: 'Stats En Ligne', icon: '📉' },
   { href: '/admin/stats-jury', label: 'Fiabilité Jury', icon: '🔍' },
+  { href: '/admin/vocal-scores', label: 'Scores Vocaux', icon: '🎯' },
   // Sélection
   { href: '/admin/suivi-mp3', label: 'Suivi MP3', icon: '🎵', section: 'Sélection' },
   // Demi-finale
