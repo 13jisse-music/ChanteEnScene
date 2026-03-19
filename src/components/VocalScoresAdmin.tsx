@@ -509,7 +509,7 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
       </div>
 
       {/* Candidate cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {sorted.map(({ candidate, analysis, avgJury, juryCount }, idx) => {
           const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
           const hasAnalysis = !!analysis
@@ -519,79 +519,91 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
               key={candidate.id}
               onClick={() => hasAnalysis && setSelectedId(candidate.id)}
               disabled={!hasAnalysis}
-              className={`text-left bg-[#1a1232] border rounded-xl p-4 transition-all ${
+              className={`text-left bg-[#1a1232] border rounded-2xl p-5 transition-all ${
                 hasAnalysis
                   ? 'border-[#2a2545] hover:border-[#e91e8c]/40 hover:bg-[#1a1232]/80 cursor-pointer active:scale-[.98]'
                   : 'border-[#2a2545]/50 opacity-40 cursor-not-allowed'
               }`}
             >
-              <div className="flex items-center gap-3">
-                {/* Rank + Photo + Score Ring */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="relative">
-                    {candidate.photo_url ? (
-                      <img src={candidate.photo_url} alt={name} className="w-12 h-12 rounded-full object-cover border-2 border-white/10" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-lg font-bold">
-                        {(candidate.stage_name || candidate.first_name)[0]}
-                      </div>
-                    )}
-                    {hasAnalysis && (
-                      <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#1a1232] border border-[#2a2545] flex items-center justify-center text-[9px] font-bold text-white/60">
-                        {idx + 1}
-                      </div>
-                    )}
-                  </div>
-                  {hasAnalysis && <ScoreRing pct={analysis.justesse_pct} size={48} />}
+              {/* Top row: Photo + Name + Score Ring */}
+              <div className="flex items-center gap-4 mb-3">
+                <div className="relative flex-shrink-0">
+                  {candidate.photo_url ? (
+                    <img src={candidate.photo_url} alt={name} className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-2xl font-bold">
+                      {(candidate.stage_name || candidate.first_name)[0]}
+                    </div>
+                  )}
+                  {hasAnalysis && (
+                    <div className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-[#e91e8c] flex items-center justify-center text-[10px] font-black text-white shadow">
+                      {idx + 1}
+                    </div>
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-semibold text-sm truncate">{name}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-white/30 font-medium flex-shrink-0">
+                    <span className="text-white font-bold text-base truncate">{name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/8 text-white/40 font-semibold flex-shrink-0">
                       {candidate.category}
                     </span>
                   </div>
-                  <p className="text-white/30 text-xs truncate mt-0.5">
+                  <p className="text-white/40 text-sm truncate mt-0.5">
                     {candidate.song_title} — {candidate.song_artist}
                   </p>
+                </div>
 
-                  {hasAnalysis && (
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {/* Vocal score badge */}
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                        style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
-                        {Math.round(analysis.justesse_pct)}%
-                      </span>
-                      {/* Jury score */}
-                      {avgJury != null && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#a78bfa]/15 text-[#a78bfa]">
-                          Jury {avgJury.toFixed(1)} ({juryCount})
-                        </span>
-                      )}
-                      {analysis.octaves && (
-                        <span className="text-[10px] text-white/30">{analysis.octaves.toFixed(1)} oct</span>
-                      )}
-                    </div>
-                  )}
+                {hasAnalysis && (
+                  <div className="flex-shrink-0">
+                    <ScoreRing pct={analysis.justesse_pct} size={64} />
+                  </div>
+                )}
+              </div>
 
-                  {hasAnalysis && analysis.tessiture_low_midi && analysis.tessiture_high_midi && (
-                    <div className="mt-2">
-                      <TessitureBar
-                        low={analysis.tessiture_low!}
-                        high={analysis.tessiture_high!}
-                        lowMidi={analysis.tessiture_low_midi}
-                        highMidi={analysis.tessiture_high_midi}
-                      />
-                    </div>
+              {/* Score badges row */}
+              {hasAnalysis && (
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg"
+                    style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
+                    {analysis.justesse_label}
+                  </span>
+                  {avgJury != null && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#a78bfa]/15 text-[#a78bfa]">
+                      Jury {avgJury.toFixed(1)} ({juryCount})
+                    </span>
                   )}
-                  {hasAnalysis && analysis.raw_data?.coach_comment && (
-                    <p className="text-[10px] text-white/30 mt-1.5 line-clamp-2 italic">
-                      {analysis.raw_data.coach_comment}
-                    </p>
+                  {analysis.octaves && (
+                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-white/5 text-white/50">
+                      {analysis.octaves.toFixed(1)} oct
+                    </span>
+                  )}
+                  {analysis.voice_type && (
+                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-[#e91e8c]/10 text-[#e91e8c]/70">
+                      {analysis.voice_type}
+                    </span>
                   )}
                 </div>
-              </div>
+              )}
+
+              {/* Tessiture bar */}
+              {hasAnalysis && analysis.tessiture_low_midi && analysis.tessiture_high_midi && (
+                <div className="mb-2">
+                  <TessitureBar
+                    low={analysis.tessiture_low!}
+                    high={analysis.tessiture_high!}
+                    lowMidi={analysis.tessiture_low_midi}
+                    highMidi={analysis.tessiture_high_midi}
+                  />
+                </div>
+              )}
+
+              {/* Coach comment */}
+              {hasAnalysis && analysis.raw_data?.coach_comment && (
+                <p className="text-xs text-white/30 mt-2 line-clamp-2 italic leading-relaxed">
+                  {analysis.raw_data.coach_comment}
+                </p>
+              )}
             </button>
           )
         })}
