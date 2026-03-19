@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       city: city?.trim() || null,
       category,
       photo_url,
-      video_url: video_url || null,
+      video_url: (video_url && !video_url.includes('youtube.com') && !video_url.includes('youtu.be')) ? video_url : null,
       mp3_url: null,
       song_title: song_title?.trim() || null,
       song_artist: song_artist?.trim() || null,

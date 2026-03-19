@@ -38,10 +38,29 @@ interface VocalAnalysis {
   created_at: string
 }
 
+interface JuryScore {
+  id: string
+  juror_id: string
+  candidate_id: string
+  scores: Record<string, number> | null
+  total_score: number | null
+  comment: string | null
+  event_type: string
+  created_at: string
+}
+
+interface Juror {
+  id: string
+  first_name: string
+  last_name: string
+}
+
 interface Props {
   sessionId: string
   candidates: Candidate[]
   analyses: VocalAnalysis[]
+  juryScores?: JuryScore[]
+  jurors?: Juror[]
 }
 
 function getScoreColor(pct: number): string {
@@ -85,7 +104,6 @@ function ScoreRing({ pct, size = 64 }: { pct: number; size?: number }) {
 }
 
 function TessitureBar({ low, high, lowMidi, highMidi }: { low: string; high: string; lowMidi: number; highMidi: number }) {
-  // Piano range: C2 (36) to C6 (84)
   const minMidi = 36
   const maxMidi = 84
   const range = maxMidi - minMidi
@@ -132,7 +150,7 @@ function ZoneChart({ grave, medium, aigu }: { grave: number; medium: number; aig
         <div
           className="flex items-center justify-center text-[8px] font-bold text-white/80"
           style={{ width: `${medium}%`, background: '#0d9488' }}
-          title={`Médium ${Math.round(medium)}%`}
+          title={`Medium ${Math.round(medium)}%`}
         >
           {medium >= 15 && `${Math.round(medium)}%`}
         </div>
@@ -150,28 +168,69 @@ function ZoneChart({ grave, medium, aigu }: { grave: number; medium: number; aig
   )
 }
 
-function CandidateDetailModal({ candidate, analysis, onClose }: { candidate: Candidate; analysis: VocalAnalysis; onClose: () => void }) {
+function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorMap, onClose }: {
+  candidate: Candidate
+  analysis: VocalAnalysis
+  candidateJuryScores: JuryScore[]
+  jurorMap: Map<string, Juror>
+  onClose: () => void
+}) {
   const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
+  const avgJury = candidateJuryScores.length > 0
+    ? candidateJuryScores.reduce((s, j) => s + (j.total_score || 0), 0) / candidateJuryScores.length
+    : null
 
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
-      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[520px] sm:max-h-[85vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
+      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[560px] sm:max-h-[85vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
         <div className="p-5">
-          {/* Header */}
+          {/* Header with photo */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-4">
-              <ScoreRing pct={analysis.justesse_pct} size={80} />
+              {candidate.photo_url ? (
+                <img src={candidate.photo_url} alt={name} className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-[#e91e8c]/30" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-xl font-bold flex-shrink-0">
+                  {(candidate.stage_name || candidate.first_name)[0]}
+                </div>
+              )}
               <div>
                 <h2 className="text-white font-bold text-lg">{name}</h2>
                 <p className="text-white/40 text-sm">{candidate.song_title} — {candidate.song_artist}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-semibold"
-                  style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
-                  {analysis.justesse_label}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
+                    {analysis.justesse_label}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-white/30">{candidate.category}</span>
+                </div>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/30 hover:text-white/60 text-xl p-1">✕</button>
+            <button onClick={onClose} className="text-white/30 hover:text-white/60 text-xl p-1">&#10005;</button>
+          </div>
+
+          {/* Score vocal + Jury side by side */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="p-3 bg-white/5 rounded-xl text-center">
+              <ScoreRing pct={analysis.justesse_pct} size={72} />
+              <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Score Vocal</div>
+            </div>
+            <div className="p-3 bg-white/5 rounded-xl text-center">
+              {avgJury != null ? (
+                <>
+                  <div className="text-3xl font-black text-[#a78bfa]">{avgJury.toFixed(1)}</div>
+                  <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
+                    Jury ({candidateJuryScores.length} vote{candidateJuryScores.length > 1 ? 's' : ''})
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-black text-white/15">--</div>
+                  <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Pas de vote</div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Tessiture */}
@@ -210,41 +269,69 @@ function CandidateDetailModal({ candidate, analysis, onClose }: { candidate: Can
               />
               <div className="flex justify-between mt-1.5">
                 <span className="text-[10px] text-[#6366f1]">Grave</span>
-                <span className="text-[10px] text-[#0d9488]">Médium</span>
+                <span className="text-[10px] text-[#0d9488]">Medium</span>
                 <span className="text-[10px] text-[#e91e8c]">Aigu</span>
               </div>
             </div>
           )}
 
-          {/* Métriques détaillées */}
+          {/* Metrics */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.total_notes || '—'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Notes détectées</div>
+              <div className="text-2xl font-black text-white">{analysis.total_notes || '--'}</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-wider">Notes</div>
             </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '—'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilité</div>
+              <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
             </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.vibrato_count ?? '—'}</div>
+              <div className="text-2xl font-black text-white">{analysis.vibrato_count ?? '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">Vibratos</div>
             </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.song_bpm ? Math.round(analysis.song_bpm) : '—'}</div>
+              <div className="text-2xl font-black text-white">{analysis.song_bpm ? Math.round(analysis.song_bpm) : '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">BPM</div>
             </div>
           </div>
 
-          {/* Infos techniques */}
+          {/* Jury votes detail */}
+          {candidateJuryScores.length > 0 && (
+            <div className="p-3 bg-white/5 rounded-xl mb-4">
+              <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">
+                Votes Jury ({candidateJuryScores.length})
+              </span>
+              <div className="space-y-2">
+                {candidateJuryScores.map(js => {
+                  const juror = jurorMap.get(js.juror_id)
+                  const jurorName = juror ? `${juror.first_name} ${juror.last_name}` : 'Anonyme'
+                  return (
+                    <div key={js.id} className="flex items-center justify-between">
+                      <span className="text-xs text-white/60">{jurorName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#a78bfa]">{js.total_score ?? '--'}</span>
+                        {js.comment && (
+                          <span className="text-[10px] text-white/30 max-w-[150px] truncate" title={js.comment}>
+                            "{js.comment}"
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Technical info */}
           <div className="p-3 bg-white/5 rounded-xl">
-            <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">Infos techniques</span>
+            <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">Infos</span>
             <div className="grid grid-cols-2 gap-y-1.5 text-xs">
-              <span className="text-white/30">Tonalité</span>
-              <span className="text-white/70">{analysis.song_key || '—'} {analysis.song_key_confidence ? `(${Math.round(analysis.song_key_confidence * 100)}%)` : ''}</span>
-              <span className="text-white/30">Temps traitement</span>
-              <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '—'}</span>
-              <span className="text-white/30">Date analyse</span>
+              <span className="text-white/30">Tonalite</span>
+              <span className="text-white/70">{analysis.song_key || '--'} {analysis.song_key_confidence ? `(${Math.round(analysis.song_key_confidence * 100)}%)` : ''}</span>
+              <span className="text-white/30">Traitement</span>
+              <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '--'}</span>
+              <span className="text-white/30">Date</span>
               <span className="text-white/70">{new Date(analysis.created_at).toLocaleDateString('fr-FR')}</span>
             </div>
           </div>
@@ -254,18 +341,36 @@ function CandidateDetailModal({ candidate, analysis, onClose }: { candidate: Can
   )
 }
 
-export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Props) {
+export default function VocalScoresAdmin({ sessionId, candidates, analyses, juryScores = [], jurors = [] }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [filterCat, setFilterCat] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'score' | 'name' | 'tessiture'>('score')
+  const [sortBy, setSortBy] = useState<'score' | 'jury' | 'mix' | 'name' | 'tessiture'>('mix')
 
   const analysisMap = new Map(analyses.map(a => [a.candidate_id, a]))
+  const jurorMap = new Map(jurors.map(j => [j.id, j]))
 
-  // Merge candidates with analyses
-  const merged = candidates.map(c => ({
-    candidate: c,
-    analysis: analysisMap.get(c.id) || null,
-  }))
+  // Group jury scores by candidate
+  const juryByCandidate = new Map<string, JuryScore[]>()
+  for (const js of juryScores) {
+    const arr = juryByCandidate.get(js.candidate_id) || []
+    arr.push(js)
+    juryByCandidate.set(js.candidate_id, arr)
+  }
+
+  // Merge candidates with analyses + jury
+  const merged = candidates.map(c => {
+    const cJury = juryByCandidate.get(c.id) || []
+    const avgJury = cJury.length > 0
+      ? cJury.reduce((s, j) => s + (j.total_score || 0), 0) / cJury.length
+      : null
+    return {
+      candidate: c,
+      analysis: analysisMap.get(c.id) || null,
+      juryScores: cJury,
+      avgJury,
+      juryCount: cJury.length,
+    }
+  })
 
   // Filter
   const filtered = filterCat === 'all' ? merged : merged.filter(m => m.candidate.category === filterCat)
@@ -273,14 +378,19 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
   // Sort
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'score') {
-      const sa = a.analysis?.justesse_pct ?? -1
-      const sb = b.analysis?.justesse_pct ?? -1
-      return sb - sa
+      return (b.analysis?.justesse_pct ?? -1) - (a.analysis?.justesse_pct ?? -1)
+    }
+    if (sortBy === 'jury') {
+      return (b.avgJury ?? -1) - (a.avgJury ?? -1)
+    }
+    if (sortBy === 'mix') {
+      // Normalize: vocal score 0-100, jury score typically 0-20 → multiply by 5
+      const mixA = ((a.analysis?.justesse_pct ?? 0) + (a.avgJury != null ? a.avgJury * 5 : 0)) / (a.avgJury != null ? 2 : 1)
+      const mixB = ((b.analysis?.justesse_pct ?? 0) + (b.avgJury != null ? b.avgJury * 5 : 0)) / (b.avgJury != null ? 2 : 1)
+      return mixB - mixA
     }
     if (sortBy === 'tessiture') {
-      const ta = a.analysis?.octaves ?? 0
-      const tb = b.analysis?.octaves ?? 0
-      return tb - ta
+      return (b.analysis?.octaves ?? 0) - (a.analysis?.octaves ?? 0)
     }
     const na = a.candidate.stage_name || a.candidate.last_name
     const nb = b.candidate.stage_name || b.candidate.last_name
@@ -295,6 +405,10 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
   const bestCandidate = analyzed.length > 0
     ? analyzed.reduce((best, m) => (m.analysis!.justesse_pct > (best.analysis?.justesse_pct || 0) ? m : best))
     : null
+  const totalJuryVotes = juryScores.length
+  const avgJuryGlobal = totalJuryVotes > 0
+    ? juryScores.reduce((s, j) => s + (j.total_score || 0), 0) / totalJuryVotes
+    : 0
 
   const categories = ['Enfant', 'Ado', 'Adulte']
   const catCounts = categories.map(cat => ({
@@ -308,31 +422,35 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
   return (
     <div>
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <div className="bg-[#1a1232] border border-[#2a2545] rounded-xl p-4 text-center">
           <div className="text-3xl font-black text-[#e91e8c]">{analyzed.length}<span className="text-white/30 text-lg">/{candidates.length}</span></div>
-          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Analysés</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Analyses</div>
         </div>
         <div className="bg-[#1a1232] border border-[#2a2545] rounded-xl p-4 text-center">
           <div className="text-3xl font-black" style={{ color: avgScore > 0 ? getScoreColor(avgScore) : 'rgba(255,255,255,.2)' }}>
-            {avgScore > 0 ? `${Math.round(avgScore)}%` : '—'}
+            {avgScore > 0 ? `${Math.round(avgScore)}%` : '--'}
           </div>
-          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Moyenne justesse</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Moy. vocale</div>
         </div>
         <div className="bg-[#1a1232] border border-[#2a2545] rounded-xl p-4 text-center">
           {bestCandidate ? (
             <>
               <div className="text-3xl font-black text-[#22c55e]">{Math.round(bestCandidate.analysis!.justesse_pct)}%</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
-                Meilleur : {bestCandidate.candidate.stage_name || bestCandidate.candidate.first_name}
+                {bestCandidate.candidate.stage_name || bestCandidate.candidate.first_name}
               </div>
             </>
           ) : (
             <>
-              <div className="text-3xl font-black text-white/20">—</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Meilleur score</div>
+              <div className="text-3xl font-black text-white/20">--</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Meilleur</div>
             </>
           )}
+        </div>
+        <div className="bg-[#1a1232] border border-[#2a2545] rounded-xl p-4 text-center">
+          <div className="text-3xl font-black text-[#a78bfa]">{totalJuryVotes}</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Votes jury</div>
         </div>
         <div className="bg-[#1a1232] border border-[#2a2545] rounded-xl p-4">
           <div className="flex flex-col gap-1">
@@ -343,11 +461,11 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
               </div>
             ))}
           </div>
-          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1.5 text-center">Par catégorie</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1.5 text-center">Categories</div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters + Sort */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div className="flex gap-1">
           {['all', ...categories].map(cat => (
@@ -365,7 +483,7 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
           ))}
         </div>
         <div className="flex gap-1 ml-auto">
-          {([['score', 'Score'], ['name', 'Nom'], ['tessiture', 'Tessiture']] as const).map(([key, label]) => (
+          {([['mix', 'Mix'], ['score', 'Vocal'], ['jury', 'Jury'], ['tessiture', 'Tessiture'], ['name', 'Nom']] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setSortBy(key)}
@@ -383,7 +501,7 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
 
       {/* Candidate cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {sorted.map(({ candidate, analysis }) => {
+        {sorted.map(({ candidate, analysis, avgJury, juryCount }, idx) => {
           const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
           const hasAnalysis = !!analysis
 
@@ -399,14 +517,23 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
               }`}
             >
               <div className="flex items-center gap-3">
-                {/* Score ring or placeholder */}
-                {hasAnalysis ? (
-                  <ScoreRing pct={analysis.justesse_pct} size={56} />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/15 text-xs flex-shrink-0">
-                    N/A
-                  </div>
-                )}
+                {/* Rank + Photo */}
+                <div className="relative flex-shrink-0">
+                  {candidate.photo_url ? (
+                    <img src={candidate.photo_url} alt={name} className="w-14 h-14 rounded-full object-cover border-2 border-white/10" />
+                  ) : hasAnalysis ? (
+                    <ScoreRing pct={analysis.justesse_pct} size={56} />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/15 text-lg font-bold flex-shrink-0">
+                      {(candidate.stage_name || candidate.first_name)[0]}
+                    </div>
+                  )}
+                  {hasAnalysis && (
+                    <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#1a1232] border border-[#2a2545] flex items-center justify-center text-[9px] font-bold text-white/60">
+                      {idx + 1}
+                    </div>
+                  )}
+                </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -421,15 +548,19 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
 
                   {hasAnalysis && (
                     <div className="flex items-center gap-2 mt-1.5">
+                      {/* Vocal score badge */}
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                         style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
-                        {analysis.justesse_label}
+                        {Math.round(analysis.justesse_pct)}%
                       </span>
+                      {/* Jury score */}
+                      {avgJury != null && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#a78bfa]/15 text-[#a78bfa]">
+                          Jury {avgJury.toFixed(1)} ({juryCount})
+                        </span>
+                      )}
                       {analysis.octaves && (
                         <span className="text-[10px] text-white/30">{analysis.octaves.toFixed(1)} oct</span>
-                      )}
-                      {analysis.voice_type && (
-                        <span className="text-[10px] text-[#e91e8c]/60">{analysis.voice_type}</span>
                       )}
                     </div>
                   )}
@@ -453,8 +584,8 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
 
       {sorted.length === 0 && (
         <div className="text-center py-16 text-white/20">
-          <p className="text-4xl mb-3">🎤</p>
-          <p className="text-sm">Aucun candidat {filterCat !== 'all' ? `dans la catégorie ${filterCat}` : ''}</p>
+          <p className="text-4xl mb-3">&#127908;</p>
+          <p className="text-sm">Aucun candidat {filterCat !== 'all' ? `dans la categorie ${filterCat}` : ''}</p>
         </div>
       )}
 
@@ -463,6 +594,8 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses }: Pr
         <CandidateDetailModal
           candidate={selectedMerged.candidate}
           analysis={selectedMerged.analysis}
+          candidateJuryScores={selectedMerged.juryScores}
+          jurorMap={jurorMap}
           onClose={() => setSelectedId(null)}
         />
       )}

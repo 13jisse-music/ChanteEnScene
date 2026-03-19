@@ -30,11 +30,22 @@ async function getData() {
     .select('*')
     .eq('session_id', session.id)
 
-  return { session, candidates: candidates || [], analyses: analyses || [] }
+  const { data: juryScores } = await supabase
+    .from('jury_scores')
+    .select('id, juror_id, candidate_id, scores, total_score, comment, event_type, created_at')
+    .eq('session_id', session.id)
+    .eq('event_type', 'online')
+
+  const { data: jurors } = await supabase
+    .from('jurors')
+    .select('id, first_name, last_name')
+    .eq('session_id', session.id)
+
+  return { session, candidates: candidates || [], analyses: analyses || [], juryScores: juryScores || [], jurors: jurors || [] }
 }
 
 export default async function VocalScoresPage() {
-  const { session, candidates, analyses } = await getData()
+  const { session, candidates, analyses, juryScores, jurors } = await getData()
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -58,6 +69,8 @@ export default async function VocalScoresPage() {
         sessionId={session?.id || ''}
         candidates={candidates}
         analyses={analyses}
+        juryScores={juryScores}
+        jurors={jurors}
       />
     </div>
   )

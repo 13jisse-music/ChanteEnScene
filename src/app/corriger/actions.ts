@@ -42,6 +42,9 @@ export async function submitCorrection(
     updateData.song_artist = updates.song_artist.trim()
   }
   if (allowedFields.includes('video') && updates.video_url) {
+    if (updates.video_url.includes('youtube.com') || updates.video_url.includes('youtu.be')) {
+      return { error: 'Les liens YouTube ne sont pas acceptés. Veuillez uploader votre vidéo directement.' }
+    }
     updateData.video_url = updates.video_url
   }
   if (allowedFields.includes('photo') && updates.photo_url) {
