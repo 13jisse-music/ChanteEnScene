@@ -36,6 +36,7 @@ interface VocalAnalysis {
   song_bpm: number | null
   processing_time_sec: number | null
   created_at: string
+  raw_data: { coach_comment?: string } | null
 }
 
 interface JuryScore {
@@ -323,6 +324,14 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
+          {/* Coach comment */}
+          {analysis.raw_data?.coach_comment && (
+            <div className="mb-4 p-3 bg-[#C9A84C]/10 border border-[#C9A84C]/20 rounded-xl">
+              <span className="text-xs text-[#C9A84C] font-semibold uppercase tracking-wider block mb-1">Avis du coach</span>
+              <p className="text-sm text-white/70 italic">{analysis.raw_data.coach_comment}</p>
+            </div>
+          )}
+
           {/* Technical info */}
           <div className="p-3 bg-white/5 rounded-xl">
             <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">Infos</span>
@@ -517,22 +526,23 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
               }`}
             >
               <div className="flex items-center gap-3">
-                {/* Rank + Photo */}
-                <div className="relative flex-shrink-0">
-                  {candidate.photo_url ? (
-                    <img src={candidate.photo_url} alt={name} className="w-14 h-14 rounded-full object-cover border-2 border-white/10" />
-                  ) : hasAnalysis ? (
-                    <ScoreRing pct={analysis.justesse_pct} size={56} />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center text-white/15 text-lg font-bold flex-shrink-0">
-                      {(candidate.stage_name || candidate.first_name)[0]}
-                    </div>
-                  )}
-                  {hasAnalysis && (
-                    <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#1a1232] border border-[#2a2545] flex items-center justify-center text-[9px] font-bold text-white/60">
-                      {idx + 1}
-                    </div>
-                  )}
+                {/* Rank + Photo + Score Ring */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="relative">
+                    {candidate.photo_url ? (
+                      <img src={candidate.photo_url} alt={name} className="w-12 h-12 rounded-full object-cover border-2 border-white/10" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-lg font-bold">
+                        {(candidate.stage_name || candidate.first_name)[0]}
+                      </div>
+                    )}
+                    {hasAnalysis && (
+                      <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#1a1232] border border-[#2a2545] flex items-center justify-center text-[9px] font-bold text-white/60">
+                        {idx + 1}
+                      </div>
+                    )}
+                  </div>
+                  {hasAnalysis && <ScoreRing pct={analysis.justesse_pct} size={48} />}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -574,6 +584,11 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
                         highMidi={analysis.tessiture_high_midi}
                       />
                     </div>
+                  )}
+                  {hasAnalysis && analysis.raw_data?.coach_comment && (
+                    <p className="text-[10px] text-white/30 mt-1.5 line-clamp-2 italic">
+                      {analysis.raw_data.coach_comment}
+                    </p>
                   )}
                 </div>
               </div>
