@@ -192,7 +192,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
-      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[560px] sm:max-h-[85vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
+      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[720px] sm:max-h-[90vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
         <div className="p-5">
           {/* Header with photo */}
           <div className="flex items-start justify-between mb-5">
@@ -461,11 +461,11 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
-          {/* Coach comment */}
-          {analysis.raw_data?.coach_comment && (
+          {/* Coach comment — stored in column coach_comment, NOT raw_data */}
+          {(analysis.coach_comment || analysis.raw_data?.coach_comment) && (
             <div className="mb-4 p-3 bg-[#C9A84C]/10 border border-[#C9A84C]/20 rounded-xl">
               <span className="text-xs text-[#C9A84C] font-semibold uppercase tracking-wider block mb-1">Avis du coach</span>
-              <p className="text-sm text-white/70 italic">{analysis.raw_data.coach_comment}</p>
+              <p className="text-sm text-white/70 italic">{analysis.coach_comment || analysis.raw_data?.coach_comment}</p>
             </div>
           )}
 
