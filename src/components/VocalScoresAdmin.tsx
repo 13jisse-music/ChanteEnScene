@@ -289,8 +289,8 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
-          {/* Metrics with human labels */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          {/* Metrics with human labels — 4 cols on one line */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="p-3 bg-white/5 rounded-xl text-center">
               <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
@@ -479,6 +479,8 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '--'}</span>
               <span className="text-white/30">Date</span>
               <span className="text-white/70">{new Date(analysis.created_at).toLocaleDateString('fr-FR')}</span>
+              <span className="text-white/30">Moteur</span>
+              <span className="text-white/70">{analysis.raw_data?.analysis_version === 'v2' ? 'Analyse v2 (strict)' : 'Analyse v1'} — {analysis.pipeline_version || '?'}</span>
             </div>
           </div>
         </div>
@@ -708,9 +710,11 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
                       <span className="opacity-60 ml-1">/ {Math.round(analysis.raw_data.justesse_harmonique.pct)}%</span>
                     )}
                   </span>
-                  {analysis.raw_data?.analysis_version === 'v2' && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400">v2</span>
-                  )}
+                  {analysis.raw_data?.analysis_version === 'v2' ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400" title={`Pipeline: ${analysis.pipeline_version || '?'}`}>v2</span>
+                  ) : analysis.pipeline_version ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/30" title={`Pipeline: ${analysis.pipeline_version}`}>v1</span>
+                  ) : null}
                   {avgJury != null && (
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#a78bfa]/15 text-[#a78bfa]">
                       Jury {avgJury.toFixed(1)} ({juryCount})
