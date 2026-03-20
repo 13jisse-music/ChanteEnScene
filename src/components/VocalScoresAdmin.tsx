@@ -186,10 +186,12 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
   jurorMap: Map<string, Juror>
   onClose: () => void
 }) {
+  const [activeTab, setActiveTab] = useState<'analyse' | 'coach'>('analyse')
   const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
   const avgJury = candidateJuryScores.length > 0
     ? candidateJuryScores.reduce((s, j) => s + (j.total_score || 0), 0) / candidateJuryScores.length
     : null
+  const coachText = analysis.coach_comment || analysis.raw_data?.coach_comment || ''
 
   return (
     <>
@@ -197,7 +199,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
       <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[720px] sm:max-h-[90vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
         <div className="p-5">
           {/* Header with photo */}
-          <div className="flex items-start justify-between mb-5">
+          <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-4">
               {candidate.photo_url ? (
                 <img src={candidate.photo_url} alt={name} className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-[#e91e8c]/30" />
@@ -226,13 +228,13 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             <button onClick={onClose} className="text-white/30 hover:text-white/60 text-xl p-1">&#10005;</button>
           </div>
 
-          {/* Score + Jury + Coach comment — compact top section */}
-          <div className="grid grid-cols-[auto_auto_1fr] gap-3 mb-3 items-start">
+          {/* Score + Jury compact */}
+          <div className="flex items-center gap-4 mb-3">
             <div className="text-center">
-              <ScoreRing pct={analysis.justesse_pct} size={60} />
-              <div className="text-[9px] text-white/40 uppercase tracking-wider mt-0.5">Score</div>
+              <ScoreRing pct={analysis.justesse_pct} size={56} />
+              <div className="text-[9px] text-white/40 uppercase mt-0.5">Score</div>
             </div>
-            <div className="text-center pt-1">
+            <div className="text-center">
               {avgJury != null ? (
                 <>
                   <div className="text-2xl font-black text-[#a78bfa]">{avgJury.toFixed(1)}</div>
@@ -245,18 +247,58 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
                 </>
               )}
             </div>
-            {/* Coach comment right next to score */}
-            <div className="p-2 bg-[#C9A84C]/8 border border-[#C9A84C]/15 rounded-lg min-w-0">
-              {(analysis.coach_comment || analysis.raw_data?.coach_comment) ? (
-                <>
-                  <span className="text-[9px] text-[#C9A84C] font-semibold uppercase tracking-wider">Coach</span>
-                  <p className="text-[11px] text-white/60 italic leading-relaxed mt-0.5 line-clamp-4">{analysis.coach_comment || analysis.raw_data?.coach_comment}</p>
-                </>
-              ) : (
-                <span className="text-[10px] text-white/20">Pas de commentaire</span>
-              )}
+
+            {/* Tabs */}
+            <div className="flex gap-1 ml-auto">
+              <button
+                onClick={() => setActiveTab('analyse')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'analyse'
+                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
+                    : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
+                }`}
+              >
+                Analyse
+              </button>
+              <button
+                onClick={() => setActiveTab('coach')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'coach'
+                    ? 'bg-[#C9A84C]/20 text-[#C9A84C] border border-[#C9A84C]/30'
+                    : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
+                }`}
+              >
+                Coach {coachText ? '' : '(-)'}
+              </button>
             </div>
           </div>
+
+          {/* TAB: Coach */}
+          {activeTab === 'coach' && (
+            <div className="p-4 bg-[#C9A84C]/8 border border-[#C9A84C]/20 rounded-xl">
+              <span className="text-xs text-[#C9A84C] font-bold uppercase tracking-wider block mb-3">Avis du coach — Analyse technique</span>
+              {coachText ? (
+                <p className="text-sm text-white/80 italic leading-relaxed whitespace-pre-line">{coachText}</p>
+              ) : (
+                <p className="text-sm text-white/30">Pas de commentaire coach pour ce candidat.</p>
+              )}
+              {/* Technical info */}
+              <div className="mt-4 pt-3 border-t border-[#C9A84C]/10 grid grid-cols-2 gap-y-1.5 text-xs">
+                <span className="text-white/30">Tonalite</span>
+                <span className="text-white/70">{analysis.song_key || '--'} {analysis.song_key_confidence ? `(${Math.round(analysis.song_key_confidence * 100)}%)` : ''}</span>
+                <span className="text-white/30">Traitement</span>
+                <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '--'}</span>
+                <span className="text-white/30">Date</span>
+                <span className="text-white/70">{new Date(analysis.created_at).toLocaleDateString('fr-FR')}</span>
+                <span className="text-white/30">Moteur</span>
+                <span className="text-white/70">{analysis.raw_data?.analysis_version === 'v2' ? 'Analyse v2 (strict)' : 'Analyse v1'} — {analysis.pipeline_version || '?'}</span>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: Analyse */}
+          {activeTab === 'analyse' && (<>
+
 
           {/* Tessiture + Zones — compact side by side */}
           <div className="grid grid-cols-2 gap-2 mb-2">
@@ -472,22 +514,8 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
-          {/* Coach comment is now displayed in the top section next to score */}
-
-          {/* Technical info */}
-          <div className="p-3 bg-white/5 rounded-xl">
-            <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">Infos</span>
-            <div className="grid grid-cols-2 gap-y-1.5 text-xs">
-              <span className="text-white/30">Tonalite</span>
-              <span className="text-white/70">{analysis.song_key || '--'} {analysis.song_key_confidence ? `(${Math.round(analysis.song_key_confidence * 100)}%)` : ''}</span>
-              <span className="text-white/30">Traitement</span>
-              <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '--'}</span>
-              <span className="text-white/30">Date</span>
-              <span className="text-white/70">{new Date(analysis.created_at).toLocaleDateString('fr-FR')}</span>
-              <span className="text-white/30">Moteur</span>
-              <span className="text-white/70">{analysis.raw_data?.analysis_version === 'v2' ? 'Analyse v2 (strict)' : 'Analyse v1'} — {analysis.pipeline_version || '?'}</span>
-            </div>
-          </div>
+          {/* End of Analyse tab */}
+          </>)}
         </div>
       </div>
     </>
