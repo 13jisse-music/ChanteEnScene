@@ -226,73 +226,82 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             <button onClick={onClose} className="text-white/30 hover:text-white/60 text-xl p-1">&#10005;</button>
           </div>
 
-          {/* Score vocal + Jury side by side */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <ScoreRing pct={analysis.justesse_pct} size={72} />
-              <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Score Vocal</div>
+          {/* Score + Jury + Coach comment — compact top section */}
+          <div className="grid grid-cols-[auto_auto_1fr] gap-3 mb-3 items-start">
+            <div className="text-center">
+              <ScoreRing pct={analysis.justesse_pct} size={60} />
+              <div className="text-[9px] text-white/40 uppercase tracking-wider mt-0.5">Score</div>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-center pt-1">
               {avgJury != null ? (
                 <>
-                  <div className="text-3xl font-black text-[#a78bfa]">{avgJury.toFixed(1)}</div>
-                  <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">
-                    Jury ({candidateJuryScores.length} vote{candidateJuryScores.length > 1 ? 's' : ''})
-                  </div>
+                  <div className="text-2xl font-black text-[#a78bfa]">{avgJury.toFixed(1)}</div>
+                  <div className="text-[9px] text-white/40 uppercase">Jury ({candidateJuryScores.length})</div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-black text-white/15">--</div>
-                  <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Pas de vote</div>
+                  <div className="text-2xl font-black text-white/15">--</div>
+                  <div className="text-[9px] text-white/40 uppercase">Jury</div>
                 </>
+              )}
+            </div>
+            {/* Coach comment right next to score */}
+            <div className="p-2 bg-[#C9A84C]/8 border border-[#C9A84C]/15 rounded-lg min-w-0">
+              {(analysis.coach_comment || analysis.raw_data?.coach_comment) ? (
+                <>
+                  <span className="text-[9px] text-[#C9A84C] font-semibold uppercase tracking-wider">Coach</span>
+                  <p className="text-[11px] text-white/60 italic leading-relaxed mt-0.5 line-clamp-4">{analysis.coach_comment || analysis.raw_data?.coach_comment}</p>
+                </>
+              ) : (
+                <span className="text-[10px] text-white/20">Pas de commentaire</span>
               )}
             </div>
           </div>
 
-          {/* Tessiture */}
-          {analysis.tessiture_low_midi && analysis.tessiture_high_midi && (
-            <div className="mb-4 p-3 bg-white/5 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-white/50 font-semibold uppercase tracking-wider">Tessiture</span>
-                <div className="flex items-center gap-2">
-                  {analysis.voice_type && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#e91e8c]/15 text-[#e91e8c] font-semibold">
-                      {analysis.voice_type}
-                    </span>
-                  )}
-                  {analysis.octaves && (
-                    <span className="text-xs text-white/60 font-bold">{analysis.octaves.toFixed(1)} oct</span>
-                  )}
+          {/* Tessiture + Zones — compact side by side */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {analysis.tessiture_low_midi && analysis.tessiture_high_midi && (
+              <div className="p-2 bg-white/5 rounded-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-white/50 font-semibold uppercase">Tessiture</span>
+                  <div className="flex items-center gap-1">
+                    {analysis.voice_type && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#e91e8c]/15 text-[#e91e8c] font-semibold">
+                        {analysis.voice_type}
+                      </span>
+                    )}
+                    {analysis.octaves && (
+                      <span className="text-[9px] text-white/50 font-bold">{analysis.octaves.toFixed(1)} oct</span>
+                    )}
+                  </div>
+                </div>
+                <TessitureBar
+                  low={analysis.tessiture_low!}
+                  high={analysis.tessiture_high!}
+                  lowMidi={analysis.tessiture_low_midi}
+                  highMidi={analysis.tessiture_high_midi}
+                />
+              </div>
+            )}
+            {analysis.zone_grave_pct != null && (
+              <div className="p-2 bg-white/5 rounded-xl">
+                <span className="text-[10px] text-white/50 font-semibold uppercase block mb-1">Zones vocales</span>
+                <ZoneChart
+                  grave={analysis.zone_grave_pct || 0}
+                  medium={analysis.zone_medium_pct || 0}
+                  aigu={analysis.zone_aigu_pct || 0}
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[9px] text-[#6366f1]">Grave</span>
+                  <span className="text-[9px] text-[#0d9488]">Medium</span>
+                  <span className="text-[9px] text-[#e91e8c]">Aigu</span>
                 </div>
               </div>
-              <TessitureBar
-                low={analysis.tessiture_low!}
-                high={analysis.tessiture_high!}
-                lowMidi={analysis.tessiture_low_midi}
-                highMidi={analysis.tessiture_high_midi}
-              />
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Zones vocales */}
-          {analysis.zone_grave_pct != null && (
-            <div className="mb-4 p-3 bg-white/5 rounded-xl">
-              <span className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-2">Zones vocales</span>
-              <ZoneChart
-                grave={analysis.zone_grave_pct || 0}
-                medium={analysis.zone_medium_pct || 0}
-                aigu={analysis.zone_aigu_pct || 0}
-              />
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[10px] text-[#6366f1]">Grave</span>
-                <span className="text-[10px] text-[#0d9488]">Medium</span>
-                <span className="text-[10px] text-[#e91e8c]">Aigu</span>
-              </div>
-            </div>
-          )}
-
-          {/* Metrics with human labels — 4 cols on one line */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          {/* Metrics with human labels — 4 cols compact */}
+          <div className="grid grid-cols-4 gap-1.5 mb-2">
             <div className="p-3 bg-white/5 rounded-xl text-center">
               <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
@@ -463,13 +472,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
-          {/* Coach comment — stored in column coach_comment, NOT raw_data */}
-          {(analysis.coach_comment || analysis.raw_data?.coach_comment) && (
-            <div className="mb-4 p-3 bg-[#C9A84C]/10 border border-[#C9A84C]/20 rounded-xl">
-              <span className="text-xs text-[#C9A84C] font-semibold uppercase tracking-wider block mb-1">Avis du coach</span>
-              <p className="text-sm text-white/70 italic">{analysis.coach_comment || analysis.raw_data?.coach_comment}</p>
-            </div>
-          )}
+          {/* Coach comment is now displayed in the top section next to score */}
 
           {/* Technical info */}
           <div className="p-3 bg-white/5 rounded-xl">
