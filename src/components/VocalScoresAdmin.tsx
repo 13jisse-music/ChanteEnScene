@@ -289,109 +289,149 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             </div>
           )}
 
-          {/* Metrics */}
+          {/* Metrics with human labels */}
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.total_notes || '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Notes</div>
-            </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
               <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
+              <div className="text-[9px] mt-0.5" style={{ color: analysis.stability_pct != null ? (analysis.stability_pct >= 65 ? '#22c55e' : analysis.stability_pct >= 45 ? '#c9a84c' : '#ef4444') : '#666' }}>
+                {analysis.stability_pct != null ? (analysis.stability_pct >= 75 ? 'Voix tres posee' : analysis.stability_pct >= 55 ? 'Bonne maitrise' : analysis.stability_pct >= 35 ? 'A travailler' : 'Voix instable') : ''}
+              </div>
             </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
               <div className="text-2xl font-black text-white">{analysis.vibrato_count ?? '--'}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wider">Vibratos</div>
+              <div className="text-[9px] text-teal-400/60 mt-0.5">
+                {analysis.vibrato_count != null ? (analysis.vibrato_count >= 2000 ? 'Vibrato riche' : analysis.vibrato_count >= 1000 ? 'Vibrato present' : analysis.vibrato_count >= 200 ? 'Vibrato leger' : 'Pas de vibrato') : ''}
+              </div>
+            </div>
+            <div className="p-3 bg-white/5 rounded-xl text-center">
+              <div className="text-2xl font-black text-white">{analysis.total_notes || '--'}</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-wider">Notes detectees</div>
             </div>
             <div className="p-3 bg-white/5 rounded-xl text-center">
               <div className="text-2xl font-black text-white">{analysis.song_bpm ? Math.round(analysis.song_bpm) : '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">BPM</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-wider">Tempo (BPM)</div>
+              <div className="text-[9px] text-white/25 mt-0.5">
+                {analysis.song_bpm ? (analysis.song_bpm >= 140 ? 'Rapide' : analysis.song_bpm >= 100 ? 'Medium' : analysis.song_bpm >= 70 ? 'Modere' : 'Lent') : ''}
+              </div>
             </div>
           </div>
 
-          {/* Metriques v2 */}
-          {analysis.raw_data?.analysis_version === 'v2' && (
-            <div className="mb-4 p-3 bg-white/5 rounded-xl border border-teal-500/20">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs text-white/50 font-semibold uppercase tracking-wider">Metriques v2</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-bold">v2</span>
-              </div>
+          {/* Metriques v2 — Jauges visuelles */}
+          {analysis.raw_data?.analysis_version === 'v2' && (() => {
+            const rd = analysis.raw_data
+            const harm = rd?.justesse_harmonique
+            const dyn = rd?.dynamique
+            const tim = rd?.timbre
+            const ten = rd?.tenue
+            const tessConf = rd?.tessiture?.confidence
 
-              {/* Justesse harmonique with bar */}
-              {analysis.raw_data?.justesse_harmonique?.pct != null && (
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] text-white/40">Justesse harmonique</span>
-                    <span className="text-xs font-bold" style={{ color: getScoreColor(analysis.raw_data.justesse_harmonique.pct) }}>
-                      {Math.round(analysis.raw_data.justesse_harmonique.pct)}%
-                      {analysis.raw_data.justesse_harmonique.label && (
-                        <span className="text-white/30 font-normal ml-1">({analysis.raw_data.justesse_harmonique.label})</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, analysis.raw_data.justesse_harmonique.pct)}%`,
-                        background: getScoreColor(analysis.raw_data.justesse_harmonique.pct),
-                      }}
-                    />
-                  </div>
+            // Helper: gauge bar with label
+            const Gauge = ({ value, max = 100, label, detail, color }: { value: number; max?: number; label: string; detail: string; color: string }) => (
+              <div className="mb-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] text-white/50">{label}</span>
+                  <span className="text-[11px] font-bold" style={{ color }}>{detail}</span>
                 </div>
-              )}
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (value / max) * 100)}%`, background: color }} />
+                </div>
+              </div>
+            )
 
-              <div className="grid grid-cols-2 gap-2">
-                {/* Dynamique */}
-                {analysis.raw_data?.dynamique?.label && (
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Dynamique</div>
-                    <div className="text-xs text-white/70 font-semibold">
-                      {analysis.raw_data.dynamique.label}
-                      {analysis.raw_data.dynamique.range_db != null && (
-                        <span className="text-white/30 font-normal ml-1">({Math.round(analysis.raw_data.dynamique.range_db)} dB)</span>
-                      )}
-                    </div>
-                  </div>
-                )}
+            // Human-readable labels
+            const stabilityLabel = (v: number) => v >= 75 ? 'Tres stable' : v >= 55 ? 'Stable' : v >= 35 ? 'Moyen' : 'Instable'
+            const tenueLabel = (ms: number) => ms >= 300 ? 'Excellente' : ms >= 200 ? 'Bonne' : ms >= 120 ? 'Correcte' : 'Courte'
+            const vibratoLabel = (v: number) => v >= 2000 ? 'Tres present' : v >= 1000 ? 'Present' : v >= 200 ? 'Leger' : 'Absent'
 
-                {/* Timbre */}
-                {analysis.raw_data?.timbre?.label && (
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Timbre</div>
-                    <div className="text-xs text-white/70 font-semibold">{analysis.raw_data.timbre.label}</div>
-                  </div>
-                )}
-
-                {/* Tenue */}
-                {analysis.raw_data?.tenue?.avg_duration_ms != null && (
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Tenue</div>
-                    <div className="text-xs text-white/70 font-semibold">
-                      {Math.round(analysis.raw_data.tenue.avg_duration_ms)} ms moy
-                      {analysis.raw_data.tenue.max_duration_ms != null && (
-                        <span className="text-white/30 font-normal"> / {Math.round(analysis.raw_data.tenue.max_duration_ms)} ms max</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Confiance tessiture */}
-                {analysis.raw_data?.tessiture?.confidence && (
-                  <div className="p-2 bg-white/5 rounded-lg">
-                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Confiance tessiture</div>
-                    <div className={`text-xs font-semibold ${
-                      analysis.raw_data.tessiture.confidence === 'haute' ? 'text-green-400' :
-                      analysis.raw_data.tessiture.confidence === 'moyenne' ? 'text-amber-400' :
-                      'text-red-400'
+            return (
+              <div className="mb-4 p-4 bg-white/5 rounded-xl border border-teal-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs text-teal-400 font-bold uppercase tracking-wider">Analyse detaillee</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-bold">v2</span>
+                  {tessConf && (
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ml-auto ${
+                      tessConf === 'haute' ? 'bg-green-500/20 text-green-400' :
+                      tessConf === 'moyenne' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
                     }`}>
-                      {analysis.raw_data.tessiture.confidence}
-                    </div>
+                      Fiabilite {tessConf}
+                    </span>
+                  )}
+                </div>
+
+                {/* Justesse harmonique — le plus important */}
+                {harm?.pct != null && (
+                  <Gauge
+                    value={harm.pct}
+                    label="Chante-t-il/elle en accord avec la musique ?"
+                    detail={`${Math.round(harm.pct)}% — ${harm.label || ''}`}
+                    color={harm.pct >= 90 ? '#22c55e' : harm.pct >= 70 ? '#c9a84c' : '#ef4444'}
+                  />
+                )}
+
+                {/* Stabilite */}
+                {analysis.stability_pct != null && (
+                  <Gauge
+                    value={analysis.stability_pct}
+                    label="Stabilite de la voix"
+                    detail={`${stabilityLabel(analysis.stability_pct)} (${Math.round(analysis.stability_pct)}%)`}
+                    color={analysis.stability_pct >= 60 ? '#22c55e' : analysis.stability_pct >= 40 ? '#c9a84c' : '#ef4444'}
+                  />
+                )}
+
+                {/* Tenue des notes */}
+                {ten?.avg_duration_ms != null && (
+                  <Gauge
+                    value={ten.avg_duration_ms}
+                    max={400}
+                    label="Tenue des notes (duree moyenne)"
+                    detail={`${tenueLabel(ten.avg_duration_ms)} (${Math.round(ten.avg_duration_ms)} ms)`}
+                    color={ten.avg_duration_ms >= 200 ? '#22c55e' : ten.avg_duration_ms >= 120 ? '#c9a84c' : '#ef4444'}
+                  />
+                )}
+
+                {/* Dynamique */}
+                {dyn?.range_db != null && (
+                  <Gauge
+                    value={dyn.range_db}
+                    max={30}
+                    label="Expressivite (variation piano ↔ forte)"
+                    detail={`${dyn.label || '?'} (${Math.round(dyn.range_db)} dB)`}
+                    color={dyn.range_db >= 15 ? '#22c55e' : dyn.range_db >= 8 ? '#c9a84c' : '#ef4444'}
+                  />
+                )}
+
+                {/* Vibrato */}
+                {analysis.vibrato_count != null && (
+                  <Gauge
+                    value={Math.min(analysis.vibrato_count, 3000)}
+                    max={3000}
+                    label="Vibrato (oscillations naturelles)"
+                    detail={vibratoLabel(analysis.vibrato_count)}
+                    color={analysis.vibrato_count >= 500 ? '#0d9488' : '#c9a84c'}
+                  />
+                )}
+
+                {/* Timbre — pas une jauge, juste un badge */}
+                {tim?.label && (
+                  <div className="flex items-center justify-between mt-1 pt-2 border-t border-white/5">
+                    <span className="text-[11px] text-white/50">Couleur de la voix</span>
+                    <span className="text-[11px] font-bold text-purple-400">{tim.label}</span>
+                  </div>
+                )}
+
+                {/* Note longue max */}
+                {ten?.max_duration_ms != null && ten.max_duration_ms > 500 && (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[11px] text-white/50">Note la plus longue</span>
+                    <span className="text-[11px] font-bold text-teal-400">{(ten.max_duration_ms / 1000).toFixed(1)}s</span>
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Jury votes detail */}
           {candidateJuryScores.length > 0 && (
