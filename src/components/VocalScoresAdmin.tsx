@@ -35,6 +35,8 @@ interface VocalAnalysis {
   song_key_confidence: number | null
   song_bpm: number | null
   processing_time_sec: number | null
+  pipeline_version: string | null
+  coach_comment: string | null
   created_at: string
   raw_data: {
     coach_comment?: string
