@@ -286,6 +286,8 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               <div className="mt-4 pt-3 border-t border-[#C9A84C]/10 grid grid-cols-2 gap-y-1.5 text-xs">
                 <span className="text-white/30">Tonalite</span>
                 <span className="text-white/70">{analysis.song_key || '--'} {analysis.song_key_confidence ? `(${Math.round(analysis.song_key_confidence * 100)}%)` : ''}</span>
+                <span className="text-white/30">BPM</span>
+                <span className="text-white/70">{analysis.song_bpm ? `${Math.round(analysis.song_bpm)} BPM` : '--'}</span>
                 <span className="text-white/30">Traitement</span>
                 <span className="text-white/70">{analysis.processing_time_sec ? `${Math.round(analysis.processing_time_sec)}s` : '--'}</span>
                 <span className="text-white/30">Date</span>
