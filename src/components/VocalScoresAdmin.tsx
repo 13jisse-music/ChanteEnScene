@@ -36,7 +36,15 @@ interface VocalAnalysis {
   song_bpm: number | null
   processing_time_sec: number | null
   created_at: string
-  raw_data: { coach_comment?: string } | null
+  raw_data: {
+    coach_comment?: string
+    analysis_version?: string
+    justesse_harmonique?: { pct?: number; label?: string }
+    dynamique?: { label?: string; range_db?: number; score?: number }
+    timbre?: { label?: string; brightness?: number }
+    tenue?: { avg_duration_ms?: number; max_duration_ms?: number; score?: number; regularity_pct?: number }
+    tessiture?: { confidence?: string }
+  } | null
 }
 
 interface JuryScore {
@@ -205,6 +213,11 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
                     {analysis.justesse_label}
                   </span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-white/30">{candidate.category}</span>
+                  {analysis.raw_data?.analysis_version === 'v2' ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-bold">v2</span>
+                  ) : (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/8 text-white/20 font-bold">v1</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -295,6 +308,90 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               <div className="text-[10px] text-white/40 uppercase tracking-wider">BPM</div>
             </div>
           </div>
+
+          {/* Metriques v2 */}
+          {analysis.raw_data?.analysis_version === 'v2' && (
+            <div className="mb-4 p-3 bg-white/5 rounded-xl border border-teal-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-white/50 font-semibold uppercase tracking-wider">Metriques v2</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-bold">v2</span>
+              </div>
+
+              {/* Justesse harmonique with bar */}
+              {analysis.raw_data?.justesse_harmonique?.pct != null && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-white/40">Justesse harmonique</span>
+                    <span className="text-xs font-bold" style={{ color: getScoreColor(analysis.raw_data.justesse_harmonique.pct) }}>
+                      {Math.round(analysis.raw_data.justesse_harmonique.pct)}%
+                      {analysis.raw_data.justesse_harmonique.label && (
+                        <span className="text-white/30 font-normal ml-1">({analysis.raw_data.justesse_harmonique.label})</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, analysis.raw_data.justesse_harmonique.pct)}%`,
+                        background: getScoreColor(analysis.raw_data.justesse_harmonique.pct),
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Dynamique */}
+                {analysis.raw_data?.dynamique?.label && (
+                  <div className="p-2 bg-white/5 rounded-lg">
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Dynamique</div>
+                    <div className="text-xs text-white/70 font-semibold">
+                      {analysis.raw_data.dynamique.label}
+                      {analysis.raw_data.dynamique.range_db != null && (
+                        <span className="text-white/30 font-normal ml-1">({Math.round(analysis.raw_data.dynamique.range_db)} dB)</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timbre */}
+                {analysis.raw_data?.timbre?.label && (
+                  <div className="p-2 bg-white/5 rounded-lg">
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Timbre</div>
+                    <div className="text-xs text-white/70 font-semibold">{analysis.raw_data.timbre.label}</div>
+                  </div>
+                )}
+
+                {/* Tenue */}
+                {analysis.raw_data?.tenue?.avg_duration_ms != null && (
+                  <div className="p-2 bg-white/5 rounded-lg">
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Tenue</div>
+                    <div className="text-xs text-white/70 font-semibold">
+                      {Math.round(analysis.raw_data.tenue.avg_duration_ms)} ms moy
+                      {analysis.raw_data.tenue.max_duration_ms != null && (
+                        <span className="text-white/30 font-normal"> / {Math.round(analysis.raw_data.tenue.max_duration_ms)} ms max</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Confiance tessiture */}
+                {analysis.raw_data?.tessiture?.confidence && (
+                  <div className="p-2 bg-white/5 rounded-lg">
+                    <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Confiance tessiture</div>
+                    <div className={`text-xs font-semibold ${
+                      analysis.raw_data.tessiture.confidence === 'haute' ? 'text-green-400' :
+                      analysis.raw_data.tessiture.confidence === 'moyenne' ? 'text-amber-400' :
+                      'text-red-400'
+                    }`}>
+                      {analysis.raw_data.tessiture.confidence}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Jury votes detail */}
           {candidateJuryScores.length > 0 && (
@@ -567,7 +664,13 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
                   <span className="text-xs font-bold px-2.5 py-1 rounded-lg"
                     style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
                     {analysis.justesse_label}
+                    {analysis.raw_data?.justesse_harmonique?.pct != null && (
+                      <span className="opacity-60 ml-1">/ {Math.round(analysis.raw_data.justesse_harmonique.pct)}%</span>
+                    )}
                   </span>
+                  {analysis.raw_data?.analysis_version === 'v2' && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400">v2</span>
+                  )}
                   {avgJury != null && (
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#a78bfa]/15 text-[#a78bfa]">
                       Jury {avgJury.toFixed(1)} ({juryCount})
