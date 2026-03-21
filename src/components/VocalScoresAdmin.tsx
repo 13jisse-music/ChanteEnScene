@@ -197,21 +197,21 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={onClose} />
-      <div className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[720px] sm:max-h-[90vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto">
-        <div className="p-5">
+      <div className="fixed inset-2 sm:inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-[95vw] sm:w-[720px] max-w-2xl sm:max-h-[90vh] max-h-[92vh] bg-[#1a1232] border border-[#2a2545] rounded-2xl z-50 overflow-y-auto mx-auto left-0 right-0 sm:mx-0">
+        <div className="p-3 sm:p-5">
           {/* Header with photo */}
           <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               {candidate.photo_url ? (
-                <img src={candidate.photo_url} alt={name} className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-[#e91e8c]/30" />
+                <img src={candidate.photo_url} alt={name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0 border-2 border-[#e91e8c]/30" />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-xl font-bold flex-shrink-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#e91e8c]/10 flex items-center justify-center text-[#e91e8c] text-lg sm:text-xl font-bold flex-shrink-0">
                   {(candidate.stage_name || candidate.first_name)[0]}
                 </div>
               )}
-              <div>
-                <h2 className="text-white font-bold text-lg">{name}</h2>
-                <p className="text-white/40 text-sm">{candidate.song_title} — {candidate.song_artist}</p>
+              <div className="min-w-0">
+                <h2 className="text-white font-bold text-base sm:text-lg">{name}</h2>
+                <p className="text-white/40 text-xs sm:text-sm truncate">{candidate.song_title} — {candidate.song_artist}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                     style={{ background: getScoreBg(analysis.justesse_pct), color: getScoreColor(analysis.justesse_pct) }}>
@@ -230,9 +230,9 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
           </div>
 
           {/* Score + Jury compact */}
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 flex-wrap">
             <div className="text-center">
-              <ScoreRing pct={analysis.justesse_pct} size={56} />
+              <ScoreRing pct={analysis.justesse_pct} size={48} />
               <div className="text-[9px] text-white/40 uppercase mt-0.5">Score</div>
             </div>
             <div className="text-center">
@@ -253,7 +253,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             <div className="flex gap-1 ml-auto">
               <button
                 onClick={() => setActiveTab('analyse')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${
                   activeTab === 'analyse'
                     ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
                     : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
@@ -263,7 +263,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               </button>
               <button
                 onClick={() => setActiveTab('coach')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${
                   activeTab === 'coach'
                     ? 'bg-[#C9A84C]/20 text-[#C9A84C] border border-[#C9A84C]/30'
                     : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
@@ -273,7 +273,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               </button>
               <button
                 onClick={() => setActiveTab('ecg')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${
                   activeTab === 'ecg'
                     ? 'bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/30'
                     : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
@@ -437,7 +437,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
 
 
           {/* Tessiture + Zones — compact side by side */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
             {analysis.tessiture_low_midi && analysis.tessiture_high_midi && (
               <div className="p-2 bg-white/5 rounded-xl">
                 <div className="flex items-center justify-between mb-1">
@@ -478,30 +478,30 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             )}
           </div>
 
-          {/* Metrics with human labels — 4 cols compact */}
-          <div className="grid grid-cols-4 gap-1.5 mb-2">
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
-              <div className="text-[9px] mt-0.5" style={{ color: analysis.stability_pct != null ? (analysis.stability_pct >= 65 ? '#22c55e' : analysis.stability_pct >= 45 ? '#c9a84c' : '#ef4444') : '#666' }}>
+          {/* Metrics with human labels — 2 cols mobile, 4 cols desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-2">
+            <div className="p-2 sm:p-3 bg-white/5 rounded-xl text-center">
+              <div className="text-xl sm:text-2xl font-black text-white">{analysis.stability_pct != null ? `${Math.round(analysis.stability_pct)}%` : '--'}</div>
+              <div className="text-[9px] sm:text-[10px] text-white/40 uppercase tracking-wider">Stabilite</div>
+              <div className="text-[8px] sm:text-[9px] mt-0.5" style={{ color: analysis.stability_pct != null ? (analysis.stability_pct >= 65 ? '#22c55e' : analysis.stability_pct >= 45 ? '#c9a84c' : '#ef4444') : '#666' }}>
                 {analysis.stability_pct != null ? (analysis.stability_pct >= 75 ? 'Voix tres posee' : analysis.stability_pct >= 55 ? 'Bonne maitrise' : analysis.stability_pct >= 35 ? 'A travailler' : 'Voix instable') : ''}
               </div>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.vibrato_count ?? '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Vibratos</div>
-              <div className="text-[9px] text-teal-400/60 mt-0.5">
+            <div className="p-2 sm:p-3 bg-white/5 rounded-xl text-center">
+              <div className="text-xl sm:text-2xl font-black text-white">{analysis.vibrato_count ?? '--'}</div>
+              <div className="text-[9px] sm:text-[10px] text-white/40 uppercase tracking-wider">Vibratos</div>
+              <div className="text-[8px] sm:text-[9px] text-teal-400/60 mt-0.5">
                 {analysis.vibrato_count != null ? (analysis.vibrato_count >= 2000 ? 'Vibrato riche' : analysis.vibrato_count >= 1000 ? 'Vibrato present' : analysis.vibrato_count >= 200 ? 'Vibrato leger' : 'Pas de vibrato') : ''}
               </div>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.total_notes || '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Notes detectees</div>
+            <div className="p-2 sm:p-3 bg-white/5 rounded-xl text-center">
+              <div className="text-xl sm:text-2xl font-black text-white">{analysis.total_notes || '--'}</div>
+              <div className="text-[9px] sm:text-[10px] text-white/40 uppercase tracking-wider">Notes detectees</div>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl text-center">
-              <div className="text-2xl font-black text-white">{analysis.song_bpm ? Math.round(analysis.song_bpm) : '--'}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">Tempo (BPM)</div>
-              <div className="text-[9px] text-white/25 mt-0.5">
+            <div className="p-2 sm:p-3 bg-white/5 rounded-xl text-center">
+              <div className="text-xl sm:text-2xl font-black text-white">{analysis.song_bpm ? Math.round(analysis.song_bpm) : '--'}</div>
+              <div className="text-[9px] sm:text-[10px] text-white/40 uppercase tracking-wider">Tempo (BPM)</div>
+              <div className="text-[8px] sm:text-[9px] text-white/25 mt-0.5">
                 {analysis.song_bpm ? (analysis.song_bpm >= 140 ? 'Rapide' : analysis.song_bpm >= 100 ? 'Medium' : analysis.song_bpm >= 70 ? 'Modere' : 'Lent') : ''}
               </div>
             </div>
@@ -519,9 +519,9 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             // Helper: gauge bar with label
             const Gauge = ({ value, max = 100, label, detail, color }: { value: number; max?: number; label: string; detail: string; color: string }) => (
               <div className="mb-2.5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-white/50">{label}</span>
-                  <span className="text-[11px] font-bold" style={{ color }}>{detail}</span>
+                <div className="flex items-center justify-between mb-1 gap-1">
+                  <span className="text-[10px] sm:text-[11px] text-white/50">{label}</span>
+                  <span className="text-[10px] sm:text-[11px] font-bold flex-shrink-0" style={{ color }}>{detail}</span>
                 </div>
                 <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (value / max) * 100)}%`, background: color }} />
@@ -535,7 +535,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             const vibratoLabel = (v: number) => v >= 2000 ? 'Tres present' : v >= 1000 ? 'Present' : v >= 200 ? 'Leger' : 'Absent'
 
             return (
-              <div className="mb-4 p-4 bg-white/5 rounded-xl border border-teal-500/30">
+              <div className="mb-4 p-3 sm:p-4 bg-white/5 rounded-xl border border-teal-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-xs text-teal-400 font-bold uppercase tracking-wider">Analyse detaillee</span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-400 font-bold">v2</span>
