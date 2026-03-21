@@ -325,12 +325,12 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             const pxPerSec = 60
             const maxTime = ecgData[ecgData.length - 1].time
 
-            // Range = 5th-95th percentile (eliminates breaths/noise/outliers)
+            // Range = 10th-90th percentile + 3 semitone margin (clean but visible)
             const voicedPitches = ecgData.filter(p => p.is_voiced && p.pitch_midi > 0).map(p => p.pitch_midi).sort((a, b) => a - b)
-            const p5 = voicedPitches.length > 0 ? voicedPitches[Math.floor(voicedPitches.length * 0.05)] : 55
-            const p95 = voicedPitches.length > 0 ? voicedPitches[Math.floor(voicedPitches.length * 0.95)] : 75
-            const dataMin = Math.floor(p5) - 2
-            const dataMax = Math.ceil(p95) + 2
+            const p10 = voicedPitches.length > 0 ? voicedPitches[Math.floor(voicedPitches.length * 0.10)] : 55
+            const p90 = voicedPitches.length > 0 ? voicedPitches[Math.floor(voicedPitches.length * 0.90)] : 75
+            const dataMin = Math.floor(p10) - 3
+            const dataMax = Math.ceil(p90) + 3
             const midiMin = dataMin
             const midiMax = dataMax
             const numNotes = midiMax - midiMin
@@ -364,8 +364,8 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               // Skip notes outside visible range (breaths, noise)
               if (p.pitch_midi < midiMin || p.pitch_midi > midiMax) continue
               if (pNext.pitch_midi < midiMin || pNext.pitch_midi > midiMax) continue
-              // Skip jumps > 7 semitones (likely noise/octave error)
-              if (Math.abs(p.pitch_midi - pNext.pitch_midi) > 7) continue
+              // Skip jumps > 12 semitones (octave+ = likely noise)
+              if (Math.abs(p.pitch_midi - pNext.pitch_midi) > 12) continue
               const nearestSemi = Math.round(p.pitch_midi)
               const centsOff = Math.abs(p.pitch_midi - nearestSemi) * 100
               let color = '#10b981'
