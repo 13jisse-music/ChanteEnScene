@@ -321,25 +321,25 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               )
             }
 
-            // Melodyne-style: 40px/sec, 14px per semitone, alternating bands
-            const pxPerSec = 40
-            const noteH = 14
+            // Melodyne-style: wide horizontal, fixed height, no vertical scroll
+            const pxPerSec = 60
             const maxTime = ecgData[ecgData.length - 1].time
 
-            // Auto-detect range from data (with 3 semitone margin)
+            // Tight range: only notes actually used (+1 semitone margin)
             const voicedPitches = ecgData.filter(p => p.is_voiced && p.pitch_midi > 0).map(p => p.pitch_midi)
-            const dataMin = voicedPitches.length > 0 ? Math.floor(Math.min(...voicedPitches)) - 3 : 48
-            const dataMax = voicedPitches.length > 0 ? Math.ceil(Math.max(...voicedPitches)) + 3 : 84
-            const midiMin = Math.max(36, dataMin)
-            const midiMax = Math.min(96, dataMax)
+            const dataMin = voicedPitches.length > 0 ? Math.floor(Math.min(...voicedPitches)) - 1 : 55
+            const dataMax = voicedPitches.length > 0 ? Math.ceil(Math.max(...voicedPitches)) + 1 : 75
+            const midiMin = dataMin
+            const midiMax = dataMax
             const numNotes = midiMax - midiMin
 
             const padL = 50
             const padR = 10
             const padT = 5
             const padB = 25
+            const H = 400
+            const noteH = (H - padT - padB) / numNotes
             const W = Math.max(700, Math.round(maxTime * pxPerSec) + padL + padR)
-            const H = numNotes * noteH + padT + padB
 
             const timeToX = (t: number) => padL + (t / maxTime) * (W - padL - padR)
             const midiToY = (m: number) => padT + (midiMax - m) * noteH
@@ -373,7 +373,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
 
             return (
               <div className="rounded-xl overflow-hidden border border-[#e91e8c]/20">
-                <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 500 }}>
+                <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
                 <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block', minWidth: W }}>
                   {/* Alternating note bands (like Melodyne piano roll) */}
                   {Array.from({ length: numNotes }, (_, i) => {
