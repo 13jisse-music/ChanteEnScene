@@ -321,12 +321,15 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               )
             }
 
-            const W = 660
-            const H = 200
+            // Width proportional to duration (20px per second for readability)
+            const pxPerSec = 20
+            const maxTime = ecgData[ecgData.length - 1].time
+            const W = Math.max(660, Math.round(maxTime * pxPerSec) + 60)
+            const H = 400
             const padL = 45
             const padR = 10
             const padT = 15
-            const padB = 25
+            const padB = 30
             const plotW = W - padL - padR
             const plotH = H - padT - padB
 
@@ -334,7 +337,6 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
             const midiMax = 90
             const midiRange = midiMax - midiMin
 
-            const maxTime = ecgData[ecgData.length - 1].time
             const timeToX = (t: number) => padL + (t / maxTime) * plotW
             const midiToY = (m: number) => padT + plotH - ((m - midiMin) / midiRange) * plotH
 
@@ -377,27 +379,47 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               timeLabels.push(t)
             }
 
+            // Vertical time bars every 5 seconds
+            const timeBars: number[] = []
+            for (let t = 5; t < maxTime; t += 5) {
+              timeBars.push(t)
+            }
+
             return (
               <div className="rounded-xl overflow-hidden border border-[#e91e8c]/20">
-                <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200" style={{ background: '#1a1a2e', display: 'block' }}>
+                <div style={{ overflowX: 'auto', overflowY: 'hidden', maxHeight: 440 }}>
+                <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ background: '#1a1a2e', display: 'block', minWidth: W }}>
                   {/* Grid lines for C notes */}
                   {cNotes.map(n => (
                     <g key={n.label}>
                       <line x1={padL} y1={midiToY(n.midi)} x2={W - padR} y2={midiToY(n.midi)} stroke="rgba(255,255,255,.08)" strokeWidth=".5" />
-                      <text x={padL - 4} y={midiToY(n.midi) + 3} textAnchor="end" fill="rgba(255,255,255,.3)" fontSize="9" fontFamily="monospace">{n.label}</text>
+                      <text x={padL - 4} y={midiToY(n.midi) + 4} textAnchor="end" fill="rgba(255,255,255,.4)" fontSize="11" fontFamily="monospace" fontWeight="bold">{n.label}</text>
                     </g>
+                  ))}
+
+                  {/* Vertical time bars every 5s */}
+                  {timeBars.map(t => (
+                    <line key={`bar-${t}`} x1={timeToX(t)} y1={padT} x2={timeToX(t)} y2={H - padB} stroke={t % 15 === 0 ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.05)'} strokeWidth={t % 15 === 0 ? '1' : '.5'} />
                   ))}
 
                   {/* Time axis labels */}
                   {timeLabels.map(t => (
-                    <text key={t} x={timeToX(t)} y={H - 4} textAnchor="middle" fill="rgba(255,255,255,.25)" fontSize="8" fontFamily="monospace">{t}s</text>
+                    <g key={t}>
+                      <text x={timeToX(t)} y={H - 4} textAnchor="middle" fill="rgba(255,255,255,.35)" fontSize="10" fontFamily="monospace">{Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}</text>
+                    </g>
                   ))}
 
                   {/* Pitch curve segments */}
                   {segments.map((seg, i) => (
-                    <line key={i} x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2} stroke={seg.color} strokeWidth="1.5" strokeLinecap="round" />
+                    <line key={i} x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2} stroke={seg.color} strokeWidth="2" strokeLinecap="round" />
+                  ))}
+
+                  {/* Semitone grid lines (every note) */}
+                  {Array.from({ length: midiMax - midiMin }, (_, i) => midiMin + i).map(m => (
+                    <line key={`semi-${m}`} x1={padL} y1={midiToY(m)} x2={W - padR} y2={midiToY(m)} stroke="rgba(255,255,255,.03)" strokeWidth=".3" />
                   ))}
                 </svg>
+                </div>
 
                 {/* Legend */}
                 <div className="flex items-center justify-center gap-4 py-2 bg-[#1a1a2e] border-t border-white/5">
