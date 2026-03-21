@@ -321,108 +321,96 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               )
             }
 
-            // Width proportional to duration (20px per second for readability)
-            const pxPerSec = 20
+            // Melodyne-style: 40px/sec, 14px per semitone, alternating bands
+            const pxPerSec = 40
+            const noteH = 14
             const maxTime = ecgData[ecgData.length - 1].time
-            const W = Math.max(660, Math.round(maxTime * pxPerSec) + 60)
-            const H = 400
-            const padL = 45
+
+            // Auto-detect range from data (with 3 semitone margin)
+            const voicedPitches = ecgData.filter(p => p.is_voiced && p.pitch_midi > 0).map(p => p.pitch_midi)
+            const dataMin = voicedPitches.length > 0 ? Math.floor(Math.min(...voicedPitches)) - 3 : 48
+            const dataMax = voicedPitches.length > 0 ? Math.ceil(Math.max(...voicedPitches)) + 3 : 84
+            const midiMin = Math.max(36, dataMin)
+            const midiMax = Math.min(96, dataMax)
+            const numNotes = midiMax - midiMin
+
+            const padL = 50
             const padR = 10
-            const padT = 15
-            const padB = 30
-            const plotW = W - padL - padR
-            const plotH = H - padT - padB
+            const padT = 5
+            const padB = 25
+            const W = Math.max(700, Math.round(maxTime * pxPerSec) + padL + padR)
+            const H = numNotes * noteH + padT + padB
 
-            const midiMin = 40
-            const midiMax = 90
-            const midiRange = midiMax - midiMin
+            const timeToX = (t: number) => padL + (t / maxTime) * (W - padL - padR)
+            const midiToY = (m: number) => padT + (midiMax - m) * noteH
 
-            const timeToX = (t: number) => padL + (t / maxTime) * plotW
-            const midiToY = (m: number) => padT + plotH - ((m - midiMin) / midiRange) * plotH
+            // Note names (french)
+            const noteNames = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si']
+            const noteName = (midi: number) => {
+              const n = midi % 12
+              const oct = Math.floor(midi / 12) - 1
+              return `${noteNames[n]}${oct}`
+            }
+            const isBlackKey = (midi: number) => [1,3,6,8,10].includes(midi % 12)
 
-            // Reference lines for C notes
-            const cNotes = [
-              { midi: 36, label: 'C2' },
-              { midi: 48, label: 'C3' },
-              { midi: 60, label: 'C4' },
-              { midi: 72, label: 'C5' },
-              { midi: 84, label: 'C6' },
-            ].filter(n => n.midi >= midiMin && n.midi <= midiMax)
-
-            // Build path segments colored by intonation accuracy
-            // We approximate "justesse" by distance to nearest semitone
+            // Build segments
             const segments: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = []
             for (let i = 0; i < ecgData.length - 1; i++) {
               const p = ecgData[i]
               const pNext = ecgData[i + 1]
               if (!p.is_voiced || !pNext.is_voiced) continue
-
               const nearestSemi = Math.round(p.pitch_midi)
               const centsOff = Math.abs(p.pitch_midi - nearestSemi) * 100
-              let color = '#10b981' // vert = juste
-              if (centsOff > 50) color = '#ef4444' // rouge = faux
-              else if (centsOff > 30) color = '#f59e0b' // orange = limite
-
-              segments.push({
-                x1: timeToX(p.time),
-                y1: midiToY(p.pitch_midi),
-                x2: timeToX(pNext.time),
-                y2: midiToY(pNext.pitch_midi),
-                color,
-              })
+              let color = '#10b981'
+              if (centsOff > 50) color = '#ef4444'
+              else if (centsOff > 30) color = '#f59e0b'
+              segments.push({ x1: timeToX(p.time), y1: midiToY(p.pitch_midi), x2: timeToX(pNext.time), y2: midiToY(pNext.pitch_midi), color })
             }
 
-            // Time axis labels
+            // Time labels every 5s
             const timeLabels: number[] = []
-            const step = maxTime > 120 ? 30 : maxTime > 60 ? 15 : maxTime > 20 ? 5 : 2
-            for (let t = 0; t <= maxTime; t += step) {
-              timeLabels.push(t)
-            }
-
-            // Vertical time bars every 5 seconds
-            const timeBars: number[] = []
-            for (let t = 5; t < maxTime; t += 5) {
-              timeBars.push(t)
-            }
+            for (let t = 0; t <= maxTime; t += 5) timeLabels.push(t)
 
             return (
               <div className="rounded-xl overflow-hidden border border-[#e91e8c]/20">
-                <div style={{ overflowX: 'auto', overflowY: 'hidden', maxHeight: 440 }}>
-                <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ background: '#1a1a2e', display: 'block', minWidth: W }}>
-                  {/* Grid lines for C notes */}
-                  {cNotes.map(n => (
-                    <g key={n.label}>
-                      <line x1={padL} y1={midiToY(n.midi)} x2={W - padR} y2={midiToY(n.midi)} stroke="rgba(255,255,255,.08)" strokeWidth=".5" />
-                      <text x={padL - 4} y={midiToY(n.midi) + 4} textAnchor="end" fill="rgba(255,255,255,.4)" fontSize="11" fontFamily="monospace" fontWeight="bold">{n.label}</text>
-                    </g>
+                <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 500 }}>
+                <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block', minWidth: W }}>
+                  {/* Alternating note bands (like Melodyne piano roll) */}
+                  {Array.from({ length: numNotes }, (_, i) => {
+                    const midi = midiMax - i - 1
+                    const y = padT + i * noteH
+                    const bg = isBlackKey(midi) ? '#12121f' : '#1a1a2e'
+                    return (
+                      <g key={`band-${midi}`}>
+                        <rect x={padL} y={y} width={W - padL - padR} height={noteH} fill={bg} />
+                        <line x1={padL} y1={y + noteH} x2={W - padR} y2={y + noteH} stroke="rgba(255,255,255,.06)" strokeWidth=".5" />
+                        {/* Bold line for C notes */}
+                        {midi % 12 === 0 && <line x1={padL} y1={y + noteH} x2={W - padR} y2={y + noteH} stroke="rgba(255,255,255,.2)" strokeWidth="1" />}
+                        {/* Note label */}
+                        <text x={padL - 4} y={y + noteH / 2 + 4} textAnchor="end" fill={midi % 12 === 0 ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.25)'} fontSize={midi % 12 === 0 ? '10' : '8'} fontFamily="monospace" fontWeight={midi % 12 === 0 ? 'bold' : 'normal'}>{noteName(midi)}</text>
+                      </g>
+                    )
+                  })}
+
+                  {/* Vertical time bars every second (thin) + every 5s (bold) */}
+                  {Array.from({ length: Math.ceil(maxTime) }, (_, i) => i + 1).map(t => (
+                    <line key={`vbar-${t}`} x1={timeToX(t)} y1={padT} x2={timeToX(t)} y2={H - padB} stroke={t % 5 === 0 ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.04)'} strokeWidth={t % 5 === 0 ? '1' : '.3'} />
                   ))}
 
-                  {/* Vertical time bars every 5s */}
-                  {timeBars.map(t => (
-                    <line key={`bar-${t}`} x1={timeToX(t)} y1={padT} x2={timeToX(t)} y2={H - padB} stroke={t % 15 === 0 ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.05)'} strokeWidth={t % 15 === 0 ? '1' : '.5'} />
-                  ))}
-
-                  {/* Time axis labels */}
+                  {/* Time axis labels every 5s */}
                   {timeLabels.map(t => (
-                    <g key={t}>
-                      <text x={timeToX(t)} y={H - 4} textAnchor="middle" fill="rgba(255,255,255,.35)" fontSize="10" fontFamily="monospace">{Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}</text>
-                    </g>
+                    <text key={`t-${t}`} x={timeToX(t)} y={H - 6} textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="10" fontFamily="monospace">{Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}</text>
                   ))}
 
-                  {/* Pitch curve segments */}
+                  {/* Pitch curve — thicker for visibility */}
                   {segments.map((seg, i) => (
-                    <line key={i} x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2} stroke={seg.color} strokeWidth="2" strokeLinecap="round" />
-                  ))}
-
-                  {/* Semitone grid lines (every note) */}
-                  {Array.from({ length: midiMax - midiMin }, (_, i) => midiMin + i).map(m => (
-                    <line key={`semi-${m}`} x1={padL} y1={midiToY(m)} x2={W - padR} y2={midiToY(m)} stroke="rgba(255,255,255,.03)" strokeWidth=".3" />
+                    <line key={i} x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2} stroke={seg.color} strokeWidth="2.5" strokeLinecap="round" opacity=".9" />
                   ))}
                 </svg>
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-4 py-2 bg-[#1a1a2e] border-t border-white/5">
+                <div className="flex items-center justify-center gap-4 py-2 bg-[#12121f] border-t border-white/5">
                   <span className="flex items-center gap-1 text-[10px]">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block" /> <span className="text-white/40">Juste (&lt;30c)</span>
                   </span>
