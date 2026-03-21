@@ -46,6 +46,7 @@ interface VocalAnalysis {
     timbre?: { label?: string; brightness?: number }
     tenue?: { avg_duration_ms?: number; max_duration_ms?: number; score?: number; regularity_pct?: number }
     tessiture?: { confidence?: string }
+    ecg_data?: Array<{ time: number; pitch_midi: number; is_voiced: boolean }>
   } | null
 }
 
@@ -186,7 +187,7 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
   jurorMap: Map<string, Juror>
   onClose: () => void
 }) {
-  const [activeTab, setActiveTab] = useState<'analyse' | 'coach'>('analyse')
+  const [activeTab, setActiveTab] = useState<'analyse' | 'coach' | 'ecg'>('analyse')
   const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
   const avgJury = candidateJuryScores.length > 0
     ? candidateJuryScores.reduce((s, j) => s + (j.total_score || 0), 0) / candidateJuryScores.length
@@ -270,6 +271,16 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               >
                 Coach {coachText ? '' : '(-)'}
               </button>
+              <button
+                onClick={() => setActiveTab('ecg')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'ecg'
+                    ? 'bg-[#e91e8c]/20 text-[#e91e8c] border border-[#e91e8c]/30'
+                    : 'bg-white/5 text-white/30 border border-transparent hover:text-white/50'
+                }`}
+              >
+                ECG {analysis.raw_data?.ecg_data ? '' : '(-)'}
+              </button>
             </div>
           </div>
 
@@ -297,6 +308,112 @@ function CandidateDetailModal({ candidate, analysis, candidateJuryScores, jurorM
               </div>
             </div>
           )}
+
+          {/* TAB: ECG */}
+          {activeTab === 'ecg' && (() => {
+            const ecgData = analysis.raw_data?.ecg_data
+            if (!ecgData || ecgData.length === 0) {
+              return (
+                <div className="p-6 bg-white/5 rounded-xl text-center">
+                  <div className="text-3xl mb-3 opacity-30">~</div>
+                  <p className="text-sm text-white/40">Analyse ECG non disponible — sera generee au prochain cycle</p>
+                </div>
+              )
+            }
+
+            const W = 660
+            const H = 200
+            const padL = 45
+            const padR = 10
+            const padT = 15
+            const padB = 25
+            const plotW = W - padL - padR
+            const plotH = H - padT - padB
+
+            const midiMin = 40
+            const midiMax = 90
+            const midiRange = midiMax - midiMin
+
+            const maxTime = ecgData[ecgData.length - 1].time
+            const timeToX = (t: number) => padL + (t / maxTime) * plotW
+            const midiToY = (m: number) => padT + plotH - ((m - midiMin) / midiRange) * plotH
+
+            // Reference lines for C notes
+            const cNotes = [
+              { midi: 36, label: 'C2' },
+              { midi: 48, label: 'C3' },
+              { midi: 60, label: 'C4' },
+              { midi: 72, label: 'C5' },
+              { midi: 84, label: 'C6' },
+            ].filter(n => n.midi >= midiMin && n.midi <= midiMax)
+
+            // Build path segments colored by intonation accuracy
+            // We approximate "justesse" by distance to nearest semitone
+            const segments: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = []
+            for (let i = 0; i < ecgData.length - 1; i++) {
+              const p = ecgData[i]
+              const pNext = ecgData[i + 1]
+              if (!p.is_voiced || !pNext.is_voiced) continue
+
+              const nearestSemi = Math.round(p.pitch_midi)
+              const centsOff = Math.abs(p.pitch_midi - nearestSemi) * 100
+              let color = '#10b981' // vert = juste
+              if (centsOff > 50) color = '#ef4444' // rouge = faux
+              else if (centsOff > 30) color = '#f59e0b' // orange = limite
+
+              segments.push({
+                x1: timeToX(p.time),
+                y1: midiToY(p.pitch_midi),
+                x2: timeToX(pNext.time),
+                y2: midiToY(pNext.pitch_midi),
+                color,
+              })
+            }
+
+            // Time axis labels
+            const timeLabels: number[] = []
+            const step = maxTime > 120 ? 30 : maxTime > 60 ? 15 : maxTime > 20 ? 5 : 2
+            for (let t = 0; t <= maxTime; t += step) {
+              timeLabels.push(t)
+            }
+
+            return (
+              <div className="rounded-xl overflow-hidden border border-[#e91e8c]/20">
+                <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="200" style={{ background: '#1a1a2e', display: 'block' }}>
+                  {/* Grid lines for C notes */}
+                  {cNotes.map(n => (
+                    <g key={n.label}>
+                      <line x1={padL} y1={midiToY(n.midi)} x2={W - padR} y2={midiToY(n.midi)} stroke="rgba(255,255,255,.08)" strokeWidth=".5" />
+                      <text x={padL - 4} y={midiToY(n.midi) + 3} textAnchor="end" fill="rgba(255,255,255,.3)" fontSize="9" fontFamily="monospace">{n.label}</text>
+                    </g>
+                  ))}
+
+                  {/* Time axis labels */}
+                  {timeLabels.map(t => (
+                    <text key={t} x={timeToX(t)} y={H - 4} textAnchor="middle" fill="rgba(255,255,255,.25)" fontSize="8" fontFamily="monospace">{t}s</text>
+                  ))}
+
+                  {/* Pitch curve segments */}
+                  {segments.map((seg, i) => (
+                    <line key={i} x1={seg.x1} y1={seg.y1} x2={seg.x2} y2={seg.y2} stroke={seg.color} strokeWidth="1.5" strokeLinecap="round" />
+                  ))}
+                </svg>
+
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 py-2 bg-[#1a1a2e] border-t border-white/5">
+                  <span className="flex items-center gap-1 text-[10px]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] inline-block" /> <span className="text-white/40">Juste (&lt;30c)</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] inline-block" /> <span className="text-white/40">Limite (30-50c)</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block" /> <span className="text-white/40">Faux (&gt;50c)</span>
+                  </span>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* TAB: Analyse */}
           {activeTab === 'analyse' && (<>
