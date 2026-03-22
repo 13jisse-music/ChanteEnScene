@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChanteEnScene — Dossier de presentation villes</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.6;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h1, h2, h3 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 25mm 22mm;
+    position: relative;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+  }
+
+  /* ── Accent color ── */
+  .accent { color: #22c55e; }
+  .bg-accent { background-color: #22c55e; }
+
+  /* ── Cover page ── */
+  .cover {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(160deg, #f0fdf4 0%, #ffffff 40%, #ffffff 100%);
+  }
+
+  .cover-logo {
+    font-size: 52px;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .cover-edition {
+    font-size: 20px;
+    color: #22c55e;
+    font-weight: 600;
+    margin-bottom: 40px;
+    letter-spacing: 0.5px;
+  }
+
+  .cover-hook {
+    font-size: 26px;
+    font-family: Georgia, serif;
+    color: #111;
+    max-width: 480px;
+    margin: 0 auto 16px;
+    line-height: 1.35;
+  }
+
+  .cover-subtitle {
+    font-size: 15px;
+    color: #6b7280;
+    margin-bottom: 60px;
+  }
+
+  .cover-line {
+    width: 60px;
+    height: 3px;
+    background: #22c55e;
+    margin: 0 auto 60px;
+    border-radius: 2px;
+  }
+
+  .cover-contact {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  .cover-contact strong {
+    color: #6b7280;
+  }
+
+  /* ── Content pages ── */
+  .page-title {
+    font-size: 28px;
+    margin-bottom: 6px;
+    color: #111;
+  }
+
+  .page-title-accent {
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: #22c55e;
+    margin: 10px 0 28px;
+    border-radius: 2px;
+  }
+
+  .section-intro {
+    font-size: 15px;
+    color: #4b5563;
+    margin-bottom: 28px;
+    max-width: 520px;
+    line-height: 1.7;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .feature-list li {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 18px;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .feature-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+  }
+
+  .feature-list li strong {
+    color: #111;
+  }
+
+  .highlight-box {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #166534;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .photo-placeholders {
+    display: flex;
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .photo-placeholder {
+    flex: 1;
+    height: 130px;
+    background: #f3f4f6;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  /* ── Formules ── */
+  .formules-grid {
+    display: flex;
+    gap: 20px;
+    margin-top: 8px;
+  }
+
+  .formule-card {
+    flex: 1;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .formule-card.recommended {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  .formule-badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .formule-name {
+    font-size: 13px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .formule-title {
+    font-size: 20px;
+    font-family: Georgia, serif;
+    margin-bottom: 4px;
+  }
+
+  .formule-price {
+    font-size: 22px;
+    font-weight: 700;
+    color: #22c55e;
+    margin-bottom: 16px;
+  }
+
+  .formule-price span {
+    font-size: 13px;
+    color: #9ca3af;
+    font-weight: 400;
+  }
+
+  .formule-features {
+    list-style: none;
+    padding: 0;
+  }
+
+  .formule-features li {
+    font-size: 13.5px;
+    padding: 6px 0;
+    padding-left: 22px;
+    position: relative;
+    color: #374151;
+  }
+
+  .formule-features li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: #22c55e;
+    font-weight: 700;
+  }
+
+  /* ── Budget ── */
+  .budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  .budget-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+  }
+
+  .budget-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .budget-table .amount {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .budget-table .total-row td {
+    border-top: 2px solid #22c55e;
+    font-weight: 700;
+    font-size: 15px;
+    padding-top: 14px;
+  }
+
+  .budget-table .total-row .amount {
+    color: #22c55e;
+  }
+
+  .budget-section-label {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 4px;
+    color: #111;
+  }
+
+  .budget-section-label:first-of-type {
+    margin-top: 0;
+  }
+
+  /* ── Contact page ── */
+  .contact-page {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .contact-card {
+    max-width: 400px;
+  }
+
+  .contact-name {
+    font-size: 28px;
+    font-family: Georgia, serif;
+    margin-bottom: 6px;
+  }
+
+  .contact-role {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 32px;
+  }
+
+  .contact-info {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+  }
+
+  .contact-info li {
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .contact-info li:last-child {
+    border-bottom: none;
+  }
+
+  .contact-icon {
+    width: 36px;
+    height: 36px;
+    background: #f0fdf4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .contact-cta {
+    margin-top: 40px;
+    font-size: 22px;
+    font-family: Georgia, serif;
+    font-style: italic;
+    color: #22c55e;
+  }
+
+  /* ── Footer on each page ── */
+  .page-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #d1d5db;
+  }
+
+  /* ── Print rules ── */
+  @media print {
+    body { background: none; }
+    .page {
+      width: auto;
+      min-height: auto;
+      height: 100vh;
+      padding: 20mm 18mm;
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+    .page:last-child {
+      page-break-after: auto;
+    }
+  }
+
+  /* ── Screen preview ── */
+  @media screen {
+    body {
+      background: #e5e7eb;
+    }
+    .page {
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+      border-radius: 2px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════ PAGE 1 — COVER ════════════════════════════════════════ -->
+<div class="page cover">
+  <div>
+    <div class="cover-logo">ChanteEnScene</div>
+    <div class="cover-edition">Concours de chant live — Edition Aubagne 2026</div>
+    <div class="cover-line"></div>
+    <div class="cover-hook">Votre ville aussi peut accueillir son concours de chant</div>
+    <div class="cover-subtitle">Dossier de presentation — Plateforme cle en main</div>
+  </div>
+  <div style="flex-grow:1"></div>
+  <div class="cover-contact">
+    <strong>Jean Christophe Martinez</strong> &middot; chantenscene.fr
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 2 — LE CONCEPT ════════════════════════════════════════ -->
+<div class="page">
+  <h2 class="page-title">Le concept</h2>
+  <span class="page-title-accent"></span>
+
+  <p class="section-intro">
+    ChanteEnScene est un concours de chant live qui rassemble toutes les generations
+    autour de la musique. Un evenement culturel federateur, cle en main.
+  </p>
+
+  <ul class="feature-list">
+    <li><strong>Concours de chant live</strong> avec musiciens professionnels sur scene — pas de playback, pas de karaoke. Une vraie experience de concert.</li>
+    <li><strong>Jury professionnel + votes du public</strong> — un format hybride qui implique les spectateurs et garantit la credibilite artistique.</li>
+    <li><strong>Intergenerationnel</strong> — enfants, adolescents, adultes : trois categories qui permettent a chaque tranche d'age de s'exprimer.</li>
+    <li><strong>Demi-finales en salle + finale en plein air</strong> — un format progressif qui cree du suspense et maximise la visibilite pour la ville.</li>
+    <li><strong>Plateforme numerique</strong> — inscription en ligne, scoring vocal IA, newsletter automatique. Tout est gere par la technologie.</li>
+  </ul>
+
+  <div class="highlight-box">
+    L'evenement culturel federateur de votre ville
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>2 / 7</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 3 — HISTORIQUE ════════════════════════════════════════ -->
+<div class="page">
+  <h2 class="page-title">Historique &amp; chiffres</h2>
+  <span class="page-title-accent"></span>
+
+  <p class="section-intro">
+    Trois editions a Aubagne ont permis de valider le concept, d'affiner
+    l'organisation et de developper une plateforme technologique unique en France.
+  </p>
+
+  <ul class="feature-list">
+    <li><strong>3eme edition en 2026</strong> — un evenement installe dans le paysage culturel aubagnais, avec une communaute grandissante.</li>
+    <li><strong>23 candidats inscrits, 86 abonnes newsletter</strong> — une base solide et engagee, en croissance chaque annee.</li>
+    <li><strong>Scoring vocal par intelligence artificielle (VocalPrint)</strong> — une innovation exclusive qui analyse la justesse, la stabilite et la tessiture de chaque candidat.</li>
+    <li><strong>Soutien de la Ville d'Aubagne</strong> — subvention municipale + mise a disposition d'infrastructure (salle, scene, technique).</li>
+  </ul>
+
+  <div class="photo-placeholders">
+    <div class="photo-placeholder">[ Photo demi-finale ]</div>
+    <div class="photo-placeholder">[ Photo finale plein air ]</div>
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>3 / 7</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 4 — LA PLATEFORME ════════════════════════════════════════ -->
+<div class="page">
+  <h2 class="page-title">La plateforme</h2>
+  <span class="page-title-accent"></span>
+
+  <p class="section-intro">
+    Une plateforme web complete qui automatise toute la gestion du concours,
+    de l'inscription a la finale.
+  </p>
+
+  <ul class="feature-list">
+    <li><strong>Inscription en ligne avec video</strong> — les candidats s'inscrivent, envoient leur video et sont notifies automatiquement a chaque etape.</li>
+    <li><strong>Scoring VocalPrint</strong> — analyse vocale par IA : justesse, stabilite, tessiture, timbre. Chaque candidat recoit un profil vocal detaille.</li>
+    <li><strong>Newsletter automatique</strong> — 86 abonnes informes automatiquement des etapes cles du concours.</li>
+    <li><strong>Pipeline automatise</strong> — inscription, analyse vocale, notification candidat, suivi jury : tout est gere sans intervention manuelle.</li>
+    <li><strong>Dashboard administrateur</strong> — vue d'ensemble des candidats, scores, votes du jury, statistiques en temps reel.</li>
+  </ul>
+
+  <div class="highlight-box">
+    La seule plateforme de concours de chant avec IA en France
+  </div>
+
+  <div class="photo-placeholders">
+    <div class="photo-placeholder">[ Screenshot inscription ]</div>
+    <div class="photo-placeholder">[ Screenshot scoring VocalPrint ]</div>
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>4 / 7</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 5 — DEUX FORMULES ════════════════════════════════════════ -->
+<div class="page">
+  <h2 class="page-title">Deux formules</h2>
+  <span class="page-title-accent"></span>
+
+  <p class="section-intro">
+    Selon vos moyens et votre organisation, choisissez la formule
+    qui correspond a votre ville.
+  </p>
+
+  <div class="formules-grid">
+    <!-- Formule 1 -->
+    <div class="formule-card">
+      <div class="formule-name">Formule 1</div>
+      <div class="formule-title">Licence plateforme</div>
+      <div class="formule-price">3 000 — 5 000 &euro; <span>/ an</span></div>
+      <ul class="formule-features">
+        <li>Acces complet a la plateforme ChanteEnScene</li>
+        <li>Scoring VocalPrint pour vos candidats</li>
+        <li>Page dediee a votre ville (sous-domaine)</li>
+        <li>Support technique et mises a jour</li>
+        <li>Formation a l'utilisation de la plateforme</li>
+      </ul>
+      <p style="margin-top:16px;font-size:13px;color:#6b7280;font-style:italic;">
+        La ville organise l'evenement live de son cote.
+      </p>
+    </div>
+
+    <!-- Formule 2 -->
+    <div class="formule-card recommended">
+      <div class="formule-badge">Recommande</div>
+      <div class="formule-name">Formule 2</div>
+      <div class="formule-title">Cle en main</div>
+      <div class="formule-price">5 000 — 8 000 &euro;</div>
+      <ul class="formule-features">
+        <li>Tout inclus : plateforme + organisation</li>
+        <li>Coordination musiciens et jury</li>
+        <li>Logistique complete (son, scene, technique)</li>
+        <li>Communication et promotion</li>
+        <li>Jean Christophe Martinez sur place</li>
+      </ul>
+      <p style="margin-top:16px;font-size:13px;color:#6b7280;font-style:italic;">
+        Vous n'avez qu'a fournir le lieu et le public.
+      </p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>5 / 7</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 6 — BUDGET TYPE ════════════════════════════════════════ -->
+<div class="page">
+  <h2 class="page-title">Budget type</h2>
+  <span class="page-title-accent"></span>
+
+  <p class="section-intro">
+    Un evenement rentable des la premiere edition grace a une plateforme
+    deja developpee et operationnelle.
+  </p>
+
+  <div class="budget-section-label">Recettes estimees</div>
+  <table class="budget-table">
+    <thead>
+      <tr>
+        <th>Poste</th>
+        <th style="text-align:right">Montant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Subvention mairie / collectivite</td>
+        <td class="amount">5 000 — 10 000 &euro;</td>
+      </tr>
+      <tr>
+        <td>Inscriptions candidats (25 &euro; x 30)</td>
+        <td class="amount">750 &euro;</td>
+      </tr>
+      <tr>
+        <td>Sponsors locaux / partenaires</td>
+        <td class="amount">2 000 — 5 000 &euro;</td>
+      </tr>
+      <tr>
+        <td>Billetterie finale (option)</td>
+        <td class="amount">500 — 2 000 &euro;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="budget-section-label">Depenses estimees</div>
+  <table class="budget-table">
+    <thead>
+      <tr>
+        <th>Poste</th>
+        <th style="text-align:right">Montant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Musiciens professionnels</td>
+        <td class="amount">~1 000 &euro;</td>
+      </tr>
+      <tr>
+        <td>Droits SACEM</td>
+        <td class="amount">~200 &euro;</td>
+      </tr>
+      <tr>
+        <td>Communication / affichage</td>
+        <td class="amount">~200 &euro;</td>
+      </tr>
+      <tr>
+        <td>Technique son / lumiere (si non fourni)</td>
+        <td class="amount">500 — 1 500 &euro;</td>
+      </tr>
+      <tr>
+        <td>Licence plateforme ou formule cle en main</td>
+        <td class="amount">3 000 — 8 000 &euro;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:24px"></div>
+  <table class="budget-table">
+    <tbody>
+      <tr class="total-row">
+        <td><strong>Resultat net typique</strong></td>
+        <td class="amount">+8 000 a +12 000 &euro;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    La plateforme technique est DEJA developpee = 0 &euro; de developpement supplementaire
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>6 / 7</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ PAGE 7 — CONTACT ════════════════════════════════════════ -->
+<div class="page contact-page">
+  <div class="contact-card">
+    <div style="margin-bottom:32px;">
+      <div style="width:80px;height:80px;background:#f0fdf4;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:32px;border:3px solid #22c55e;">&#9835;</div>
+    </div>
+
+    <div class="contact-name">Jean Christophe Martinez</div>
+    <div class="contact-role">Coach vocal &amp; Directeur artistique ChanteEnScene</div>
+
+    <ul class="contact-info">
+      <li>
+        <span class="contact-icon">&#9742;</span>
+        <span>06 58 20 02 70</span>
+      </li>
+      <li>
+        <span class="contact-icon">&#9993;</span>
+        <span>contact@chantenscene.fr</span>
+      </li>
+      <li>
+        <span class="contact-icon">&#9658;</span>
+        <span>www.chantenscene.fr</span>
+      </li>
+    </ul>
+
+    <div class="contact-cta">
+      &laquo; Prenons rendez-vous pour en discuter &raquo;
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ChanteEnScene — Dossier de presentation</span>
+    <span>7 / 7</span>
+  </div>
+</div>
+
+</body>
+</html>
