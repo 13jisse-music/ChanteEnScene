@@ -55,6 +55,33 @@ export const metadata: Metadata = {
   },
 };
 
+const eventJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "ChanteEnScene - Concours de chant Aubagne 2026",
+  "startDate": "2026-07-16",
+  "endDate": "2026-07-16",
+  "location": {
+    "@type": "Place",
+    "name": "Cours Foch, Aubagne",
+    "address": "Aubagne, France",
+  },
+  "description": "Concours de chant live avec musiciens, jury professionnel et votes du public",
+  "organizer": {
+    "@type": "Organization",
+    "name": "ChanteEnScene",
+    "url": "https://www.chantenscene.fr",
+  },
+  "eventStatus": "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "offers": {
+    "@type": "Offer",
+    "price": "25",
+    "priceCurrency": "EUR",
+    "url": "https://www.chantenscene.fr/aubagne-2026/inscription",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -66,6 +93,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#e91e8c" />
         <meta name="google-site-verification" content="37_MpQxOvWvqTDw-dHmRA7DNSBGLRJUnqFB2naXa8Z4" />
         <link rel="apple-touch-icon" href="/images/pwa-icon-192.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+        />
       </head>
       <body
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
