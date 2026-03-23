@@ -4,6 +4,7 @@ export const maxDuration = 300 // 5 minutes max (Vercel hobby)
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { uploadToR2, getR2PublicUrl } from '@/lib/r2'
+import { sendTelegram } from '@/lib/telegram'
 
 /**
  * CRON: Process new CES candidates automatically.
@@ -25,8 +26,7 @@ import { uploadToR2, getR2PublicUrl } from '@/lib/r2'
 
 const SUPABASE_STORAGE_PREFIX = 'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/'
 const DEMUCS_URL = process.env.DEMUCS_URL || 'http://100.122.159.69:8642' // PCmusique via Tailscale
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8745661004:AAGJffmkzEK6GfI0wfgVj0K8XboyWDpiCRY'
-const TELEGRAM_CHAT_ID = '8064044229'
+// Telegram constants moved to @/lib/telegram
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -35,15 +35,7 @@ function isAuthorized(request: Request): boolean {
   return authHeader === `Bearer ${cronSecret}`
 }
 
-async function sendTelegram(text: string) {
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'HTML' }),
-    })
-  } catch { /* ignore */ }
-}
+// sendTelegram imported from @/lib/telegram
 
 interface ProcessResult {
   candidateId: string
@@ -381,6 +373,28 @@ export async function GET(request: Request) {
         }
       }
     }
+  }
+
+  // --- Monitoring: alert if candidates are pending > 2h ---
+  try {
+    const TWO_HOURS_AGO = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    const { data: stuckCandidates } = await supabase
+      .from('candidates')
+      .select('id, first_name, last_name, created_at, status')
+      .eq('session_id', sessionId)
+      .eq('status', 'pending')
+      .lt('created_at', TWO_HOURS_AGO)
+
+    if (stuckCandidates && stuckCandidates.length > 0) {
+      const names = stuckCandidates.map(c => `${c.first_name} ${c.last_name}`).join(', ')
+      await sendTelegram(
+        `⚠️ <b>Candidats pending &gt; 2h</b>\n` +
+        `${stuckCandidates.length} candidat(s) : ${names}\n` +
+        `Verifier le pipeline !`
+      )
+    }
+  } catch {
+    // Monitoring non-blocking
   }
 
   return NextResponse.json({

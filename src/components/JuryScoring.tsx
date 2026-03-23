@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { addToOfflineQueue } from '@/lib/jury-offline-queue'
 import { useRealtimeJuryPush } from '@/hooks/useRealtimeJuryPush'
 import { useWinnerReveal } from '@/hooks/useWinnerReveal'
 import JuryWinnerBanner from '@/components/JuryWinnerBanner'
@@ -284,8 +285,22 @@ function TikTokFeed({
         }
       }, 600)
     } catch {
+      // Offline fallback: save to local queue
+      try {
+        addToOfflineQueue({
+          session_id: session.id,
+          juror_id: juror.id,
+          candidate_id: candidate.id,
+          event_type: eventType,
+          scores: { decision },
+          total_score: DECISION_CONFIG[decision].score,
+          comment: comments[candidate.id] || null,
+        })
+        setSavedIds((prev) => new Set([...prev, candidate.id]))
+      } catch {
+        // ignore
+      }
       setVoteAnimation(null)
-      alert('Erreur lors de la sauvegarde.')
     } finally {
       setSaving(false)
     }
@@ -1012,7 +1027,25 @@ function StarRatingView({
       setJustSavedId(scoringId)
       setScoringId(null)
     } catch {
-      alert('Erreur lors de la sauvegarde.')
+      // Offline fallback: save to local queue
+      if (scoringId) {
+        try {
+          addToOfflineQueue({
+            session_id: session.id,
+            juror_id: juror.id,
+            candidate_id: scoringId,
+            event_type: eventType,
+            scores: { stars },
+            total_score: stars,
+            comment: comment || null,
+          })
+          setSavedIds((prev) => new Set([...prev, scoringId]))
+          setJustSavedId(scoringId)
+          setScoringId(null)
+        } catch {
+          alert('Erreur lors de la sauvegarde.')
+        }
+      }
     } finally {
       setSaving(false)
     }
@@ -1508,7 +1541,26 @@ function CriteriaScoringView({
       setJustSavedId(scoringId)
       setScoringId(null)
     } catch {
-      alert('Erreur lors de la sauvegarde.')
+      // Offline fallback: save to local queue
+      if (scoringId) {
+        try {
+          const totalScore = Object.values(scores).reduce<number>((a, b) => a + (typeof b === 'number' ? b : 0), 0)
+          addToOfflineQueue({
+            session_id: session.id,
+            juror_id: juror.id,
+            candidate_id: scoringId,
+            event_type: eventType,
+            scores,
+            total_score: totalScore,
+            comment: comment || null,
+          })
+          setSavedIds((prev) => new Set([...prev, scoringId]))
+          setJustSavedId(scoringId)
+          setScoringId(null)
+        } catch {
+          alert('Erreur lors de la sauvegarde.')
+        }
+      }
     } finally {
       setSaving(false)
     }

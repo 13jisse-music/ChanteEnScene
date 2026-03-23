@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { uploadToR2 } from '@/lib/r2'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const maxDuration = 60
 
 export async function POST(request: Request) {
+  // Rate limiting: 5 registrations per IP per minute
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const { allowed, remaining } = rateLimit(`register:${ip}`, { windowMs: 60_000, maxRequests: 5 })
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives. Veuillez reessayer dans une minute.' },
+      { status: 429, headers: { 'X-RateLimit-Remaining': String(remaining) } }
+    )
+  }
+
   try {
     const supabase = createAdminClient()
 

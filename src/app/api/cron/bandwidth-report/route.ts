@@ -2,10 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 
+import { sendTelegram } from '@/lib/telegram'
+
 const PAT = process.env.SUPABASE_ACCESS_TOKEN || ''
 const PROJECT_REF = 'xarrchsokuhobwqvcnkg'
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
-const TELEGRAM_CHAT_ID = '8064044229'
 const BW_LIMIT_GB = 250 // Pro plan (25€/mois)
 
 function isAuthorized(request: Request): boolean {
@@ -43,16 +43,6 @@ function groupByDay(data: HourlyData[]) {
     days[day].auth += r.total_auth_requests || 0
   }
   return days
-}
-
-async function sendTelegram(text: string) {
-  if (!TELEGRAM_TOKEN) return false
-  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: 'Markdown' }),
-  })
-  return res.ok
 }
 
 async function checkSiteUp(): Promise<{ up: boolean; ms: number }> {
@@ -113,29 +103,36 @@ export async function GET(request: Request) {
   // Cost analysis: is Pro worth it?
   const proWorth = estBwGB > 5.5 ? 'Pro necessaire' : 'Pro non rentable (< 5.5 GB free tier)'
 
-  const message = [
-    `*ChanteEnScene — ${hour}*`,
-    ``,
-    `*Statut :* ${status}`,
-    `Site : ${site.up ? 'en ligne' : 'HORS LIGNE'} (${site.ms}ms)`,
-    `Bandwidth : ${estBwGB.toFixed(1)} GB / ${BW_LIMIT_GB} GB (${bwPct}%)`,
-    ``,
-    `*Aujourd'hui*`,
-    `Storage : ${todayData.storage.toLocaleString('fr-FR')} req (${trendArrow} ${Math.abs(storageDiff).toLocaleString('fr-FR')} vs hier)`,
-    `REST : ${todayData.rest.toLocaleString('fr-FR')} req`,
-    `Auth : ${todayData.auth.toLocaleString('fr-FR')} req`,
-    ``,
-    `*7 derniers jours :*`,
-    ...historyLines.map(l => `\`${l}\``),
-    ``,
-    `_Plan Pro 25€/mois — ${proWorth}_`,
-  ].join('\n')
+  // Only notify Telegram if bandwidth > 70% or site down
+  const shouldNotify = !site.up || Number(bwPct) > 70
 
-  const sent = await sendTelegram(message)
+  let sent = false
+  if (shouldNotify) {
+    const message = [
+      `<b>Bandwidth — ${hour}</b>`,
+      ``,
+      `<b>Statut :</b> ${status}`,
+      `Site : ${site.up ? 'en ligne' : 'HORS LIGNE'} (${site.ms}ms)`,
+      `Bandwidth : ${estBwGB.toFixed(1)} GB / ${BW_LIMIT_GB} GB (${bwPct}%)`,
+      ``,
+      `<b>Aujourd'hui</b>`,
+      `Storage : ${todayData.storage.toLocaleString('fr-FR')} req (${trendArrow} ${Math.abs(storageDiff).toLocaleString('fr-FR')} vs hier)`,
+      `REST : ${todayData.rest.toLocaleString('fr-FR')} req`,
+      `Auth : ${todayData.auth.toLocaleString('fr-FR')} req`,
+      ``,
+      `<b>7 derniers jours :</b>`,
+      ...historyLines.map(l => `<code>${l}</code>`),
+      ``,
+      `<i>Plan Pro 25€/mois — ${proWorth}</i>`,
+    ].join('\n')
+
+    sent = await sendTelegram(message)
+  }
 
   return NextResponse.json({
-    message: 'Bandwidth report sent',
+    message: shouldNotify ? 'Bandwidth report sent' : 'Bandwidth OK, no notification needed',
     sent,
+    notified: shouldNotify,
     data: { today: todayData, yesterday: ydayData, estBwGB, bwPct, siteUp: site.up },
   })
 }

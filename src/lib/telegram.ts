@@ -1,0 +1,21 @@
+/**
+ * Centralized Telegram notification helper.
+ * Used by cron routes and other server-side code.
+ */
+
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8745661004:AAGJffmkzEK6GfI0wfgVj0K8XboyWDpiCRY'
+const TELEGRAM_CHAT_ID = '8064044229'
+
+export async function sendTelegram(text: string, prefix: string = '🎤 CES'): Promise<boolean> {
+  const fullMessage = `<b>${prefix}</b>\n${text}`
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: fullMessage, parse_mode: 'HTML' }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
