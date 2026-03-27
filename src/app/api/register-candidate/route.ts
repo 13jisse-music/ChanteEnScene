@@ -137,6 +137,30 @@ export async function POST(request: Request) {
       source: 'inscription',
     }, { onConflict: 'session_id,email', ignoreDuplicates: true }).then(() => {})
 
+    // Notify admin via Telegram (fire-and-forget)
+    const { sendTelegram } = await import('@/lib/telegram')
+    sendTelegram(
+      `🆕 <b>Nouvelle inscription !</b>\n` +
+      `👤 ${first_name} ${last_name}\n` +
+      `🎵 "${song_title}" — ${song_artist}\n` +
+      `📧 ${email}\n` +
+      `📍 ${city || '?'}`,
+      '🎤 CES'
+    ).catch(() => {})
+
+    // Send push notification to admin subscriptions (fire-and-forget)
+    try {
+      const { sendPushNotifications } = await import('@/lib/push')
+      sendPushNotifications({
+        role: 'admin',
+        sessionId: session_id,
+        payload: {
+          title: 'Nouvelle inscription ChanteEnScène !',
+          body: `${first_name} ${last_name} — "${song_title}" (${song_artist})`,
+        },
+      }).catch(() => {})
+    } catch {}
+
     return NextResponse.json({ success: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erreur serveur'
