@@ -58,19 +58,29 @@ export const metadata: Metadata = {
 const eventJsonLd = {
   "@context": "https://schema.org",
   "@type": "Event",
-  "name": "ChanteEnScene - Concours de chant Aubagne 2026",
+  "name": "ChanteEnScène — Concours de chant Aubagne 2026",
   "startDate": "2026-07-16",
   "endDate": "2026-07-16",
   "location": {
     "@type": "Place",
     "name": "Cours Foch, Aubagne",
-    "address": "Aubagne, France",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Aubagne",
+      "addressRegion": "Bouches-du-Rhône",
+      "addressCountry": "FR",
+    },
   },
-  "description": "Concours de chant live avec musiciens, jury professionnel et votes du public",
+  "description": "Concours de chant live avec musiciens, jury professionnel et votes du public. Ouvert à tous, toute la France.",
+  "image": "https://www.chantenscene.fr/images/affiche-chantenscene-2026.png",
   "organizer": {
     "@type": "Organization",
-    "name": "ChanteEnScene",
+    "name": "ChanteEnScène",
     "url": "https://www.chantenscene.fr",
+  },
+  "performer": {
+    "@type": "PerformingGroup",
+    "name": "Candidats ChanteEnScène 2026",
   },
   "eventStatus": "https://schema.org/EventScheduled",
   "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
@@ -79,7 +89,11 @@ const eventJsonLd = {
     "price": "25",
     "priceCurrency": "EUR",
     "url": "https://www.chantenscene.fr/aubagne-2026/inscription",
+    "availability": "https://schema.org/InStock",
+    "name": "Inscription candidat",
   },
+  "inLanguage": "fr",
+  "url": "https://www.chantenscene.fr",
 };
 
 export default function RootLayout({
