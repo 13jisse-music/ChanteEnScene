@@ -47,17 +47,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Compter le total d'installations
+    const { count: totalInstalls } = await supabase
+      .from('pwa_installs')
+      .select('*', { count: 'exact', head: true })
+
     // Chercher si un candidat correspond a ce fingerprint
-    let candidateName = ''
+    let candidateInfo = ''
     if (fingerprint) {
       const { data: candidate } = await supabase
         .from('candidates')
-        .select('first_name, last_name, song_title, song_artist')
+        .select('first_name, last_name, song_title, city, category')
         .eq('fingerprint', fingerprint)
         .maybeSingle()
       if (candidate) {
-        candidateName = `\n🎤 <b>${candidate.first_name} ${candidate.last_name}</b>` +
-          (candidate.song_title ? ` — "${candidate.song_title}"` : '')
+        candidateInfo = `\n🎤 <b>${candidate.first_name} ${candidate.last_name}</b>` +
+          (candidate.song_title ? ` — "${candidate.song_title}"` : '') +
+          (candidate.category ? ` (${candidate.category})` : '')
+      }
+
+      // Dernieres pages visitees par ce fingerprint
+      const { data: views } = await supabase
+        .from('page_views')
+        .select('page_path, duration_seconds')
+        .eq('fingerprint', fingerprint)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (views && views.length > 0) {
+        const pages = views.map(v => {
+          const dur = v.duration_seconds ? ` (${v.duration_seconds}s)` : ''
+          return v.page_path + dur
+        }).join(', ')
+        candidateInfo += `\n📄 ${pages}`
       }
     }
 
@@ -66,10 +87,10 @@ export async function POST(request: NextRequest) {
     const platformLabel = platform === 'ios' ? '🍎 iOS' : platform === 'android' ? '🤖 Android' : '💻 Desktop'
     const { sendTelegram } = await import('@/lib/telegram')
     await sendTelegram(
-      `📲 <b>Nouvelle installation PWA</b>\n` +
+      `📲 <b>Nouvelle installation PWA</b> (${totalInstalls || '?'} total)\n` +
       `${platformLabel}\n` +
       `📍 ${city || '?'}, ${region || ''} ${country}` +
-      candidateName,
+      candidateInfo,
       '🎤 CES'
     )
 
