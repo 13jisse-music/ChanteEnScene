@@ -19,3 +19,18 @@ export async function sendTelegram(text: string, prefix: string = '🎤 CES'): P
     return false
   }
 }
+
+/** Envoie une photo avec legende via Telegram */
+export async function sendTelegramPhoto(photoUrl: string, caption: string, prefix: string = '🎤 CES'): Promise<boolean> {
+  const fullCaption = `<b>${prefix}</b>\n${caption}`
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, photo: photoUrl, caption: fullCaption, parse_mode: 'HTML' }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}

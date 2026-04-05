@@ -137,28 +137,31 @@ export async function POST(request: Request) {
       source: 'inscription',
     }, { onConflict: 'session_id,email', ignoreDuplicates: true }).then(() => {})
 
-    // Notify admin via Telegram (fire-and-forget)
-    const { sendTelegram } = await import('@/lib/telegram')
-    sendTelegram(
+    // Notifier admin via Telegram (avec photo du candidat)
+    const { sendTelegramPhoto } = await import('@/lib/telegram')
+    const now = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    await sendTelegramPhoto(
+      photo_url,
       `🆕 <b>Nouvelle inscription !</b>\n` +
       `👤 ${first_name} ${last_name}\n` +
-      `🎵 "${song_title}" — ${song_artist}\n` +
+      `🎵 "${song_title || '?'}" — ${song_artist || '?'}\n` +
       `📧 ${email}\n` +
-      `📍 ${city || '?'}`,
+      `📍 ${city || '?'}\n` +
+      `📅 ${now}`,
       '🎤 CES'
-    ).catch(() => {})
+    )
 
-    // Send push notification to admin subscriptions (fire-and-forget)
+    // Notification push admin
     try {
       const { sendPushNotifications } = await import('@/lib/push')
-      sendPushNotifications({
+      await sendPushNotifications({
         role: 'admin',
         sessionId: session_id,
         payload: {
           title: 'Nouvelle inscription ChanteEnScène !',
           body: `${first_name} ${last_name} — "${song_title}" (${song_artist})`,
         },
-      }).catch(() => {})
+      })
     } catch {}
 
     return NextResponse.json({ success: true })
