@@ -58,6 +58,7 @@ interface VocalAnalysis {
       dynamique_pct?: number
     }
   } | null
+  mixScore?: number
 }
 
 interface JuryScore {
@@ -673,7 +674,25 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
   const [filterCat, setFilterCat] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'score' | 'jury' | 'mix' | 'name' | 'tessiture'>('mix')
 
-  const analysisMap = new Map(analyses.map(a => [a.candidate_id, a]))
+  // Precalculer le score Mix pondere pour chaque analyse
+  const analysesWithMix = analyses.map(a => {
+    const m = a.raw_data?.metriques_v3
+    let vpScore = a.justesse_pct ?? 0
+    if (m) {
+      vpScore = (
+        (m.justesse_pct ?? 0) * 0.35 +
+        (m.stability_pct ?? 0) * 0.20 +
+        (m.vibrato_pct ?? 0) * 0.15 +
+        (m.rythme_pct ?? 0) * 0.10 +
+        (m.souffle_pct ?? 0) * 0.10 +
+        (m.tenue_pct ?? 0) * 0.05 +
+        (m.fatigue_pct ?? 0) * 0.03 +
+        (m.dynamique_pct ?? 0) * 0.02
+      )
+    }
+    return { ...a, mixScore: Math.round(vpScore * 10) / 10 }
+  })
+  const analysisMap = new Map(analysesWithMix.map(a => [a.candidate_id, a]))
   const jurorMap = new Map(jurors.map(j => [j.id, j]))
 
   // Group jury scores by candidate
@@ -711,25 +730,7 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
       return (b.avgJury ?? -1) - (a.avgJury ?? -1)
     }
     if (sortBy === 'mix') {
-      // Score VP pondere (8 metriques, ponderation coach)
-      const vpScore = (d: typeof a) => {
-        const m = d.analysis?.raw_data?.metriques_v3
-        if (!m) return d.analysis?.justesse_pct ?? 0 // fallback anciennes analyses
-        return (
-          (m.justesse_pct ?? 0) * 0.35 +
-          (m.stability_pct ?? 0) * 0.20 +
-          (m.vibrato_pct ?? 0) * 0.15 +
-          (m.rythme_pct ?? 0) * 0.10 +
-          (m.souffle_pct ?? 0) * 0.10 +
-          (m.tenue_pct ?? 0) * 0.05 +
-          (m.fatigue_pct ?? 0) * 0.03 +
-          (m.dynamique_pct ?? 0) * 0.02
-        )
-      }
-      // Mix = VP pondere (70%) + jury normalise (30%) si jury disponible
-      const mixA = a.avgJury != null ? vpScore(a) * 0.7 + a.avgJury * 5 * 0.3 : vpScore(a)
-      const mixB = b.avgJury != null ? vpScore(b) * 0.7 + b.avgJury * 5 * 0.3 : vpScore(b)
-      return mixB - mixA
+      return (b.analysis?.mixScore ?? 0) - (a.analysis?.mixScore ?? 0)
     }
     if (sortBy === 'tessiture') {
       return (b.analysis?.octaves ?? 0) - (a.analysis?.octaves ?? 0)
