@@ -37,6 +37,8 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
+    const { sendTelegram } = await import('@/lib/telegram')
+    await sendTelegram('⚠️ Upload image newsletter : utilisateur non authentifie', '🚨 CES')
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
@@ -47,6 +49,8 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (!adminUser) {
+    const { sendTelegram } = await import('@/lib/telegram')
+    await sendTelegram(`⚠️ Upload image newsletter : ${user.email} n'est pas admin`, '🚨 CES')
     return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
   }
 
@@ -68,6 +72,9 @@ export async function POST(request: Request) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erreur serveur'
     console.error('[upload-image] R2 upload failed:', msg)
+    // Notifier l'erreur sur Telegram
+    const { sendTelegram } = await import('@/lib/telegram')
+    await sendTelegram(`⚠️ Upload image newsletter echoue :\n<code>${msg}</code>`, '🚨 CES')
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
