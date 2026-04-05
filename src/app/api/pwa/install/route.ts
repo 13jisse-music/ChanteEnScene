@@ -47,6 +47,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Chercher si un candidat correspond a ce fingerprint
+    let candidateName = ''
+    if (fingerprint) {
+      const { data: candidate } = await supabase
+        .from('candidates')
+        .select('first_name, last_name, song_title, song_artist')
+        .eq('fingerprint', fingerprint)
+        .maybeSingle()
+      if (candidate) {
+        candidateName = `\n🎤 <b>${candidate.first_name} ${candidate.last_name}</b>` +
+          (candidate.song_title ? ` — "${candidate.song_title}"` : '')
+      }
+    }
+
+    // Notifier via Telegram
+    const country = request.headers.get('x-vercel-ip-country') || '?'
+    const platformLabel = platform === 'ios' ? '🍎 iOS' : platform === 'android' ? '🤖 Android' : '💻 Desktop'
+    const { sendTelegram } = await import('@/lib/telegram')
+    await sendTelegram(
+      `📲 <b>Nouvelle installation PWA</b>\n` +
+      `${platformLabel}\n` +
+      `📍 ${city || '?'}, ${region || ''} ${country}` +
+      candidateName,
+      '🎤 CES'
+    )
+
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
