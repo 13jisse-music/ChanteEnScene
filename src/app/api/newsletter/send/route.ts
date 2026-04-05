@@ -96,12 +96,24 @@ export async function POST(req: NextRequest) {
   }
 
   // Update campaign
+  const finalStatus = errors === subscribers.length ? 'failed' : 'sent'
   await supabase.from('email_campaigns').update({
-    status: errors === subscribers.length ? 'failed' : 'sent',
+    status: finalStatus,
     total_sent: sent,
     total_errors: errors,
     sent_at: new Date().toISOString(),
   }).eq('id', campaignId)
+
+  // Notifier sur Telegram
+  const { sendTelegram } = await import('@/lib/telegram')
+  const statusEmoji = finalStatus === 'sent' ? '✅' : '❌'
+  await sendTelegram(
+    `${statusEmoji} <b>Newsletter envoyee</b>\n` +
+    `📝 "${campaign.subject}"\n` +
+    `📬 ${sent} envoyes` + (errors > 0 ? ` / ${errors} erreurs` : '') + `\n` +
+    `👥 ${subscribers.length} destinataires (${campaign.target})`,
+    '🎤 CES'
+  )
 
   return NextResponse.json({ success: true, sent, errors })
 }

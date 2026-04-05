@@ -52,13 +52,26 @@ export async function GET(request: Request) {
     })
   }
 
-  // Log unsubscribe event (fire-and-forget)
+  // Log unsubscribe event
   if (sub?.email) {
-    supabase.from('email_events').insert({
-      campaign_id: null as unknown as string, // no specific campaign
+    await supabase.from('email_events').insert({
+      campaign_id: null as unknown as string,
       subscriber_email: sub.email,
       event_type: 'unsubscribe',
-    }).then(() => {})
+    })
+
+    // Notifier sur Telegram
+    const { count: totalSubs } = await supabase
+      .from('email_subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+    const { sendTelegram } = await import('@/lib/telegram')
+    await sendTelegram(
+      `🚫 <b>Desinscription newsletter</b>\n` +
+      `📧 ${sub.email}\n` +
+      `👥 ${totalSubs} abonnes restants`,
+      '🎤 CES'
+    )
   }
 
   return new NextResponse(

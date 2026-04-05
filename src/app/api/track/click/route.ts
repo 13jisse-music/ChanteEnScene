@@ -26,6 +26,21 @@ export async function GET(request: NextRequest) {
           ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null,
         },
       })
+
+      // Notifier chaque clic sur Telegram
+      const { count: totalClicks } = await supabase
+        .from('email_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', cid)
+        .eq('event_type', 'click')
+      const shortUrl = url.length > 50 ? url.substring(0, 50) + '...' : url
+      const { sendTelegram } = await import('@/lib/telegram')
+      await sendTelegram(
+        `🔗 <b>Clic newsletter</b> (${totalClicks} clics total)\n` +
+        `📧 ${email}\n` +
+        `🔗 ${shortUrl}`,
+        '🎤 CES'
+      )
     } catch {
       // Fire-and-forget
     }
