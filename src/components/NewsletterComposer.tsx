@@ -154,10 +154,10 @@ export default function NewsletterComposer({
   // ─── Upload base64 image to Supabase Storage ───
 
   async function uploadBase64ToStorage(dataUrl: string): Promise<string> {
-    // Already a public URL? Return as-is
+    // Deja une URL publique ? Retourner telle quelle
     if (dataUrl.startsWith('http')) return dataUrl
 
-    // Convert base64 data URL to Blob
+    // Convertir base64 en Blob
     const res = await fetch(dataUrl)
     const blob = await res.blob()
     const ext = blob.type === 'image/png' ? 'png' : 'jpg'
@@ -166,10 +166,29 @@ export default function NewsletterComposer({
     const formData = new FormData()
     formData.append('file', file)
 
-    const uploadRes = await fetch('/api/admin/upload-image', { method: 'POST', body: formData })
-    const data = await uploadRes.json()
-    if (data.error) throw new Error(data.error)
-    return data.url
+    // Timeout 15s pour eviter le blocage infini
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15_000)
+    try {
+      const uploadRes = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      })
+      clearTimeout(timeout)
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json().catch(() => ({}))
+        throw new Error((errData as { error?: string }).error || `Upload echoue (${uploadRes.status})`)
+      }
+      const data = await uploadRes.json()
+      return data.url
+    } catch (err) {
+      clearTimeout(timeout)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new Error('Upload image : timeout (15s)')
+      }
+      throw err
+    }
   }
 
   // ─── Handlers ───

@@ -65,7 +65,9 @@ export async function POST(request: Request) {
     const publicUrl = await uploadToR2(key, buffer, file.type || 'image/jpeg')
 
     return NextResponse.json({ url: publicUrl })
-  } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erreur serveur'
+    console.error('[upload-image] R2 upload failed:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
