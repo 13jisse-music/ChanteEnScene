@@ -680,14 +680,14 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
     let vpScore = a.justesse_pct ?? 0
     if (m) {
       vpScore = (
-        (m.justesse_pct ?? 0) * 0.35 +
-        (m.stability_pct ?? 0) * 0.20 +
-        (m.vibrato_pct ?? 0) * 0.15 +
-        (m.rythme_pct ?? 0) * 0.10 +
-        (m.souffle_pct ?? 0) * 0.10 +
-        (m.tenue_pct ?? 0) * 0.05 +
-        (m.fatigue_pct ?? 0) * 0.03 +
-        (m.dynamique_pct ?? 0) * 0.02
+        (m.justesse_pct ?? 0) * 0.30 +
+        (m.rythme_pct ?? 0) * 0.20 +
+        (m.stability_pct ?? 0) * 0.18 +
+        (m.souffle_pct ?? 0) * 0.08 +
+        (m.tenue_pct ?? 0) * 0.07 +
+        (m.fatigue_pct ?? 0) * 0.07 +
+        (m.vibrato_pct ?? 0) * 0.05 +
+        (m.dynamique_pct ?? 0) * 0.05
       )
     }
     return { ...a, mixScore: Math.round(vpScore * 10) / 10 }
