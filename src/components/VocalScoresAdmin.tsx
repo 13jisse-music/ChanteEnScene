@@ -47,6 +47,16 @@ interface VocalAnalysis {
     tenue?: { avg_duration_ms?: number; max_duration_ms?: number; score?: number; regularity_pct?: number }
     tessiture?: { confidence?: string }
     ecg_data?: Array<{ time: number; pitch_midi: number; is_voiced: boolean }>
+    metriques_v3?: {
+      justesse_pct?: number
+      stability_pct?: number
+      vibrato_pct?: number
+      rythme_pct?: number
+      souffle_pct?: number
+      tenue_pct?: number
+      fatigue_pct?: number
+      dynamique_pct?: number
+    }
   } | null
 }
 
@@ -701,9 +711,24 @@ export default function VocalScoresAdmin({ sessionId, candidates, analyses, jury
       return (b.avgJury ?? -1) - (a.avgJury ?? -1)
     }
     if (sortBy === 'mix') {
-      // Normalize: vocal score 0-100, jury score typically 0-20 → multiply by 5
-      const mixA = ((a.analysis?.justesse_pct ?? 0) + (a.avgJury != null ? a.avgJury * 5 : 0)) / (a.avgJury != null ? 2 : 1)
-      const mixB = ((b.analysis?.justesse_pct ?? 0) + (b.avgJury != null ? b.avgJury * 5 : 0)) / (b.avgJury != null ? 2 : 1)
+      // Score VP pondere (8 metriques, ponderation coach)
+      const vpScore = (d: typeof a) => {
+        const m = d.analysis?.raw_data?.metriques_v3
+        if (!m) return d.analysis?.justesse_pct ?? 0 // fallback anciennes analyses
+        return (
+          (m.justesse_pct ?? 0) * 0.35 +
+          (m.stability_pct ?? 0) * 0.20 +
+          (m.vibrato_pct ?? 0) * 0.15 +
+          (m.rythme_pct ?? 0) * 0.10 +
+          (m.souffle_pct ?? 0) * 0.10 +
+          (m.tenue_pct ?? 0) * 0.05 +
+          (m.fatigue_pct ?? 0) * 0.03 +
+          (m.dynamique_pct ?? 0) * 0.02
+        )
+      }
+      // Mix = VP pondere (70%) + jury normalise (30%) si jury disponible
+      const mixA = a.avgJury != null ? vpScore(a) * 0.7 + a.avgJury * 5 * 0.3 : vpScore(a)
+      const mixB = b.avgJury != null ? vpScore(b) * 0.7 + b.avgJury * 5 * 0.3 : vpScore(b)
       return mixB - mixA
     }
     if (sortBy === 'tessiture') {
