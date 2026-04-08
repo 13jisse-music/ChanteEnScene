@@ -345,6 +345,7 @@ export default async function HomePage() {
                 <>
                   <Link
                     href={`/${sessionSlug}/inscription`}
+                    data-track="btn_candidater"
                     className="inline-block px-5 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-xs sm:text-base text-white bg-gradient-to-r from-[#d4380d] to-[#e8541e] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#e8541e]/30 transition-all uppercase tracking-wider"
                   >
                     S&apos;inscrire au concours
@@ -654,6 +655,7 @@ export default async function HomePage() {
           <div className="text-center mt-12 animate-fade-up">
             <Link
               href={`/${sessionSlug}/candidats`}
+              data-track="btn_voir_resultats"
               className="inline-block px-8 py-3 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[#d4380d] to-[#e8541e] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#e8541e]/30 transition-all uppercase tracking-wider"
             >
               Voir tous les candidats
@@ -711,6 +713,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href={`/${sessionSlug}/inscription`}
+                data-track="btn_candidater"
                 className="inline-block px-10 py-4 rounded-full font-bold text-base text-white bg-gradient-to-r from-[#d4380d] to-[#e8541e] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#e8541e]/30 transition-all uppercase tracking-wider"
               >
                 S&apos;inscrire au concours

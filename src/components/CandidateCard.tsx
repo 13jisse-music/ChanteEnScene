@@ -206,6 +206,7 @@ export default function CandidateCard({ candidate, sessionId, isSemifinalist }: 
           <button
             onClick={handleVote}
             disabled={hasVoted || voting}
+            data-track="btn_voter"
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               hasVoted
                 ? 'bg-[#e91e8c]/15 text-[#e91e8c] cursor-default'
