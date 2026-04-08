@@ -9,6 +9,7 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 import PublicFooter from "@/components/PublicFooter";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MetaPixel from "@/components/MetaPixel";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import "./globals.css";
 
 const inter = Inter({
@@ -118,6 +119,7 @@ export default function RootLayout({
       >
         <GoogleAnalytics />
         <MetaPixel />
+        <AnalyticsTracker />
         <ServiceWorkerRegistrar />
         <SplashScreen />
         <InstallPrompt />
