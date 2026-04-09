@@ -155,6 +155,20 @@ function handleUnhandledRejection(e: PromiseRejectionEvent) {
   })
 }
 
+// --- Fonction standalone pour events business ---
+export function trackBusinessEvent(
+  eventType: string,
+  data?: Record<string, unknown>
+) {
+  if (typeof window === 'undefined') return
+  queueEvent({
+    event_type: eventType,
+    event_data: data,
+    page_path: window.location.pathname,
+    page_title: document.title,
+  })
+}
+
 // --- Hook principal ---
 export function useAnalytics() {
   const startTime = useRef(Date.now())

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { trackBusinessEvent } from '@/hooks/useAnalytics'
 
 export default function PresseContactForm() {
   const [form, setForm] = useState({ name: '', organization: '', email: '', message: '' })
@@ -17,6 +18,7 @@ export default function PresseContactForm() {
       })
       if (!res.ok) throw new Error()
       setStatus('sent')
+      trackBusinessEvent('contact_submit', { form: 'presse' })
       setForm({ name: '', organization: '', email: '', message: '' })
     } catch {
       setStatus('error')

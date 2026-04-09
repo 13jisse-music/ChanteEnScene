@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify, getCategory, calculateAge } from '@/lib/utils'
+import { trackBusinessEvent } from '@/hooks/useAnalytics'
 import { getFingerprint } from '@/lib/fingerprint'
 import { subscribeEmail } from '@/app/actions/subscribe-email'
 
@@ -441,6 +442,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       } catch {}
 
       setCreatedSlug(candidateSlug)
+      trackBusinessEvent('registration_completed', { type: 'candidature' })
       setSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue.')

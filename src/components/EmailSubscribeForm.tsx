@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { subscribeEmail } from '@/app/actions/subscribe-email'
 import { getFingerprint } from '@/lib/fingerprint'
+import { trackBusinessEvent } from '@/hooks/useAnalytics'
 
 interface Props {
   sessionId: string
@@ -34,6 +35,7 @@ export default function EmailSubscribeForm({ sessionId, source = 'footer', compa
       setStatus('success')
       setEmail('')
       localStorage.setItem('email-subscribed', '1')
+      trackBusinessEvent('newsletter_subscribe', { source })
       onSuccess?.()
     }
   }
