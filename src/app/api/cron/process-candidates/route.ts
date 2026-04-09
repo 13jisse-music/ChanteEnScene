@@ -241,7 +241,68 @@ function noteToMidi(note: string): number | null {
   return (parseInt(octaveStr) + 1) * 12 + base + adj
 }
 
-// --- Main handler ---
+// --- POST handler : analyse VP manuelle sur un ou plusieurs candidats ---
+export async function POST(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await request.json().catch(() => null)
+  const candidateIds: string[] = body?.candidate_ids || (body?.candidate_id ? [body.candidate_id] : [])
+
+  if (candidateIds.length === 0) {
+    return NextResponse.json({ error: 'candidate_id ou candidate_ids requis' }, { status: 400 })
+  }
+
+  const supabase = createAdminClient()
+
+  // Trouver la session active
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('id')
+    .eq('is_active', true)
+    .limit(1)
+  const sessionId = sessions?.[0]?.id
+  if (!sessionId) return NextResponse.json({ error: 'Pas de session active' }, { status: 400 })
+
+  const results = []
+
+  for (const candidateId of candidateIds) {
+    const { data: candidate } = await supabase
+      .from('candidates')
+      .select('id, first_name, last_name, video_url')
+      .eq('id', candidateId)
+      .single()
+
+    if (!candidate?.video_url) {
+      results.push({ candidateId, name: '?', error: 'Pas de video' })
+      continue
+    }
+
+    const name = `${candidate.first_name} ${candidate.last_name}`
+    const analysisResult = await analyzeVocals(candidate.video_url, candidateId, sessionId, supabase)
+
+    if (analysisResult.success) {
+      const { data: va } = await supabase
+        .from('vocal_analyses')
+        .select('justesse_pct, voice_type')
+        .eq('candidate_id', candidateId)
+        .single()
+
+      await sendTelegram(
+        `🎤 <b>VP Analyse manuelle</b>\n` +
+        `${name} : ${va?.justesse_pct ?? '?'}% | ${va?.voice_type ?? '?'}`
+      )
+      results.push({ candidateId, name, success: true })
+    } else {
+      results.push({ candidateId, name, error: analysisResult.error })
+    }
+  }
+
+  return NextResponse.json({ results })
+}
+
+// --- GET handler : cron automatique (R2 migration uniquement, PAS d'analyse VP) ---
 export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -302,63 +363,10 @@ export async function GET(request: Request) {
     results.push(result)
   }
 
-  // --- Process vocal analyses (limit to 3 per run to stay within Vercel timeout) ---
-  const MAX_ANALYSES_PER_RUN = 3
-  let analyzedCount = 0
-
-  for (const candidate of toAnalyze) {
-    if (analyzedCount >= MAX_ANALYSES_PER_RUN) break
-    // Skip if already in results from migration step
-    const existing = results.find(r => r.candidateId === candidate.id)
-
-    const name = `${candidate.first_name} ${candidate.last_name}`
-    const result: ProcessResult = existing || {
-      candidateId: candidate.id,
-      name,
-      steps: [],
-      r2Migrated: false,
-      vocalAnalyzed: false,
-    }
-
-    // Check remaining time (leave 30s buffer for response)
-    const elapsed = Date.now() - startTime
-    if (elapsed > 240_000) { // 4 min — stop to avoid Vercel timeout
-      result.steps.push('SKIP: timeout approaching')
-      if (!existing) results.push(result)
-      break
-    }
-
-    try {
-      // Re-fetch candidate to get latest URL (might have been migrated above)
-      const { data: fresh } = await supabase
-        .from('candidates')
-        .select('video_url')
-        .eq('id', candidate.id)
-        .single()
-
-      const videoUrl = fresh?.video_url || candidate.video_url
-      if (!videoUrl) {
-        result.steps.push('SKIP: no video URL')
-        if (!existing) results.push(result)
-        continue
-      }
-
-      result.steps.push('VP API → analyzing...')
-      const analysisResult = await analyzeVocals(videoUrl, candidate.id, sessionId, supabase)
-
-      if (analysisResult.success) {
-        result.vocalAnalyzed = true
-        result.steps.push('vocal analysis OK')
-        analyzedCount++
-      } else {
-        result.steps.push(`analysis FAILED: ${analysisResult.error}`)
-      }
-    } catch (err) {
-      result.error = err instanceof Error ? err.message : String(err)
-    }
-
-    if (!existing) results.push(result)
-  }
+  // --- Analyse vocale VP : PAS automatique ---
+  // L'analyse VP est declenchee manuellement via POST /api/cron/process-candidates?analyze=candidateId
+  // Le cron automatique (IONOS) ne fait que la migration R2.
+  const analyzedCount = 0
 
   // --- Summary ---
   const migratedCount = results.filter(r => r.r2Migrated).length
