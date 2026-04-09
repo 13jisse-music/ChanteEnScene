@@ -15,7 +15,7 @@ import { sendTelegram } from '@/lib/telegram'
  * 3. Upload to R2
  * 4. Update URL in candidates table (video_url / photo_url → R2)
  * 5. Delete from Supabase Storage (save bandwidth)
- * 6. Send to Demucs (PCmusique GPU) for vocal analysis
+ * 6. Send to VP API (vp.vocalprint.fr) for vocal analysis
  * 7. Wait for analysis → insert into vocal_analyses
  * 8. Notify via Telegram
  *
@@ -25,7 +25,7 @@ import { sendTelegram } from '@/lib/telegram'
  */
 
 const SUPABASE_STORAGE_PREFIX = 'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/'
-const DEMUCS_URL = process.env.DEMUCS_URL || 'http://100.122.159.69:8642' // PCmusique via Tailscale
+const VP_API_URL = process.env.VP_API_URL || 'https://vp.vocalprint.fr'
 // Telegram constants moved to @/lib/telegram
 
 function isAuthorized(request: Request): boolean {
@@ -114,7 +114,9 @@ async function deleteFromSupabase(supabase: ReturnType<typeof createAdminClient>
   await supabase.storage.from(bucket).remove([path])
 }
 
-// --- Step 4: Send to Demucs for vocal analysis ---
+// --- Step 4: Send to VP API for vocal analysis ---
+// VP API v4.3 : mode=auto (Demucs + analyse), source=ces
+// Le mapper traduit la response VP → schema vocal_analyses (CES inchange)
 async function analyzeVocals(
   videoUrl: string,
   candidateId: string,
@@ -122,96 +124,121 @@ async function analyzeVocals(
   supabase: ReturnType<typeof createAdminClient>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Download the audio file
+    // Telecharger l'audio
     const audioRes = await fetch(videoUrl)
     if (!audioRes.ok) return { success: false, error: `Download failed: ${audioRes.status}` }
 
     const audioBuffer = await audioRes.arrayBuffer()
     const isVideo = videoUrl.includes('.mp4') || videoUrl.includes('.mov') || videoUrl.includes('.webm')
 
-    // Send to Demucs
+    // Envoyer a VP API
     const formData = new FormData()
     const ext = isVideo ? '.mp4' : '.mp3'
     formData.append('file', new Blob([audioBuffer]), `audio${ext}`)
+    formData.append('source', 'ces')
+    formData.append('mode', 'auto')
+    formData.append('context', JSON.stringify({
+      candidate_id: candidateId,
+      session_id: sessionId,
+    }))
 
-    const submitRes = await fetch(`${DEMUCS_URL}/separate?two_stems=vocals`, {
+    const submitRes = await fetch(`${VP_API_URL}/api/analyze-voice`, {
       method: 'POST',
       body: formData,
     })
 
-    if (!submitRes.ok) return { success: false, error: `Demucs submit: ${submitRes.status}` }
+    if (!submitRes.ok) return { success: false, error: `VP submit: ${submitRes.status}` }
     const { job_id } = await submitRes.json()
 
-    // Poll for completion (max 10 min)
-    const maxWait = 600_000
+    // Poll pour le resultat (max 8 min — Demucs + analyse)
+    const maxWait = 480_000
     const pollInterval = 10_000
     const start = Date.now()
 
     while (Date.now() - start < maxWait) {
       await new Promise(r => setTimeout(r, pollInterval))
 
-      const statusRes = await fetch(`${DEMUCS_URL}/status/${job_id}`)
+      const statusRes = await fetch(`${VP_API_URL}/api/analyze-status/${job_id}`)
       if (!statusRes.ok) continue
 
       const statusData = await statusRes.json()
 
       if (statusData.status === 'done') {
-        // Get analysis
-        const analyzeRes = await fetch(`${DEMUCS_URL}/analyze/${job_id}`)
-        if (!analyzeRes.ok) return { success: false, error: `Analyze failed: ${analyzeRes.status}` }
+        const vp = statusData.result
+        if (!vp || !vp.metriques) return { success: false, error: 'VP: response vide' }
 
-        const analysis = await analyzeRes.json()
-        if (analysis.error) return { success: false, error: analysis.error }
+        // --- MAPPER VP → vocal_analyses ---
+        const m = vp.metriques || {}
+        const tess = vp.tessiture || {}
+        const raw = vp.raw || {}
+        // Les zones sont dans le pitch_stream ou raw_data VP
+        const zones = vp.zones || {}
 
-        const tessiture = analysis.tessiture || {}
-        const zones = analysis.zones || {}
-
-        // Insert into vocal_analyses
         const { error: insertError } = await supabase
           .from('vocal_analyses')
           .upsert({
             session_id: sessionId,
             candidate_id: candidateId,
-            justesse_pct: analysis.justesse_pct,
-            justesse_label: analysis.justesse_label || 'N/A',
-            tessiture_low: tessiture.low_note,
-            tessiture_low_midi: tessiture.low_midi,
-            tessiture_high: tessiture.high_note,
-            tessiture_high_midi: tessiture.high_midi,
-            octaves: tessiture.octaves,
-            voice_type: analysis.voice_type,
-            stability_pct: analysis.stability_pct,
-            vibrato_count: analysis.vibrato_count,
-            total_notes: analysis.total_notes,
-            zone_grave_pct: zones.grave_pct,
-            zone_medium_pct: zones.medium_pct,
-            zone_aigu_pct: zones.aigu_pct,
-            song_key: analysis.key,
-            song_key_confidence: analysis.key_confidence,
-            song_bpm: analysis.bpm,
+            justesse_pct: m.justesse_pct,
+            justesse_label: mapJustesseLabel(m.justesse_pct),
+            tessiture_low: tess.low_note,
+            tessiture_low_midi: tess.low_note ? noteToMidi(tess.low_note) : null,
+            tessiture_high: tess.high_note,
+            tessiture_high_midi: tess.high_note ? noteToMidi(tess.high_note) : null,
+            octaves: tess.octaves,
+            voice_type: tess.voice_type,
+            stability_pct: m.stability_pct,
+            vibrato_count: Math.round((m.vibrato_pct || 0) / 5),
+            total_notes: raw.total_notes,
+            zone_grave_pct: zones.grave_pct ?? null,
+            zone_medium_pct: zones.medium_pct ?? null,
+            zone_aigu_pct: zones.aigu_pct ?? null,
+            song_key: vp.key,
+            song_key_confidence: null,
+            song_bpm: vp.bpm,
             demucs_job_id: job_id,
             processing_time_sec: Math.round((Date.now() - start) / 1000),
-            pipeline_version: 'v2-cron',
-            server_used: DEMUCS_URL,
-            raw_data: analysis,
+            pipeline_version: `vp-${vp.analysis_version || 'v4'}`,
+            server_used: VP_API_URL,
+            raw_data: {
+              ...vp,
+              metriques_v3: m,
+            },
           }, { onConflict: 'session_id,candidate_id' })
 
         if (insertError) return { success: false, error: `DB insert: ${insertError.message}` }
 
-        // Cleanup Demucs job
-        try { await fetch(`${DEMUCS_URL}/cleanup/${job_id}`, { method: 'DELETE' }) } catch { /* ok */ }
-
         return { success: true }
 
       } else if (statusData.status === 'error') {
-        return { success: false, error: statusData.error || 'Demucs error' }
+        return { success: false, error: statusData.error || 'VP error' }
       }
     }
 
-    return { success: false, error: 'Timeout (>10 min)' }
+    return { success: false, error: 'Timeout (>8 min)' }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+// Mapper helpers
+function mapJustesseLabel(pct: number | null): string {
+  if (pct == null) return 'N/A'
+  if (pct >= 80) return 'Excellent'
+  if (pct >= 65) return 'Tres bien'
+  if (pct >= 50) return 'Bien'
+  return 'A travailler'
+}
+
+function noteToMidi(note: string): number | null {
+  const match = note.match(/^([A-G])(#|b)?(\d+)$/)
+  if (!match) return null
+  const [, letter, accidental, octaveStr] = match
+  const noteMap: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
+  const base = noteMap[letter]
+  if (base === undefined) return null
+  const adj = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0
+  return (parseInt(octaveStr) + 1) * 12 + base + adj
 }
 
 // --- Main handler ---
@@ -316,7 +343,7 @@ export async function GET(request: Request) {
         continue
       }
 
-      result.steps.push('Demucs → analyzing...')
+      result.steps.push('VP API → analyzing...')
       const analysisResult = await analyzeVocals(videoUrl, candidate.id, sessionId, supabase)
 
       if (analysisResult.success) {
