@@ -3,10 +3,14 @@
  * Used by cron routes and other server-side code.
  */
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8745661004:AAGJffmkzEK6GfI0wfgVj0K8XboyWDpiCRY'
-const TELEGRAM_CHAT_ID = '8064044229'
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 export async function sendTelegram(text: string, prefix: string = '🎤 CES'): Promise<boolean> {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.error('[CES telegram] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not configured')
+    return false
+  }
   const fullMessage = `<b>${prefix}</b>\n${text}`
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -22,6 +26,10 @@ export async function sendTelegram(text: string, prefix: string = '🎤 CES'): P
 
 /** Envoie une photo avec legende via Telegram */
 export async function sendTelegramPhoto(photoUrl: string, caption: string, prefix: string = '🎤 CES'): Promise<boolean> {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.error('[CES telegram] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not configured')
+    return false
+  }
   const fullCaption = `<b>${prefix}</b>\n${caption}`
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {

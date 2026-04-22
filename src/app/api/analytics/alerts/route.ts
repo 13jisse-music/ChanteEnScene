@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const PROJECT = 'CES'
-const TELEGRAM_TOKEN = '8745661004:AAGJffmkzEK6GfI0wfgVj0K8XboyWDpiCRY'
-const TELEGRAM_CHAT_ID = '8064044229'
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const THRESHOLDS = {
   bounceRate: 70,
@@ -21,6 +21,10 @@ interface Alert {
 
 // Envoie une notification Telegram
 async function sendTelegram(alert: Alert): Promise<boolean> {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.error('[CES analytics/alerts] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not configured')
+    return false
+  }
   const text = [
     `\u26a0\ufe0f [ANALYTICS ${PROJECT}]`,
     `M\u00e9trique : ${alert.metric}`,

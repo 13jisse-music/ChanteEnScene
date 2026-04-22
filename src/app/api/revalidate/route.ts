@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const secret = request.nextUrl.searchParams.get('secret')
-  if (secret !== process.env.REVALIDATION_SECRET && secret !== 'chantenscene2026') {
+  if (secret !== process.env.REVALIDATION_SECRET) {
     return Response.json({ error: 'Invalid secret' }, { status: 401 })
   }
 
