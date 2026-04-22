@@ -57,6 +57,7 @@ function SwipeSlide({
   sessionId,
   sessionSlug,
   isActive,
+  shouldLoadMedia,
   globalMuted,
   onToggleMute,
 }: {
@@ -64,6 +65,7 @@ function SwipeSlide({
   sessionId: string
   sessionSlug: string
   isActive: boolean
+  shouldLoadMedia: boolean
   globalMuted: boolean
   onToggleMute: () => void
 }) {
@@ -91,8 +93,9 @@ function SwipeSlide({
   const accent = candidate.accent_color || '#e91e8c'
   const youTubeId = candidate.video_url ? getYouTubeId(candidate.video_url) : null
   const isYouTube = !!youTubeId
-  const showVideo = candidate.video_public && candidate.video_url && !isYouTube
-  const showYouTube = candidate.video_public && isYouTube
+  // Charge la video / iframe uniquement pour la carte courante et ses voisines (N-1, N, N+1)
+  const showVideo = shouldLoadMedia && candidate.video_public && candidate.video_url && !isYouTube
+  const showYouTube = shouldLoadMedia && candidate.video_public && isYouTube
 
   // Check existing vote
   useEffect(() => {
@@ -207,6 +210,8 @@ function SwipeSlide({
               muted
               loop
               playsInline
+              preload={isActive ? 'auto' : 'metadata'}
+              poster={candidate.photo_url || undefined}
               className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl brightness-50"
               aria-hidden="true"
             />
@@ -218,6 +223,8 @@ function SwipeSlide({
             muted={globalMuted}
             loop
             playsInline
+            preload={isActive ? 'auto' : 'metadata'}
+            poster={candidate.photo_url || undefined}
             className={`absolute inset-0 w-full h-full ${isLandscape ? 'object-contain' : 'object-cover'}`}
           />
         </>
@@ -505,6 +512,7 @@ export default function CandidateSwipeFeed({ candidates, sessionId, categories }
                 sessionId={sessionId}
                 sessionSlug={sessionSlug}
                 isActive={idx === activeIndex}
+                shouldLoadMedia={Math.abs(idx - activeIndex) <= 1}
                 globalMuted={muted}
                 onToggleMute={() => setMuted(!muted)}
               />
