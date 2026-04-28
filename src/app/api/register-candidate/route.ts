@@ -5,6 +5,13 @@ import { rateLimit } from '@/lib/rate-limit'
 
 export const maxDuration = 60
 
+// Concours en présentiel à Aubagne : France métropolitaine, DOM-TOM, Monaco.
+const ALLOWED_COUNTRIES = new Set([
+  'FR', 'MC',
+  'GP', 'MQ', 'GF', 'RE', 'YT',
+  'NC', 'PF', 'PM', 'BL', 'MF', 'WF',
+])
+
 export async function POST(request: Request) {
   // Rate limiting: 5 registrations per IP per minute
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -31,7 +38,7 @@ export async function POST(request: Request) {
       const formData = await request.formData()
       const fieldNames = [
         'session_id', 'first_name', 'last_name', 'stage_name', 'date_of_birth',
-        'email', 'phone', 'city', 'category', 'song_title', 'song_artist',
+        'email', 'phone', 'city', 'country', 'category', 'song_title', 'song_artist',
         'bio', 'accent_color', 'slug', 'video_public', 'image_social_consent', 'video_url',
         'youtube_url', 'instagram_url', 'tiktok_url', 'website_url',
         'fingerprint', 'referred_by', 'photo_url', 'consent_url',
@@ -57,6 +64,16 @@ export async function POST(request: Request) {
 
     if (!session_id || !first_name || !last_name || !email || !slug) {
       return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
+    }
+
+    // Garde-fou pays : par défaut FR si non transmis (rétrocompat anciens clients).
+    // Refus si pays explicitement hors zone autorisée.
+    const country = (fields.country as string | undefined)?.trim().toUpperCase() || 'FR'
+    if (!ALLOWED_COUNTRIES.has(country)) {
+      return NextResponse.json(
+        { error: 'Le concours se déroule en présentiel à Aubagne (France). Les inscriptions hors France ne sont pas acceptées cette année.' },
+        { status: 400 }
+      )
     }
 
     const r2BasePath = `candidates/${slug}`
