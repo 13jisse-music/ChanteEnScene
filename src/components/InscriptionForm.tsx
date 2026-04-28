@@ -36,6 +36,24 @@ const STEPS = [
   { title: 'Finaliser', icon: '✨' },
 ]
 
+// Concours en présentiel à Aubagne : on n'accepte que la France métropolitaine,
+// les DOM-TOM et Monaco. "OTHER" déclenche un message bloquant.
+const ALLOWED_COUNTRIES = [
+  { code: 'FR', label: 'France' },
+  { code: 'MC', label: 'Monaco' },
+  { code: 'GP', label: 'Guadeloupe' },
+  { code: 'MQ', label: 'Martinique' },
+  { code: 'GF', label: 'Guyane' },
+  { code: 'RE', label: 'La Réunion' },
+  { code: 'YT', label: 'Mayotte' },
+  { code: 'NC', label: 'Nouvelle-Calédonie' },
+  { code: 'PF', label: 'Polynésie française' },
+  { code: 'PM', label: 'Saint-Pierre-et-Miquelon' },
+  { code: 'BL', label: 'Saint-Barthélemy' },
+  { code: 'MF', label: 'Saint-Martin' },
+  { code: 'WF', label: 'Wallis-et-Futuna' },
+]
+
 /** Compress a photo client-side to max 1200px and JPEG ~85% quality */
 async function compressPhoto(file: File, maxDim = 1200, quality = 0.85): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -164,6 +182,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
+  const [country, setCountry] = useState('FR')
   const [songTitle, setSongTitle] = useState('')
   const [songArtist, setSongArtist] = useState('')
   const [bio, setBio] = useState('')
@@ -240,6 +259,8 @@ export default function InscriptionForm({ session }: { session: Session }) {
       if (!email.trim()) return 'Veuillez remplir votre email.'
       if (!category) return 'Votre âge ne correspond à aucune catégorie.'
       if (!city.trim()) return 'Veuillez indiquer votre ville (la présence à Aubagne est requise à partir de la demi-finale).'
+      if (country === 'OTHER') return 'Le concours se déroule en présentiel à Aubagne (France). Les inscriptions hors France ne sont pas acceptées cette année.'
+      if (!ALLOWED_COUNTRIES.some(c => c.code === country)) return 'Pays non valide.'
       return null
     }
     if (currentStep === 1) {
@@ -378,6 +399,7 @@ export default function InscriptionForm({ session }: { session: Session }) {
       fd.append('email', email.trim().toLowerCase())
       if (phone.trim()) fd.append('phone', phone.trim())
       fd.append('city', city.trim())
+      fd.append('country', country)
       fd.append('category', category)
       fd.append('song_title', songTitle.trim())
       fd.append('song_artist', songArtist.trim())
@@ -615,12 +637,33 @@ export default function InscriptionForm({ session }: { session: Session }) {
             <label className={LABEL}>Ville <span className="text-[#e91e8c]">*</span></label>
             <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} placeholder="Votre ville" className={INPUT} />
           </div>
-          <div className="bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-xl p-3 flex items-start gap-2 text-[#f5a623] text-xs">
-            <span>📍</span>
-            <span>
-              <strong>Concours sur scène à Aubagne (13).</strong> La sélection se fait sur vidéo, mais la présence physique à Aubagne est obligatoire à partir de la demi-finale (17 juin 2026) et pour la finale (16 juillet 2026).
-            </span>
+          <div>
+            <label className={LABEL}>Pays <span className="text-[#e91e8c]">*</span></label>
+            <select value={country} onChange={(e) => setCountry(e.target.value)} className={INPUT}>
+              {ALLOWED_COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+              <option value="OTHER">Autre pays / hors France</option>
+            </select>
           </div>
+          {country === 'OTHER' ? (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-200 space-y-2">
+              <p className="font-semibold flex items-center gap-2"><span>🌍</span> Concours en présentiel à Aubagne</p>
+              <p className="text-red-100/80 text-xs leading-relaxed">
+                ChantEnScène se déroule physiquement à Aubagne (France). La présence sur place est obligatoire dès la demi-finale (17 juin 2026). Une version internationale en ligne est à l&apos;étude pour les saisons futures.
+              </p>
+              <p className="text-red-100/80 text-xs leading-relaxed">
+                Si vous voulez être informé(e) de l&apos;ouverture du concours en ligne, écrivez-nous à <a href="mailto:inscriptions@chantenscene.fr" className="underline">inscriptions@chantenscene.fr</a>.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-xl p-3 flex items-start gap-2 text-[#f5a623] text-xs">
+              <span>📍</span>
+              <span>
+                <strong>Concours sur scène à Aubagne (13).</strong> La sélection se fait sur vidéo, mais la présence physique à Aubagne est obligatoire à partir de la demi-finale (17 juin 2026) et pour la finale (16 juillet 2026).
+              </span>
+            </div>
+          )}
         </div>
       )}
 
