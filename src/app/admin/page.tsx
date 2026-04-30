@@ -76,31 +76,13 @@ async function getStats() {
 
   const config = (activeSession.config || {}) as Record<string, unknown>
 
-  // Paginate page_views: visitors (Supabase server max = 1000 rows)
-  const visitorsData: { fingerprint: string; user_agent: string | null }[] = []
-  {
-    let from = 0
-    while (true) {
-      const { data } = await supabase.from('page_views').select('fingerprint, user_agent').eq('session_id', sid).not('fingerprint', 'is', null).range(from, from + 999)
-      if (!data || data.length === 0) break
-      visitorsData.push(...data)
-      if (data.length < 1000) break
-      from += 1000
-    }
-  }
-
-  // Paginate page_views: last 7 days
-  const dailyViewsRaw: { fingerprint: string; created_at: string }[] = []
-  {
-    let from = 0
-    while (true) {
-      const { data } = await supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo).range(from, from + 999)
-      if (!data || data.length === 0) break
-      dailyViewsRaw.push(...data)
-      if (data.length < 1000) break
-      from += 1000
-    }
-  }
+  // Deux requêtes parallèles avec limite haute (10k >> nb visiteurs d'une session régionale)
+  const [{ data: visitorsRaw }, { data: dailyRaw }] = await Promise.all([
+    supabase.from('page_views').select('fingerprint, user_agent').eq('session_id', sid).not('fingerprint', 'is', null).limit(10000),
+    supabase.from('page_views').select('fingerprint, created_at').eq('session_id', sid).gte('created_at', sevenDaysAgo).limit(10000),
+  ])
+  const visitorsData: { fingerprint: string; user_agent: string | null }[] = visitorsRaw || []
+  const dailyViewsRaw: { fingerprint: string; created_at: string }[] = dailyRaw || []
 
   // Unique visitors with device classification
   const visitorsByDevice = { android: 0, ios: 0, desktop: 0 }
