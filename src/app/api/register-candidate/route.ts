@@ -78,17 +78,33 @@ export async function POST(request: Request) {
 
     const r2BasePath = `candidates/${slug}`
 
-    // Upload photo to R2 if file provided
-    let photo_url: string | null = fields.photo_url || null
-    if (photoFile && photoFile.size > 0) {
+    // Upload photo to R2 — convertit toujours en JPEG via sharp (gère HEIC/HEIF sur Vercel)
+    let photo_url: string | null = null
+    {
       const sharp = (await import('sharp')).default
-      const rawBuffer = Buffer.from(await photoFile.arrayBuffer())
+      let rawBuffer: Buffer | null = null
+
+      if (photoFile && photoFile.size > 0) {
+        // Fichier envoyé directement
+        rawBuffer = Buffer.from(await photoFile.arrayBuffer())
+      } else if (fields.photo_url) {
+        // URL pré-uploadée (Supabase Storage) — on refetch et on normalise
+        try {
+          const fetchRes = await fetch(fields.photo_url as string)
+          if (fetchRes.ok) rawBuffer = Buffer.from(await fetchRes.arrayBuffer())
+        } catch { /* rawBuffer reste null, erreur ci-dessous */ }
+      }
+
+      if (!rawBuffer) {
+        return NextResponse.json({ error: 'Photo obligatoire' }, { status: 400 })
+      }
+
       const photoBuffer = await sharp(rawBuffer)
         .rotate() // auto-orient EXIF
         .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 85 })
         .toBuffer()
-      photo_url = await uploadToR2(`${r2BasePath}/photo`, photoBuffer, 'image/jpeg')
+      photo_url = await uploadToR2(`${r2BasePath}/photo.jpg`, photoBuffer, 'image/jpeg')
     }
 
     if (!photo_url) {
