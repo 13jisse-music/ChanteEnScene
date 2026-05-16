@@ -31,22 +31,16 @@ async function getAnalyticsData() {
   if (!sessions?.length) return { session: null, days: [], geoData: [] }
   const session = sessions[0]
 
-  // Fetch ALL page views for this session (paginate — Supabase returns max 1000 per request)
-  const pageViews: { fingerprint: string; created_at: string }[] = []
-  let from = 0
-  const PAGE_SIZE = 1000
-  while (true) {
-    const { data: batch } = await supabase
-      .from('page_views')
-      .select('fingerprint, created_at')
-      .eq('session_id', session.id)
-      .order('created_at', { ascending: true })
-      .range(from, from + PAGE_SIZE - 1)
-    if (!batch || batch.length === 0) break
-    pageViews.push(...batch)
-    if (batch.length < PAGE_SIZE) break
-    from += PAGE_SIZE
-  }
+  // Limiter a 90 jours pour eviter l'egress excessif
+  const since90days = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: pageViews } = await supabase
+    .from('page_views')
+    .select('fingerprint, created_at')
+    .eq('session_id', session.id)
+    .gte('created_at', since90days)
+    .order('created_at', { ascending: true })
+    .limit(10000)
 
   // Fetch newsletter campaigns (sent only)
   const { data: newsletters } = await supabase
@@ -147,7 +141,9 @@ async function getAnalyticsData() {
     .from('page_views')
     .select('city, region, country, latitude, longitude')
     .eq('session_id', session.id)
+    .gte('created_at', since90days)
     .not('city', 'is', null)
+    .limit(5000)
 
   if (geoRows?.length) {
     // Group by city, use average lat/lng
