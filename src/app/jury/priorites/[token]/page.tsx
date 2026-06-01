@@ -43,7 +43,8 @@ export default async function PrioritesPage({ params }: { params: Params }) {
     .eq('juror_id', juror.id)
     .order('rank')
 
-  const validScores = (scores || []).filter(s => s.candidates)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const validScores = (scores || []).filter(s => s.candidates) as any
 
   return (
     <PrioritesClient
