@@ -232,13 +232,13 @@ function Panel({
   const topRef = useRef<HTMLDivElement>(null)
   const topsRef = useRef(tops)
   topsRef.current = tops
+  const allCandsRef = useRef<CandItem[]>([])
+  allCandsRef.current = [...tops, ...pool]
 
-  const allCands = [...tops, ...pool]
-
-  // Drag uniquement pour réordonner dans le top 10
+  // Drag uniquement pour réordonner dans le top 10 — stable, ne se recrée qu'au changement de tab
   useEffect(() => {
     if (!topRef.current) return
-    sortableRefs.current[`top-${cat}`]?.destroy()
+    try { sortableRefs.current[`top-${cat}`]?.destroy() } catch (_) {}
     sortableRefs.current[`top-${cat}`] = Sortable.create(topRef.current, {
       group: { name: cat, pull: false, put: false },
       filter: '[data-play],[data-action]',
@@ -249,13 +249,14 @@ function Panel({
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
       onSort() {
-        const ids = [...topRef.current!.querySelectorAll('[data-card]')].map(el => el.getAttribute('data-id')!)
-        const next = ids.map(id => allCands.find(c => c.id === id)).filter(Boolean) as CandItem[]
+        if (!topRef.current) return
+        const ids = [...topRef.current.querySelectorAll('[data-card]')].map(el => el.getAttribute('data-id')!)
+        const next = ids.map(id => allCandsRef.current.find(c => c.id === id)).filter(Boolean) as CandItem[]
         onChange(next)
       },
     })
-    return () => { sortableRefs.current[`top-${cat}`]?.destroy() }
-  }, [cat, tops.length])
+    return () => { try { sortableRefs.current[`top-${cat}`]?.destroy() } catch (_) {} }
+  }, [cat])
 
   const n = tops.length
   const full = n >= 10
