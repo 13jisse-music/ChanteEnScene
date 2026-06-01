@@ -4,6 +4,7 @@ import JuryScoring from '@/components/JuryScoring'
 import JuryExperience from '@/components/JuryExperience'
 import JuryLoginTracker from '@/components/JuryLoginTracker'
 import JuryConnectionStatus from '@/components/JuryConnectionStatus'
+import PrioritesClient from '../priorites/[token]/PrioritesClient'
 
 type Params = Promise<{ token: string }>
 
@@ -24,6 +25,29 @@ export default async function JuryPage({ params }: { params: Params }) {
     .single()
 
   if (!juror) notFound()
+
+  // Mode priorités : activé par l'admin via juror.show_priorities
+  if (juror.show_priorities) {
+    const { data: scores } = await supabase
+      .from('jury_scores')
+      .select(`total_score, scores, candidates(id, first_name, last_name, stage_name, category, photo_url, video_url, mp3_url)`)
+      .eq('juror_id', juror.id)
+      .gt('total_score', 0)
+
+    const { data: existingPriorities } = await supabase
+      .from('jury_priorities')
+      .select('candidate_id, category, rank')
+      .eq('juror_id', juror.id)
+      .order('rank')
+
+    return (
+      <PrioritesClient
+        juror={{ id: juror.id, firstName: juror.first_name, lastName: juror.last_name }}
+        scores={(scores || []).filter(s => s.candidates)}
+        existingPriorities={existingPriorities || []}
+      />
+    )
+  }
 
   const session = (juror as Record<string, unknown>).sessions as {
     id: string
