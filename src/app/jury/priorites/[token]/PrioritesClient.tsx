@@ -70,10 +70,12 @@ function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string): C
 }
 
 export default function PrioritesClient({ juror, scores, existingPriorities }: Props) {
-  const [screen, setScreen] = useState<'welcome' | 'main' | 'confirm'>('welcome')
+  const alreadySubmitted = existingPriorities.length > 0
+  const [screen, setScreen] = useState<'welcome' | 'main' | 'confirm' | 'readonly'>(
+    alreadySubmitted ? 'readonly' : 'welcome'
+  )
   const [activeTab, setActiveTab] = useState<string>('Ado')
   const [tops, setTops] = useState<Record<string, CandItem[]>>({})
-  const [submitted] = useState(existingPriorities.length > 0)
   const sortableRefs = useRef<Record<string, Sortable | null>>({})
 
   const pools: Record<string, CandItem[]> = {}
@@ -112,6 +114,70 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
     if (res.ok) setScreen('confirm')
   }
 
+  if (screen === 'readonly') {
+    const CAT_COLORS: Record<string, string> = { Ado: '#7c3aed', Adulte: '#0369a1', Enfant: '#b45309' }
+    return (
+      <main className="fixed inset-0 z-50 bg-[#0f172a] overflow-y-auto text-white">
+        <div className="bg-gradient-to-br from-[#1e1b4b] to-[#312e81] px-4 py-5 text-center">
+          <div className="text-3xl mb-2">✅</div>
+          <h1 className="text-lg font-bold text-white mb-1">Ma sélection — {juror.firstName} {juror.lastName}</h1>
+          <p className="text-[#a78bfa] text-xs">ChantEnScène Aubagne 2026 · Priorités validées</p>
+        </div>
+        <div className="max-w-lg mx-auto p-4 space-y-6">
+          {CATS.map(cat => {
+            const catPriorities = existingPriorities
+              .filter(p => p.category === cat)
+              .sort((a, b) => a.rank - b.rank)
+            const color = CAT_COLORS[cat]
+            return (
+              <div key={cat}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">{CAT_EMOJI[cat]}</span>
+                  <h2 className="font-bold text-sm" style={{ color }}>{cat}</h2>
+                  <span className="text-xs text-[#475569]">({catPriorities.length} candidats classés)</span>
+                </div>
+                <div className="space-y-2">
+                  {catPriorities.map(p => {
+                    const score = scores.find(s => s.candidates?.id === p.candidate_id)
+                    const cand = score?.candidates
+                    if (!cand) return null
+                    const name = cand.stage_name || `${cand.first_name} ${cand.last_name}`
+                    return (
+                      <div key={p.candidate_id} className="flex items-center gap-3 bg-[#1e293b] rounded-xl p-2.5 border border-white/7">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: p.rank <= 3 ? color : 'rgba(255,255,255,0.1)' }}>
+                          {p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1] : p.rank}
+                        </div>
+                        {cand.photo_url ? (
+                          <img src={cand.photo_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2 border-white/10" loading="lazy" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-[#334155] flex-shrink-0 flex items-center justify-center text-xs font-bold text-[#94a3b8]">{cand.first_name[0]}</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate">{name}</p>
+                          <p className="text-[10px] text-[#64748b] truncate">{cand.first_name} {cand.last_name}</p>
+                        </div>
+                        {(cand.video_url || cand.mp3_url) && (
+                          <button
+                            onClick={() => window.open((cand.video_url || cand.mp3_url)!, '_blank')}
+                            className="w-7 h-7 rounded-full bg-[#7c3aed]/25 flex items-center justify-center text-[10px] flex-shrink-0"
+                          >▶</button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+          <div className="bg-green-500/8 border border-green-500/20 rounded-xl p-4 text-center mt-4">
+            <p className="text-xs text-[#86efac]">Votre sélection a bien été enregistrée. Merci pour votre participation !</p>
+            <p className="text-[10px] text-[#475569] mt-1">Jean Christophe Martinez recevra vos choix pour la délibération finale.</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   if (screen === 'welcome') {
     return (
       <main className="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
@@ -131,7 +197,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
             </div>
           ))}
         </div>
-        {submitted && (
+        {alreadySubmitted && (
           <p className="text-[#fde68a] text-xs mb-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2">
             Vous avez déjà soumis des priorités — vous pouvez les modifier.
           </p>
