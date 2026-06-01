@@ -114,7 +114,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
 
   if (screen === 'welcome') {
     return (
-      <main className="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+      <main className="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
         <div className="text-5xl mb-4">🏆</div>
         <h1 className="text-xl font-bold text-white mb-1">Bonjour {juror.firstName} !</h1>
         <p className="text-[#a78bfa] text-sm mb-6">ChantEnScène Aubagne 2026 — Sélection finale</p>
@@ -148,7 +148,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
 
   if (screen === 'confirm') {
     return (
-      <main className="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
+      <main className="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
         <div className="text-6xl mb-4">✅</div>
         <h2 className="text-xl font-bold text-white mb-2">Priorités enregistrées !</h2>
         <p className="text-[#94a3b8] text-sm leading-relaxed max-w-xs">
@@ -162,7 +162,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
   }
 
   return (
-    <main className="bg-[#0f172a] min-h-screen pb-24 text-white">
+    <main className="fixed inset-0 z-50 bg-[#0f172a] overflow-y-auto pb-24 text-white">
       {/* Header */}
       <div className="bg-gradient-to-br from-[#1e1b4b] to-[#312e81] px-4 pt-4 sticky top-0 z-50">
         <div className="flex items-center gap-3 mb-3">
