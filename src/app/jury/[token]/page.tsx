@@ -43,7 +43,8 @@ export default async function JuryPage({ params }: { params: Params }) {
     return (
       <PrioritesClient
         juror={{ id: juror.id, firstName: juror.first_name, lastName: juror.last_name }}
-        scores={(scores || []).filter(s => s.candidates)}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        scores={(scores || []).filter(s => s.candidates) as any}
         existingPriorities={existingPriorities || []}
       />
     )
