@@ -269,6 +269,12 @@ export async function GET(request: Request) {
   for (const session of sessions) {
     const config = (session.config || {}) as SessionConfig
 
+    // Cron désactivé manuellement (inscriptions closes, phase de délibération)
+    if (config.social_cron_disabled) {
+      results.push({ session: session.name, posts: [{ type: 'skipped', success: true }] })
+      continue
+    }
+
     // Total candidats approuvés
     const { count: totalCandidates } = await supabase
       .from('candidates')
