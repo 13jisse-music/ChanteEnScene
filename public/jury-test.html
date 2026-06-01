@@ -73,10 +73,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
   <h1>Bonjour Claudie !</h1>
   <div class="sub">ChantEnScene Aubagne 2026 — Selection finale</div>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><div class="step-txt">Vos candidats <strong>OUI</strong> sont deja pre-selectionnes dans votre top 10.</div></div>
-    <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Glissez</strong> les cartes pour reordonner par priorite. Le n1 est votre favori absolu.</div></div>
-    <div class="step"><div class="step-num">3</div><div class="step-txt">Echangez des OUI contre des PEUT-ETRE en les glissant d'une zone a l'autre.</div></div>
-    <div class="step"><div class="step-num">4</div><div class="step-txt">Completez les <strong>3 categories</strong> (10 chacune) puis validez.</div></div>
+    <div class="step"><div class="step-num">1</div><div class="step-txt">Vos candidats <strong>OUI</strong> sont pre-charges. Votre mission : choisir <strong>vos 10 priorites</strong> parmi vos OUI et PEUT-ETRE.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Glissez vers le haut</strong> pour ajouter un candidat a votre selection. <strong>Glissez vers le bas</strong> pour le retirer.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>Reordonnez</strong> votre top 10 : le n1 est votre candidat prefere, le n10 est votre 10eme choix.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-txt">Faites cela pour les <strong>3 categories</strong> puis appuyez sur Valider.</div></div>
   </div>
   <button class="btn-start" onclick="startApp()">Commencer</button>
 </div>
@@ -92,7 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
   <div class="hdr">
     <div class="hdr-top">
       <div class="av">CM</div>
-      <div><h1>Claudie Martinez</h1><p>Constituez votre top 10 par categorie</p></div>
+      <div><h1>Claudie Martinez</h1><p>Classez vos 10 priorites par categorie</p></div>
     </div>
     <div class="tabs">
       <div class="tab active" onclick="switchTab('ado')">🎤 Ado<span class="cnt" id="cnt-ado">0/10</span><div class="dot"></div></div>
@@ -185,11 +185,11 @@ function render(cat){
   var lbl=full?'<span style="color:#22c55e">Complet !</span>':'<span style="color:#64748b">'+(10-n)+' restants</span>';
   var h='<div class="progress"><div class="sc" style="color:'+color+'">'+n+'<span style="font-size:12px;color:#64748b">/10</span></div><div class="bw"><div class="bf" style="width:'+(n*10)+'%"></div></div><div class="lbl">'+lbl+'</div></div>';
   h+='<div id="al-'+cat+'" class="alert-full">Maximum 10 atteint — retirez-en un avant d\'en ajouter</div>';
-  h+='<div class="zone-lbl" style="color:#a78bfa">Mon top 10 <em>(glissez pour reordonner)</em></div>';
+  h+='<div class="zone-lbl" style="color:#a78bfa">Mes 10 priorites <em>(glissez pour reordonner)</em></div>';
   h+='<div id="top-'+cat+'" class="list top">';
   if(!tops[cat].length)h+='<div class="empty">Glissez ici vos candidats favoris</div>';
   else tops[cat].forEach(function(c,i){h+=makeCard(c,i+1);});
-  h+='</div><div class="zone-lbl">Disponibles <em>('+pool.length+')</em></div>';
+  h+='</div><div class="zone-lbl">Autres candidats positifs <em>('+pool.length+' — glissez vers le haut pour inclure)</em></div>';
   h+='<div id="pool-'+cat+'" class="list pool">';
   if(!pool.length)h+='<div class="empty">Tous vos OUI/PEUT-ETRE sont selectionnes</div>';
   else pool.forEach(function(c){h+=makeCard(c,0);});
