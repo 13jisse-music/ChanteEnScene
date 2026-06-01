@@ -230,85 +230,47 @@ function Panel({
   onChange: (tops: CandItem[]) => void
 }) {
   const topRef = useRef<HTMLDivElement>(null)
-  const poolRef = useRef<HTMLDivElement>(null)
   const topsRef = useRef(tops)
   topsRef.current = tops
 
   const allCands = [...tops, ...pool]
 
+  // Drag uniquement pour réordonner dans le top 10
   useEffect(() => {
-    if (!topRef.current || !poolRef.current) return
-
+    if (!topRef.current) return
     sortableRefs.current[`top-${cat}`]?.destroy()
-    sortableRefs.current[`pool-${cat}`]?.destroy()
-
     sortableRefs.current[`top-${cat}`] = Sortable.create(topRef.current, {
-      group: {
-        name: cat,
-        pull: true,
-        put: (to: Sortable) => to.el.querySelectorAll('[data-card]').length < 10,
-      },
-      filter: '[data-play]',
+      group: { name: cat, pull: false, put: false },
+      filter: '[data-play],[data-action]',
       animation: 150,
       ghostClass: 'opacity-30',
       chosenClass: 'border-[#7c3aed]',
-      delay: 180,
+      delay: 200,
       delayOnTouchOnly: true,
-      touchStartThreshold: 4,
-      onAdd(e) {
-        const id = e.item.getAttribute('data-id')!
-        const cand = allCands.find(c => c.id === id)
-        if (!cand) return
-        const cur = topsRef.current
-        if (cur.length >= 10) {
-          poolRef.current?.appendChild(e.item)
-          return
-        }
-        const next = [...cur]
-        next.splice(e.newIndex ?? cur.length, 0, cand)
-        onChange(next)
-        setTimeout(() => onChange([...next]), 50)
-      },
-      onRemove(e) {
-        const id = e.item.getAttribute('data-id')!
-        onChange(topsRef.current.filter(c => c.id !== id))
-        setTimeout(() => onChange(topsRef.current.filter(c => c.id !== id)), 50)
-      },
+      touchStartThreshold: 5,
       onSort() {
         const ids = [...topRef.current!.querySelectorAll('[data-card]')].map(el => el.getAttribute('data-id')!)
         const next = ids.map(id => allCands.find(c => c.id === id)).filter(Boolean) as CandItem[]
         onChange(next)
       },
     })
-
-    sortableRefs.current[`pool-${cat}`] = Sortable.create(poolRef.current, {
-      group: { name: cat, pull: true, put: true },
-      filter: '[data-play]',
-      animation: 150,
-      ghostClass: 'opacity-30',
-      chosenClass: 'border-[#7c3aed]',
-      delay: 180,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 4,
-      onAdd(e) {
-        const id = e.item.getAttribute('data-id')!
-        onChange(topsRef.current.filter(c => c.id !== id))
-        setTimeout(() => onChange(topsRef.current.filter(c => c.id !== id)), 50)
-      },
-    })
-
-    return () => {
-      sortableRefs.current[`top-${cat}`]?.destroy()
-      sortableRefs.current[`pool-${cat}`]?.destroy()
-    }
-  }, [cat])
+    return () => { sortableRefs.current[`top-${cat}`]?.destroy() }
+  }, [cat, tops.length])
 
   const n = tops.length
   const full = n >= 10
 
+  const addToTop = (c: CandItem) => {
+    if (topsRef.current.length >= 10) return
+    onChange([...topsRef.current, c])
+  }
+
+  const removeFromTop = (id: string) => {
+    onChange(topsRef.current.filter(c => c.id !== id))
+  }
+
   return (
     <div>
-      {/* Progress */}
       <div className="bg-white/5 rounded-xl p-3 mb-3 flex items-center gap-3">
         <span className="text-xl font-bold" style={{ color: full ? '#22c55e' : '#a78bfa' }}>
           {n}<span className="text-xs text-white/40">/10</span>
@@ -322,33 +284,45 @@ function Panel({
       </div>
 
       <p className="text-xs text-[#a78bfa] text-center mb-2 bg-[#7c3aed]/8 rounded-lg py-2">
-        n°1 = votre favori absolu · ▶ pour revoir la prestation
+        n°1 = votre favori absolu · glissez pour réordonner · ▶ pour revoir
       </p>
 
-      {/* Top 10 */}
       <p className="text-[10px] font-bold uppercase tracking-widest text-[#7c3aed] mb-2">Mes 10 priorités</p>
       <div ref={topRef} className="min-h-14 bg-[#7c3aed]/8 border-2 border-dashed border-[#7c3aed]/30 rounded-xl p-1.5 mb-4">
         {tops.length === 0 && (
-          <p className="text-center py-4 text-[#475569] text-xs italic">Glissez ici vos candidats favoris</p>
+          <p className="text-center py-4 text-[#475569] text-xs italic">Appuyez sur + pour ajouter un candidat</p>
         )}
-        {tops.map((c, i) => <Card key={c.id} c={c} rank={i + 1} />)}
+        {tops.map((c, i) => (
+          <Card key={c.id} c={c} rank={i + 1} onAction={() => removeFromTop(c.id)} actionType="remove" />
+        ))}
       </div>
 
-      {/* Pool */}
       <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">
         Autres candidats positifs <span className="font-normal text-[#475569]">({pool.length})</span>
       </p>
-      <div ref={poolRef} className="min-h-10 bg-white/3 border border-white/7 rounded-xl p-1.5">
+      <div className="min-h-10 bg-white/3 border border-white/7 rounded-xl p-1.5">
         {pool.length === 0 && (
           <p className="text-center py-3 text-[#475569] text-xs italic">Tous vos candidats sont sélectionnés</p>
         )}
-        {pool.map(c => <Card key={c.id} c={c} rank={0} />)}
+        {pool.map(c => (
+          <Card key={c.id} c={c} rank={0}
+            onAction={full ? undefined : () => addToTop(c)}
+            actionType="add"
+            disabled={full}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-function Card({ c, rank }: { c: CandItem; rank: number }) {
+function Card({ c, rank, onAction, actionType, disabled }: {
+  c: CandItem
+  rank: number
+  onAction?: () => void
+  actionType?: 'add' | 'remove'
+  disabled?: boolean
+}) {
   return (
     <div
       data-card
@@ -380,7 +354,26 @@ function Card({ c, rank }: { c: CandItem; rank: number }) {
           ▶
         </button>
       )}
-      <div className="text-[#475569] text-base flex-shrink-0 px-1 cursor-grab">⠿</div>
+      {onAction && actionType === 'add' && (
+        <button
+          data-action
+          onClick={onAction}
+          disabled={disabled}
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all ${disabled ? 'bg-white/5 text-white/20' : 'bg-green-500/20 border border-green-500/40 text-green-400 active:bg-green-500/40'}`}
+        >
+          +
+        </button>
+      )}
+      {onAction && actionType === 'remove' && (
+        <button
+          data-action
+          onClick={onAction}
+          className="w-8 h-8 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-xs font-bold text-red-400 flex-shrink-0 active:bg-red-500/30"
+        >
+          ×
+        </button>
+      )}
+      {rank > 0 && <div className="text-[#475569] text-base flex-shrink-0 px-1 cursor-grab">⠿</div>}
     </div>
   )
 }
