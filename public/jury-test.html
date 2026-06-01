@@ -3,309 +3,285 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ChantEnScène — Mes priorités</title>
+<title>ChantEnScene - Mes priorites</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;padding-bottom:100px}
-
-/* HEADER */
-.hdr{background:linear-gradient(135deg,#1e1b4b,#312e81);padding:16px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.4)}
-.hdr-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
-.hdr-info h1{font-size:15px;font-weight:700;color:#fff}
-.hdr-info p{font-size:11px;color:#a78bfa;margin-top:1px}
-
-/* TABS */
-.tabs{display:flex;gap:4px}
-.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;border-radius:10px 10px 0 0;cursor:pointer;transition:all .2s;color:#94a3b8;background:rgba(255,255,255,.05)}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;padding-bottom:90px}
+.welcome{position:fixed;inset:0;background:#0f172a;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;overflow-y:auto}
+.welcome h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px}
+.welcome .sub{font-size:13px;color:#a78bfa;margin-bottom:24px}
+.steps{background:rgba(255,255,255,.05);border-radius:14px;padding:20px;width:100%;max-width:380px;margin-bottom:24px;text-align:left}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.step:last-child{margin-bottom:0}
+.step-num{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:13px;color:#cbd5e1;line-height:1.5}
+.step-txt strong{color:#fff}
+.btn-start{background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:700;padding:16px 0;cursor:pointer;width:100%;max-width:380px}
+.hdr{background:linear-gradient(135deg,#1e1b4b,#312e81);padding:14px 16px 0;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.hdr h1{font-size:14px;font-weight:700;color:#fff}
+.hdr p{font-size:11px;color:#a78bfa}
+.tabs{display:flex;gap:3px}
+.tab{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:700;border-radius:8px 8px 0 0;cursor:pointer;color:#94a3b8;background:rgba(255,255,255,.05);position:relative}
 .tab.active{background:#0f172a;color:#fff}
-.tab .cnt{font-size:10px;opacity:.7;display:block}
-
-/* CONTENT */
-.cat-panel{display:none;padding:16px}
-.cat-panel.active{display:block}
-
-/* PROGRESS */
-.progress-bar{background:rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.progress-bar .score{font-size:22px;font-weight:800}
-.progress-bar .label{font-size:11px;color:#94a3b8;margin-top:1px}
-.progress-bar .bar-wrap{flex:1;margin:0 14px;background:rgba(255,255,255,.1);border-radius:20px;height:8px;overflow:hidden}
-.progress-bar .bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#7c3aed,#a855f7);transition:width .3s}
-
-/* ZONE SELECTION */
-.zone-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-
-/* SORTABLE LIST */
-.sortable-list{min-height:60px;border-radius:12px;padding:8px;transition:background .2s}
-.sortable-list.top10{background:rgba(124,58,237,.08);border:2px dashed rgba(124,58,237,.3);margin-bottom:20px}
-.sortable-list.top10.drag-over{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.6)}
-.sortable-list.pool{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-
-.empty-msg{text-align:center;padding:20px;color:#475569;font-size:13px;font-style:italic}
-
-/* CARD */
-.cand-card{display:flex;align-items:center;gap:10px;background:#1e293b;border-radius:10px;padding:8px 12px 8px 8px;margin-bottom:6px;cursor:grab;border:1px solid rgba(255,255,255,.07);transition:box-shadow .15s,transform .15s;user-select:none;-webkit-user-select:none;touch-action:none}
-.cand-card:active{cursor:grabbing;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:scale(1.02)}
-.cand-card.sortable-ghost{opacity:.4;background:#334155}
-.cand-card.sortable-chosen{box-shadow:0 8px 24px rgba(124,58,237,.3);border-color:#7c3aed;transform:scale(1.02)}
-.cand-card.sortable-drag{box-shadow:0 12px 32px rgba(0,0,0,.5);z-index:9999}
-
-.rank-num{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
-.photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#334155;border:2px solid rgba(255,255,255,.1)}
-.cand-info{flex:1;min-width:0}
-.cand-name{font-size:13px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cand-sub{font-size:10px;color:#64748b;margin-top:1px}
-.vote-badge{font-size:10px;font-weight:700;border-radius:20px;padding:2px 7px;white-space:nowrap}
-.vote-oui{background:rgba(34,197,94,.15);color:#86efac}
-.vote-pe{background:rgba(234,179,8,.15);color:#fde68a}
-.drag-handle{color:#475569;font-size:16px;padding-left:4px;flex-shrink:0}
-
-/* BOUTON VALIDER */
-.btn-valider{position:fixed;bottom:0;left:0;right:0;padding:16px;background:#0f172a;border-top:1px solid rgba(255,255,255,.08);z-index:200}
-.btn-valider button{width:100%;padding:16px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.3px}
-.btn-valider button:disabled{background:rgba(255,255,255,.1);color:#475569;cursor:not-allowed}
-
-/* TOAST */
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#22c55e;color:#fff;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:700;z-index:9999;transition:transform .3s;white-space:nowrap}
-.toast.show{transform:translateX(-50%) translateY(0)}
-
-/* NOTE MOCKUP */
-.mockup-note{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:#fde68a;text-align:center}
+.tab .cnt{font-size:10px;display:block}
+.dot{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:#22c55e;display:none}
+.tab.complete .dot{display:block}
+.panel{display:none;padding:14px}
+.panel.active{display:block}
+.progress{background:rgba(255,255,255,.06);border-radius:10px;padding:11px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.progress .sc{font-size:20px;font-weight:800;min-width:36px}
+.progress .bw{flex:1;background:rgba(255,255,255,.1);border-radius:20px;height:8px;overflow:hidden}
+.progress .bf{height:100%;border-radius:20px;background:linear-gradient(90deg,#7c3aed,#a855f7);transition:width .3s}
+.progress .lbl{font-size:11px;min-width:70px;text-align:right}
+.alert-full{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#fca5a5;display:none}
+.zone-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;color:#94a3b8}
+.zone-lbl em{font-weight:400;text-transform:none;letter-spacing:0;font-style:normal;color:#475569}
+.list{min-height:52px;border-radius:10px;padding:6px;margin-bottom:16px}
+.list.top{background:rgba(124,58,237,.08);border:2px dashed rgba(124,58,237,.35)}
+.list.pool{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+.empty{text-align:center;padding:18px;color:#475569;font-size:12px;font-style:italic}
+.card{display:flex;align-items:center;gap:9px;background:#1e293b;border-radius:9px;padding:7px 10px 7px 7px;margin-bottom:5px;border:1px solid rgba(255,255,255,.07);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.card.sortable-ghost{opacity:.35}
+.card.sortable-chosen{border-color:#7c3aed;box-shadow:0 4px 16px rgba(124,58,237,.3)}
+.rk{width:22px;height:22px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.rk.e{background:rgba(255,255,255,.06)}
+.photo{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,.08);background:#334155}
+.info{flex:1;min-width:0}
+.name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:9px;font-weight:700;border-radius:20px;padding:1px 6px;display:inline-block;margin-top:2px}
+.b-oui{background:rgba(34,197,94,.15);color:#86efac}
+.b-pe{background:rgba(234,179,8,.15);color:#fde68a}
+.handle{color:#475569;font-size:18px;padding-left:2px;flex-shrink:0}
+.btn-wrap{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:#0f172a;border-top:1px solid rgba(255,255,255,.08)}
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+.btn:disabled{background:rgba(255,255,255,.08);color:#475569}
+.confirm{position:fixed;inset:0;background:#0f172a;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.confirm.show{display:flex}
+.confirm .big{font-size:60px;margin-bottom:16px}
+.confirm h2{font-size:22px;font-weight:800;color:#fff;margin-bottom:10px}
+.confirm p{font-size:14px;color:#94a3b8;line-height:1.7;max-width:300px}
+.confirm .saved{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:10px 18px;font-size:12px;color:#86efac;margin-top:20px}
 </style>
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-top">
-    <div class="avatar">CM</div>
-    <div class="hdr-info">
-      <h1>Claudie Martinez</h1>
-      <p>Définissez vos priorités — glissez pour ordonner</p>
+<div class="welcome" id="welcome">
+  <div style="font-size:48px;margin-bottom:14px">🏆</div>
+  <h1>Bonjour Claudie !</h1>
+  <div class="sub">ChantEnScene Aubagne 2026 — Selection finale</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-txt">Vos candidats <strong>OUI</strong> sont deja pre-selectionnes dans votre top 10.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Glissez</strong> les cartes pour reordonner par priorite. Le n1 est votre favori absolu.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-txt">Echangez des OUI contre des PEUT-ETRE en les glissant d'une zone a l'autre.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-txt">Completez les <strong>3 categories</strong> (10 chacune) puis validez.</div></div>
+  </div>
+  <button class="btn-start" onclick="startApp()">Commencer</button>
+</div>
+
+<div class="confirm" id="confirm">
+  <div class="big">✅</div>
+  <h2>Priorites enregistrees !</h2>
+  <p>Vos choix ont ete sauvegardes. Jean Christophe recevra vos selections pour la deliberation finale.</p>
+  <div class="saved">3 categories completees · 30 candidats classes</div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="av">CM</div>
+      <div><h1>Claudie Martinez</h1><p>Constituez votre top 10 par categorie</p></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('ado')">🎤 Ado<span class="cnt" id="cnt-ado">0/10</span><div class="dot"></div></div>
+      <div class="tab" onclick="switchTab('adulte')">🎵 Adulte<span class="cnt" id="cnt-adulte">0/10</span><div class="dot"></div></div>
+      <div class="tab" onclick="switchTab('enfant')">⭐ Enfant<span class="cnt" id="cnt-enfant">0/10</span><div class="dot"></div></div>
     </div>
   </div>
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('ado')">🎤 Ado <span class="cnt" id="cnt-ado">0/10</span></div>
-    <div class="tab" onclick="switchTab('adulte')">🎵 Adulte <span class="cnt" id="cnt-adulte">0/10</span></div>
-    <div class="tab" onclick="switchTab('enfant')">⭐ Enfant <span class="cnt" id="cnt-enfant">0/10</span></div>
+  <div id="panel-ado" class="panel active"></div>
+  <div id="panel-adulte" class="panel"></div>
+  <div id="panel-enfant" class="panel"></div>
+  <div class="btn-wrap">
+    <button class="btn" id="btnSend" onclick="doSend()" disabled>Completez les 3 categories pour valider</button>
   </div>
 </div>
-
-<div id="panel-ado" class="cat-panel active"></div>
-<div id="panel-adulte" class="cat-panel"></div>
-<div id="panel-enfant" class="cat-panel"></div>
-
-<div class="btn-valider">
-  <button id="btn-submit" onclick="handleSubmit()">Envoyer mes priorités</button>
-</div>
-
-<div class="toast" id="toast">✅ Priorités envoyées !</div>
 
 <script>
-const CATS = {
-  ado: {
-    label: 'Adolescents',
-    candidates: [
-      {id:'a1', fn:'Alexy', ln:'Morrelli', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/alexy-morrelli-ougc/photo'},
-      {id:'a2', fn:'Ambre', ln:'Koufi', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ambre-koufi-mkws/photo.jpg'},
-      {id:'a3', fn:'Angelina', ln:'Cholley', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/angelina-cholley-y4v3/photo'},
-      {id:'a4', fn:'Éliséa', ln:'Gomez', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/elisea-gomez-19kr/photo'},
-      {id:'a5', fn:'Emma-Rose', ln:'Barthélémy', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/emma-rose-barthelemy-rf2q/photo.jpg'},
-      {id:'a6', fn:'Manon', ln:'Ruty', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/manon-ruty-nq8l/photo.jpg'},
-      {id:'a7', fn:'Soane', ln:'Amrati-Pruvost', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/soane-amrati-pruvost-q3qu/photo'},
-      {id:'a8', fn:'Zoé', ln:'Galmiche', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/zoe-galmiche-wiab/photo'},
-      {id:'a9', fn:'Zoé', ln:'Lauxen', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/zoe-lauxen-yjkj/photo'},
-      {id:'a10', fn:'Léa', ln:'Debeure', vote:'peut-etre', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lea-debeure-4ngg/photo.jpg'},
-      {id:'a11', fn:'Lena', ln:'Silano', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lena-silano-qnjg/photo'},
-      {id:'a12', fn:'Sofia', ln:'Balamane', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/sofia-balamane-vy5a/photo'},
-    ]
-  },
-  adulte: {
-    label: 'Adultes',
-    candidates: [
-      {id:'b1', fn:'Ani', ln:'Airoumian', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ani-airoumian-ezfx/photo.jpg'},
-      {id:'b2', fn:'Caroline', ln:'Cohen', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/caroline-cohen-9vou/photo'},
-      {id:'b3', fn:'Elisabeth', ln:'Gautier', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/elisabeth-gautier-56uf/photo'},
-      {id:'b4', fn:'Emma', ln:'Roulin', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/emma-roulin-mwsi/photo.jpg'},
-      {id:'b5', fn:'Guillaume', ln:'Salle', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/guillaume-salle-8yzb/photo'},
-      {id:'b6', fn:'Léa', ln:'Bifarella', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lea-bifarella-46f2/photo'},
-      {id:'b7', fn:'Lisa', ln:'Martinez', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lisa-martinez-dm33/photo'},
-      {id:'b8', fn:'Lucie', ln:'Cavazas', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lucie-cavazas-s16f/photo'},
-      {id:'b9', fn:'Ludmila', ln:'Legodivès', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ludmila-legodives-lazo/photo.jpg'},
-      {id:'b10', fn:'Tom', ln:'Ludwig', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/tom-ludwig-a32d/photo'},
-      {id:'b11', fn:'Fabrice', ln:'Aoun', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/fabrice-aoun-q4ts/photo'},
-      {id:'b12', fn:'Franck', ln:'Ledda', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/franck-ledda-uyfx/photo'},
-      {id:'b13', fn:'Sarah', ln:'Vado', vote:'peut-etre', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/sarah-vado-harr/photo'},
-      {id:'b14', fn:'Sophie', ln:'Baussart', vote:'peut-etre', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/sophie-baussart-78a3/photo'},
-      {id:'b15', fn:'Marie', ln:'Nalin', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/marie-nalin-fffr/photo'},
-      {id:'b16', fn:'Maïwenn', ln:'De Vaugiraud', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/maiwenn-de-vaugiraud-m0ty/photo'},
-    ]
-  },
-  enfant: {
-    label: 'Enfants',
-    candidates: [
-      {id:'c1', fn:'Anjali', ln:'Bruna', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/anjali-bruna-3c5j/photo.jpg'},
-      {id:'c2', fn:'Antoine', ln:'Cerna', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/antoine-cerna-jl7i/photo.jpg'},
-      {id:'c3', fn:'Chloé', ln:'Zilberschlag', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/chloe-zilberschlag-marziano-z7j2/photo'},
-      {id:'c4', fn:'Heaven', ln:'Vazi', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/heaven-vazi-3deg/photo'},
-      {id:'c5', fn:'Katrin', ln:'Graziani', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/katrin-graziani-vjyq/photo'},
-      {id:'c6', fn:'Lola', ln:'Gagliano', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lola-gagliano-iyi5/photo'},
-      {id:'c7', fn:'Lola', ln:'Payet', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lola-payet-2ygr/photo'},
-      {id:'c8', fn:'Lya', ln:'Rouviere', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lya-rouviere-nf1b/photo'},
-      {id:'c9', fn:'Maël', ln:'Capocci Guilbaud', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/mael-capocci-guilbaud-ostz/photo'},
-      {id:'c10', fn:'Olivia', ln:'Pontois', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/olivia-pontois-ub1k/photo'},
-      {id:'c11', fn:'Romane', ln:'Munoz', vote:'oui', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/romane-munoz-pzmn/photo'},
-      {id:'c12', fn:'Selena', ln:'Espinosa', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/selena-espinosa-xu85/photo.jpg'},
-      {id:'c13', fn:'Naomi', ln:'Coti', vote:'oui', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/naomi-coti-tu41/photo.jpg'},
-      {id:'c14', fn:'Eva', ln:'Amselem', vote:'peut-etre', photo:'https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/eva-amselem-uo2t/photo.jpg'},
-      {id:'c15', fn:'Joy', ln:'Schuster', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/joy-schuster-lbxf/photo'},
-      {id:'c16', fn:'Olivia', ln:'Cardinale', vote:'peut-etre', photo:'https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/olivia-cardinale-z4tg/photo'},
-    ]
-  }
-};
+var CATS={ado:{candidates:[
+{id:"a1",fn:"Alexy",ln:"Morrelli",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/alexy-morrelli-ougc/photo"},
+{id:"a2",fn:"Ambre",ln:"Koufi",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ambre-koufi-mkws/photo.jpg"},
+{id:"a3",fn:"Angelina",ln:"Cholley",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/angelina-cholley-y4v3/photo"},
+{id:"a4",fn:"Elisea",ln:"Gomez",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/elisea-gomez-19kr/photo"},
+{id:"a5",fn:"Emma-Rose",ln:"Barthelemy",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/emma-rose-barthelemy-rf2q/photo.jpg"},
+{id:"a6",fn:"Manon",ln:"Ruty",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/manon-ruty-nq8l/photo.jpg"},
+{id:"a7",fn:"Soane",ln:"Amrati-Pruvost",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/soane-amrati-pruvost-q3qu/photo"},
+{id:"a8",fn:"Zoe",ln:"Galmiche",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/zoe-galmiche-wiab/photo"},
+{id:"a9",fn:"Zoe",ln:"Lauxen",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/zoe-lauxen-yjkj/photo"},
+{id:"a10",fn:"Lea",ln:"Debeure",v:"pe",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lea-debeure-4ngg/photo.jpg"},
+{id:"a11",fn:"Lena",ln:"Silano",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lena-silano-qnjg/photo"},
+{id:"a12",fn:"Sofia",ln:"Balamane",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/sofia-balamane-vy5a/photo"}
+]},adulte:{candidates:[
+{id:"b1",fn:"Ani",ln:"Airoumian",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ani-airoumian-ezfx/photo.jpg"},
+{id:"b2",fn:"Caroline",ln:"Cohen",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/caroline-cohen-9vou/photo"},
+{id:"b3",fn:"Elisabeth",ln:"Gautier",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/elisabeth-gautier-56uf/photo"},
+{id:"b4",fn:"Emma",ln:"Roulin",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/emma-roulin-mwsi/photo.jpg"},
+{id:"b5",fn:"Guillaume",ln:"Salle",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/guillaume-salle-8yzb/photo"},
+{id:"b6",fn:"Lea",ln:"Bifarella",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lea-bifarella-46f2/photo"},
+{id:"b7",fn:"Lisa",ln:"Martinez",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lisa-martinez-dm33/photo"},
+{id:"b8",fn:"Lucie",ln:"Cavazas",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/lucie-cavazas-s16f/photo"},
+{id:"b9",fn:"Ludmila",ln:"Legodives",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/ludmila-legodives-lazo/photo.jpg"},
+{id:"b10",fn:"Tom",ln:"Ludwig",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/tom-ludwig-a32d/photo"},
+{id:"b11",fn:"Fabrice",ln:"Aoun",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/fabrice-aoun-q4ts/photo"},
+{id:"b12",fn:"Franck",ln:"Ledda",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/franck-ledda-uyfx/photo"},
+{id:"b13",fn:"Sarah",ln:"Vado",v:"pe",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/sarah-vado-harr/photo"},
+{id:"b14",fn:"Sophie",ln:"Baussart",v:"pe",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/sophie-baussart-78a3/photo"},
+{id:"b15",fn:"Marie",ln:"Nalin",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/marie-nalin-fffr/photo"},
+{id:"b16",fn:"Maiwenn",ln:"De Vaugiraud",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/maiwenn-de-vaugiraud-m0ty/photo"}
+]},enfant:{candidates:[
+{id:"c1",fn:"Anjali",ln:"Bruna",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/anjali-bruna-3c5j/photo.jpg"},
+{id:"c2",fn:"Antoine",ln:"Cerna",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/antoine-cerna-jl7i/photo.jpg"},
+{id:"c3",fn:"Chloe",ln:"Zilberschlag",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/chloe-zilberschlag-marziano-z7j2/photo"},
+{id:"c4",fn:"Heaven",ln:"Vazi",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/heaven-vazi-3deg/photo"},
+{id:"c5",fn:"Katrin",ln:"Graziani",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/katrin-graziani-vjyq/photo"},
+{id:"c6",fn:"Lola",ln:"Gagliano",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lola-gagliano-iyi5/photo"},
+{id:"c7",fn:"Lola",ln:"Payet",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lola-payet-2ygr/photo"},
+{id:"c8",fn:"Lya",ln:"Rouviere",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/lya-rouviere-nf1b/photo"},
+{id:"c9",fn:"Mael",ln:"Capocci Guilbaud",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/mael-capocci-guilbaud-ostz/photo"},
+{id:"c10",fn:"Olivia",ln:"Pontois",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/olivia-pontois-ub1k/photo"},
+{id:"c11",fn:"Romane",ln:"Munoz",v:"oui",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/romane-munoz-pzmn/photo"},
+{id:"c12",fn:"Selena",ln:"Espinosa",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/selena-espinosa-xu85/photo.jpg"},
+{id:"c13",fn:"Naomi",ln:"Coti",v:"oui",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/naomi-coti-tu41/photo.jpg"},
+{id:"c14",fn:"Eva",ln:"Amselem",v:"pe",p:"https://pub-37ec13efdccb46f2bfdd62ab95fbd4d0.r2.dev/candidates/eva-amselem-uo2t/photo.jpg"},
+{id:"c15",fn:"Joy",ln:"Schuster",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/joy-schuster-lbxf/photo"},
+{id:"c16",fn:"Olivia",ln:"Cardinale",v:"pe",p:"https://xarrchsokuhobwqvcnkg.supabase.co/storage/v1/object/public/candidates/682bef39-e7ec-4943-9e62-96bfb91bfcac/olivia-cardinale-z4tg/photo"}
+]}};
 
-const state = { ado:{top:[],pool:[]}, adulte:{top:[],pool:[]}, enfant:{top:[],pool:[]} };
-const sortables = {};
+var tops={};
+['ado','adulte','enfant'].forEach(function(cat){
+  tops[cat]=CATS[cat].candidates.filter(function(c){return c.v==='oui';}).slice(0,10);
+});
 
-function makeCard(c, inTop, rank) {
-  const badge = c.vote === 'oui'
-    ? '<span class="vote-badge vote-oui">✅ Oui</span>'
-    : '<span class="vote-badge vote-pe">🤔 Peut-être</span>';
-  const rankEl = inTop
-    ? `<div class="rank-num">${rank}</div>`
-    : `<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.07);flex-shrink:0;"></div>`;
-  const fb = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect fill='%23334155' width='44' height='44' rx='22'/><text fill='%2394a3b8' font-size='16' x='22' y='28' text-anchor='middle'>${c.fn[0]}</text></svg>`;
-  return `<div class="cand-card" data-id="${c.id}">
-    ${rankEl}
-    <img class="photo" src="${c.photo}" onerror="this.src='${fb}'" alt="${c.fn}">
-    <div class="cand-info">
-      <div class="cand-name">${c.fn} ${c.ln}</div>
-      <div class="cand-sub">${badge}</div>
-    </div>
-    <div class="drag-handle">⠿</div>
-  </div>`;
+function startApp(){
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('app').style.display='block';
+  render('ado');render('adulte');render('enfant');
 }
 
-function renderPanel(catKey) {
-  const cat = CATS[catKey];
-  const s = state[catKey];
-  const panel = document.getElementById('panel-' + catKey);
-  const topIds = s.top.map(c => c.id);
-  const poolCands = cat.candidates.filter(c => !topIds.includes(c.id));
-  s.pool = poolCands;
+function makeCard(c,rank){
+  var badge=c.v==='oui'?'<span class="badge b-oui">OUI</span>':'<span class="badge b-pe">PEUT-ETRE</span>';
+  var rk=rank>0?'<div class="rk">'+rank+'</div>':'<div class="rk e"></div>';
+  return '<div class="card" data-id="'+c.id+'">'+rk+'<img class="photo" src="'+c.p+'" loading="lazy" alt=""><div class="info"><div class="name">'+c.fn+' '+c.ln+'</div>'+badge+'</div><div class="handle">&#8942;</div></div>';
+}
 
-  const n = s.top.length;
-  const full = n >= 10;
+function render(cat){
+  var panel=document.getElementById('panel-'+cat);
+  var ids=tops[cat].map(function(c){return c.id;});
+  var pool=CATS[cat].candidates.filter(function(c){return ids.indexOf(c.id)===-1;});
+  var n=tops[cat].length;
+  var full=n>=10;
+  var color=full?'#22c55e':'#a78bfa';
+  var lbl=full?'<span style="color:#22c55e">Complet !</span>':'<span style="color:#64748b">'+(10-n)+' restants</span>';
+  var h='<div class="progress"><div class="sc" style="color:'+color+'">'+n+'<span style="font-size:12px;color:#64748b">/10</span></div><div class="bw"><div class="bf" style="width:'+(n*10)+'%"></div></div><div class="lbl">'+lbl+'</div></div>';
+  h+='<div id="al-'+cat+'" class="alert-full">Maximum 10 atteint — retirez-en un avant d\'en ajouter</div>';
+  h+='<div class="zone-lbl" style="color:#a78bfa">Mon top 10 <em>(glissez pour reordonner)</em></div>';
+  h+='<div id="top-'+cat+'" class="list top">';
+  if(!tops[cat].length)h+='<div class="empty">Glissez ici vos candidats favoris</div>';
+  else tops[cat].forEach(function(c,i){h+=makeCard(c,i+1);});
+  h+='</div><div class="zone-lbl">Disponibles <em>('+pool.length+')</em></div>';
+  h+='<div id="pool-'+cat+'" class="list pool">';
+  if(!pool.length)h+='<div class="empty">Tous vos OUI/PEUT-ETRE sont selectionnes</div>';
+  else pool.forEach(function(c){h+=makeCard(c,0);});
+  h+='</div>';
+  panel.innerHTML=h;
+  initSortable(cat);
+  updateTab(cat);
+  updateBtn();
+}
 
-  panel.innerHTML = `
-    <div class="mockup-note">🧪 Version test — glissez pour réordonner · tapez et maintenez pour déplacer</div>
-    <div class="progress-bar">
-      <div><div class="score" style="color:${full?'#22c55e':'#a78bfa'}">${n}<span style="font-size:14px;color:#64748b">/10</span></div><div class="label">sélectionnés</div></div>
-      <div class="bar-wrap"><div class="bar-fill" style="width:${n*10}%"></div></div>
-      <div style="font-size:12px;color:#64748b">${full?'✅ Complet':'encore '+(10-n)}</div>
-    </div>
-    <div class="zone-label" style="color:#a78bfa">🏆 Mon top 10 <span style="color:#475569;font-weight:400">(glissez pour ordonner)</span></div>
-    <div id="top-${catKey}" class="sortable-list top10">
-      ${s.top.length ? s.top.map((c,i) => makeCard(c, true, i+1)).join('') : '<div class="empty-msg">Glissez vos candidats ici</div>'}
-    </div>
-    <div class="zone-label" style="color:#64748b;margin-top:4px">📋 Disponibles <span style="color:#475569;font-weight:400">(${poolCands.length} candidats)</span></div>
-    <div id="pool-${catKey}" class="sortable-list pool">
-      ${poolCands.map(c => makeCard(c, false, 0)).join('')}
-    </div>
-  `;
-
-  // Init SortableJS top
-  sortables['top-'+catKey] = Sortable.create(document.getElementById('top-'+catKey), {
-    group: { name: catKey, pull: true, put: (to) => to.el.children.length - 1 < 10 },
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    dragClass: 'sortable-drag',
-    delay: 150,
-    delayOnTouchOnly: true,
-    touchStartThreshold: 4,
-    onAdd(evt) {
-      const id = evt.item.dataset.id;
-      const cat = CATS[catKey];
-      const cand = cat.candidates.find(c => c.id === id);
-      const existing = s.top.find(c => c.id === id);
-      if (!existing && s.top.length <= 10) {
-        s.top.splice(evt.newIndex, 0, cand);
+function initSortable(cat){
+  Sortable.create(document.getElementById('top-'+cat),{
+    group:{name:cat,pull:true,put:function(to){return to.el.querySelectorAll('.card').length<10;}},
+    animation:150,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',
+    delay:180,delayOnTouchOnly:true,touchStartThreshold:4,
+    onAdd:function(e){
+      var topEl=document.getElementById('top-'+cat);
+      if(topEl.querySelectorAll('.card').length>10){
+        document.getElementById('pool-'+cat).appendChild(e.item);
+        var al=document.getElementById('al-'+cat);
+        al.style.display='block';
+        setTimeout(function(){al.style.display='none';},3000);
+        return;
       }
-      setTimeout(() => renderPanel(catKey), 50);
+      var id=e.item.getAttribute('data-id');
+      var c=getCand(cat,id);
+      if(c&&tops[cat].length<10)tops[cat].splice(e.newIndex,0,c);
+      setTimeout(function(){render(cat);},40);
     },
-    onRemove(evt) {
-      const id = evt.item.dataset.id;
-      s.top = s.top.filter(c => c.id !== id);
-      setTimeout(() => renderPanel(catKey), 50);
+    onRemove:function(e){
+      var id=e.item.getAttribute('data-id');
+      tops[cat]=tops[cat].filter(function(c){return c.id!==id;});
+      setTimeout(function(){render(cat);},40);
     },
-    onSort() {
-      const ids = [...document.getElementById('top-'+catKey).querySelectorAll('.cand-card')].map(el => el.dataset.id);
-      const cat = CATS[catKey];
-      s.top = ids.map(id => cat.candidates.find(c => c.id === id)).filter(Boolean);
-      updateRankNumbers(catKey);
-      updateCounter(catKey);
+    onSort:function(){
+      var ids=[].slice.call(document.getElementById('top-'+cat).querySelectorAll('.card')).map(function(el){return el.getAttribute('data-id');});
+      tops[cat]=ids.map(function(id){return getCand(cat,id);}).filter(Boolean);
+      refreshRanks(cat);updateTab(cat);updateBtn();
     }
   });
-
-  // Init SortableJS pool
-  sortables['pool-'+catKey] = Sortable.create(document.getElementById('pool-'+catKey), {
-    group: { name: catKey, pull: true, put: true },
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    dragClass: 'sortable-drag',
-    delay: 150,
-    delayOnTouchOnly: true,
-    touchStartThreshold: 4,
-    onAdd(evt) {
-      const id = evt.item.dataset.id;
-      s.top = s.top.filter(c => c.id !== id);
-      setTimeout(() => renderPanel(catKey), 50);
+  Sortable.create(document.getElementById('pool-'+cat),{
+    group:{name:cat,pull:true,put:true},
+    animation:150,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',
+    delay:180,delayOnTouchOnly:true,touchStartThreshold:4,
+    onAdd:function(e){
+      var id=e.item.getAttribute('data-id');
+      tops[cat]=tops[cat].filter(function(c){return c.id!==id;});
+      setTimeout(function(){render(cat);},40);
     }
   });
-
-  updateCounter(catKey);
-  updateSubmitBtn();
 }
 
-function updateRankNumbers(catKey) {
-  const cards = document.querySelectorAll(`#top-${catKey} .cand-card`);
-  cards.forEach((card, i) => {
-    const num = card.querySelector('.rank-num');
-    if (num) num.textContent = i + 1;
+function refreshRanks(cat){
+  document.getElementById('top-'+cat).querySelectorAll('.card').forEach(function(card,i){
+    var r=card.querySelector('.rk');if(r&&!r.classList.contains('e'))r.textContent=i+1;
   });
 }
 
-function updateCounter(catKey) {
-  const n = state[catKey].top.length;
-  document.getElementById('cnt-'+catKey).textContent = n+'/10';
+function getCand(cat,id){return CATS[cat].candidates.filter(function(c){return c.id===id;})[0];}
+
+function updateTab(cat){
+  var n=tops[cat].length;
+  var idx=['ado','adulte','enfant'].indexOf(cat);
+  document.getElementById('cnt-'+cat).textContent=n+'/10';
+  var tab=document.querySelectorAll('.tab')[idx];
+  if(n===10)tab.classList.add('complete');else tab.classList.remove('complete');
 }
 
-function updateSubmitBtn() {
-  const allDone = ['ado','adulte','enfant'].every(k => state[k].top.length === 10);
-  const btn = document.getElementById('btn-submit');
-  btn.disabled = !allDone;
-  btn.textContent = allDone ? '✅ Envoyer mes priorités' : 'Complétez les 3 catégories pour valider';
+function updateBtn(){
+  var done=tops.ado.length===10&&tops.adulte.length===10&&tops.enfant.length===10;
+  var btn=document.getElementById('btnSend');
+  btn.disabled=!done;
+  btn.textContent=done?'Valider mes priorites':'Completez les 3 categories pour valider';
 }
 
-function switchTab(catKey) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
-  document.querySelectorAll('.cat-panel').forEach(p => p.classList.remove('active'));
-  const tabs = document.querySelectorAll('.tab');
-  const idx = ['ado','adulte','enfant'].indexOf(catKey);
-  tabs[idx].classList.add('active');
-  document.getElementById('panel-'+catKey).classList.add('active');
+function switchTab(cat){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  var idx=['ado','adulte','enfant'].indexOf(cat);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('panel-'+cat).classList.add('active');
 }
 
-function handleSubmit() {
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
+function doSend(){
+  var data={juror:'Claudie Martinez',date:new Date().toISOString(),
+    ado:tops.ado.map(function(c,i){return {rank:i+1,id:c.id,name:c.fn+' '+c.ln};}),
+    adulte:tops.adulte.map(function(c,i){return {rank:i+1,id:c.id,name:c.fn+' '+c.ln};}),
+    enfant:tops.enfant.map(function(c,i){return {rank:i+1,id:c.id,name:c.fn+' '+c.ln};}),
+  };
+  localStorage.setItem('jury_priorities_claudie',JSON.stringify(data));
+  document.getElementById('confirm').classList.add('show');
 }
-
-// Init
-['ado','adulte','enfant'].forEach(renderPanel);
 </script>
 </body>
 </html>
