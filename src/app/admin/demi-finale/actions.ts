@@ -55,9 +55,10 @@ export async function callToStage(eventId: string, candidateId: string) {
   if (lineupError) return { error: lineupError.message }
 
   // Set as current candidate on the event + auto-resume to live (triggers realtime push to jurors)
+  // is_voting_open=false : le vote ne s'ouvre qu'apres la prestation (via openVoting)
   const { error: eventError } = await supabase
     .from('live_events')
-    .update({ current_candidate_id: candidateId, status: 'live' })
+    .update({ current_candidate_id: candidateId, status: 'live', is_voting_open: false })
     .eq('id', eventId)
 
   if (eventError) return { error: eventError.message }
@@ -113,6 +114,13 @@ export async function openVoting(eventId: string) {
     .eq('id', item.id)
 
   if (error) return { error: error.message }
+
+  // Ouvre le vote cote jures : le hook jury lit live_events.is_voting_open (source de verite)
+  const { error: openErr } = await supabase
+    .from('live_events')
+    .update({ is_voting_open: true })
+    .eq('id', eventId)
+  if (openErr) return { error: openErr.message }
 
   // Push notification to jury (fire-and-forget)
   const { data: evtPushVote } = await supabase
@@ -173,10 +181,10 @@ export async function finishPerformance(eventId: string) {
     })
     .eq('id', performingItem.id)
 
-  // Clear current candidate
+  // Clear current candidate + ferme le vote cote jures
   await supabase
     .from('live_events')
-    .update({ current_candidate_id: null })
+    .update({ current_candidate_id: null, is_voting_open: false })
     .eq('id', eventId)
 
   revalidatePath('/admin/demi-finale')
@@ -200,10 +208,10 @@ export async function replayCandidate(eventId: string, candidateId: string) {
     .eq('live_event_id', eventId)
     .eq('candidate_id', candidateId)
 
-  // Set as current candidate
+  // Set as current candidate + referme le vote (nouveau passage)
   await supabase
     .from('live_events')
-    .update({ current_candidate_id: candidateId })
+    .update({ current_candidate_id: candidateId, is_voting_open: false })
     .eq('id', eventId)
 
   revalidatePath('/admin/demi-finale')
