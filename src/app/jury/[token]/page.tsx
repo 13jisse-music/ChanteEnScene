@@ -26,6 +26,74 @@ export default async function JuryPage({ params }: { params: Params }) {
 
   if (!juror) notFound()
 
+  // Mode résultats : activé par l'admin via juror.show_results
+  // Affiche un message de remerciement + les demi-finalistes (fruit du travail du jury)
+  if (juror.show_results) {
+    const { data: semifinalists } = await supabase
+      .from('candidates')
+      .select('first_name, last_name, stage_name, category, photo_url')
+      .eq('session_id', (juror as Record<string, unknown>).session_id as string)
+      .eq('status', 'semifinalist')
+      .order('category')
+      .order('last_name')
+
+    const cats = ['Ado', 'Adulte', 'Enfant'] as const
+    const emoji: Record<string, string> = { Ado: '🎤', Adulte: '🎵', Enfant: '⭐' }
+    const colors: Record<string, string> = { Ado: '#7c3aed', Adulte: '#0369a1', Enfant: '#b45309' }
+
+    return (
+      <main className="fixed inset-0 z-50 bg-[#0f172a] overflow-y-auto text-white">
+        <div className="bg-gradient-to-br from-[#1e1b4b] to-[#4c1d95] px-5 py-7 text-center">
+          <div className="text-4xl mb-3">🙏</div>
+          <h1 className="text-xl font-bold mb-2">Merci {juror.first_name} !</h1>
+          <p className="text-[#c4b5fd] text-sm leading-relaxed max-w-md mx-auto">
+            Grâce à votre travail d&apos;écoute et de sélection, voici les demi-finalistes
+            de ChantEnScène Aubagne 2026. Le fruit de votre engagement.
+          </p>
+        </div>
+        <div className="max-w-lg mx-auto p-4 space-y-6">
+          {cats.map(cat => {
+            const list = (semifinalists || []).filter(s => s.category === cat)
+            if (!list.length) return null
+            return (
+              <div key={cat}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">{emoji[cat]}</span>
+                  <h2 className="font-bold text-sm" style={{ color: colors[cat] }}>{cat}</h2>
+                  <span className="text-xs text-[#475569]">({list.length} qualifiés)</span>
+                </div>
+                <div className="space-y-2">
+                  {list.map((c, i) => {
+                    const name = c.stage_name || `${c.first_name} ${c.last_name}`
+                    return (
+                      <div key={i} className="flex items-center gap-3 bg-[#1e293b] rounded-xl p-2.5 border border-white/7">
+                        {c.photo_url ? (
+                          <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-white/10" loading="lazy" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-[#334155] flex-shrink-0 flex items-center justify-center text-xs font-bold text-[#94a3b8]">{c.first_name[0]}</div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{name}</p>
+                          <p className="text-[10px] text-[#64748b] truncate">{c.first_name} {c.last_name}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+          <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/25 rounded-xl p-4 text-center mt-4">
+            <p className="text-xs text-[#c4b5fd] leading-relaxed">
+              Rendez-vous le 17 juin à l&apos;Espace des Arts et de la Culture pour la demi-finale.
+              Encore merci pour votre implication dans cette belle aventure.
+            </p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   // Mode priorités : activé par l'admin via juror.show_priorities
   if (juror.show_priorities) {
     const { data: scores } = await supabase
