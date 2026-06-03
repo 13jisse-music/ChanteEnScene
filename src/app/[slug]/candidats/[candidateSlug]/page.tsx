@@ -66,6 +66,16 @@ export default async function CandidateProfilePage({ params }: { params: Params 
 
   if (!candidate) notFound()
 
+  // Une fois la selection faite, les candidats non retenus ne sont plus accessibles publiquement.
+  if (candidate.status === 'approved') {
+    const { count } = await supabase
+      .from('candidates')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', session.id)
+      .in('status', ['semifinalist', 'finalist', 'winner'])
+    if (count && count > 0) notFound()
+  }
+
   const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
   const accent = candidate.accent_color || '#e91e8c'
   const hasVideo = candidate.video_public && candidate.video_url

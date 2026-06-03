@@ -34,12 +34,20 @@ export default async function CandidatsPage({ params }: { params: Params }) {
 
   if (!session) notFound()
 
-  const { data: candidates } = await supabase
+  const { data: allCandidates } = await supabase
     .from('candidates')
     .select('id, first_name, last_name, stage_name, photo_url, song_title, song_artist, category, bio, accent_color, slug, likes_count, video_url, video_public, status')
     .eq('session_id', session.id)
     .in('status', ['approved', 'semifinalist', 'finalist', 'winner'])
     .order('likes_count', { ascending: false })
+
+  // Une fois la selection faite, on n'affiche que les demi-finalistes et au-dela.
+  // Tant qu'aucun demi-finaliste n'existe (phase de vote), on garde les candidats valides.
+  const SELECTED_STATUSES = ['semifinalist', 'finalist', 'winner']
+  const hasSelected = (allCandidates || []).some((c) => SELECTED_STATUSES.includes(c.status))
+  const candidates = hasSelected
+    ? (allCandidates || []).filter((c) => SELECTED_STATUSES.includes(c.status))
+    : allCandidates
 
   const config = session.config as { age_categories: { name: string }[] }
   const categories = config.age_categories.map((c: { name: string }) => c.name)
