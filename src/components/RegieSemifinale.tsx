@@ -19,6 +19,8 @@ import {
   getJuryScoreCount,
 } from '@/app/admin/demi-finale/actions'
 
+const BUZZ_BONUS = 200
+
 interface Candidate {
   id: string
   first_name: string
@@ -118,11 +120,15 @@ export default function RegieSemifinale({ session, event: initialEvent, lineup: 
   // Scores helpers (defined early for chrono logic)
   const getScoresForCandidate = (candidateId: string) =>
     initialScores.filter((s) => s.candidate_id === candidateId)
+  // Bareme slider+buzz : total_score = score (0-100) + 200 si buzz.
+  const scoreOf = (s: JuryScore) => (s.total_score >= BUZZ_BONUS ? s.total_score - BUZZ_BONUS : s.total_score)
   const getAvgStars = (candidateId: string) => {
     const scores = getScoresForCandidate(candidateId)
     if (scores.length === 0) return null
-    return scores.reduce((a, s) => a + s.total_score, 0) / scores.length
+    return scores.reduce((a, s) => a + scoreOf(s), 0) / scores.length
   }
+  const getBuzzCount = (candidateId: string) =>
+    getScoresForCandidate(candidateId).filter((s) => s.total_score >= BUZZ_BONUS).length
 
   // DB-driven chronos
   const [performanceElapsed, setPerformanceElapsed] = useState(0)
@@ -248,18 +254,17 @@ export default function RegieSemifinale({ session, event: initialEvent, lineup: 
     await handleAction(() => updateSemifinaleStatus(event.id, 'live'), 'start')
   }
 
-  // Star rendering helper
-  const renderStars = (avg: number | null, size: 'sm' | 'lg' = 'sm') => {
+  // Affichage note moyenne (0-100) + nombre de buzz
+  const renderStars = (avg: number | null, size: 'sm' | 'lg' = 'sm', buzz = 0) => {
     if (avg === null) return <span className="text-white/20 text-xs">—</span>
-    const px = size === 'lg' ? 'text-lg' : 'text-sm'
+    const px = size === 'lg' ? 'text-2xl' : 'text-base'
+    const col = avg >= 80 ? '#e91e8c' : avg >= 60 ? '#7ec850' : avg >= 40 ? '#3b82f6' : avg >= 20 ? '#f59e0b' : '#ef4444'
     return (
-      <span className={`${px} tracking-wide`}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={i <= Math.round(avg) ? 'text-[#f5a623]' : 'text-white/15'}>
-            ★
-          </span>
-        ))}
-        <span className="text-white/40 text-xs ml-1">{avg.toFixed(1)}</span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className={`${px} font-bold`} style={{ color: col }}>
+          {avg.toFixed(0)}<span className="text-white/30 text-xs">/100</span>
+        </span>
+        {buzz > 0 && <span className="text-[#f5a623] text-sm font-bold">⚡{buzz > 1 ? `×${buzz}` : ''}</span>}
       </span>
     )
   }
@@ -512,8 +517,8 @@ export default function RegieSemifinale({ session, event: initialEvent, lineup: 
               </p>
             </div>
             <div className="bg-[#161228] border border-[#2a2545] rounded-xl p-3 text-center">
-              <p className="text-white/30 text-[10px] uppercase">Étoiles</p>
-              <div className="mt-1">{renderStars(getAvgStars(currentCandidate.id), 'lg')}</div>
+              <p className="text-white/30 text-[10px] uppercase">Note moyenne</p>
+              <div className="mt-1">{renderStars(getAvgStars(currentCandidate.id), 'lg', getBuzzCount(currentCandidate.id))}</div>
             </div>
             <div className={`bg-[#161228] border rounded-xl p-3 text-center ${currentCandidateId && getJuryCountForCandidate(currentCandidateId) >= jurors.length ? 'border-[#7ec850]/40' : 'border-[#2a2545]'}`}>
               <p className="text-white/30 text-[10px] uppercase">Jury</p>
@@ -680,6 +685,7 @@ export default function RegieSemifinale({ session, event: initialEvent, lineup: 
               const c = item.candidate
               if (!c) return null
               const avg = getAvgStars(item.candidate_id)
+              const buzz = getBuzzCount(item.candidate_id)
               const scoreCount = getScoresForCandidate(item.candidate_id).length
               return (
                 <div key={item.id} className="flex items-center gap-3 p-3 opacity-70">
@@ -695,7 +701,7 @@ export default function RegieSemifinale({ session, event: initialEvent, lineup: 
                     <p className="text-sm text-white/70 truncate">{displayName(c)}</p>
                     <p className="text-[10px] text-white/20">{c.category}</p>
                   </div>
-                  <div className="shrink-0">{renderStars(avg)}</div>
+                  <div className="shrink-0">{renderStars(avg, 'sm', buzz)}</div>
                   <span className="text-[10px] text-white/20 shrink-0">{scoreCount}/{jurors.length}</span>
                   {event.status === 'live' && (
                     <button

@@ -29,7 +29,7 @@ interface ExistingScore {
   id: string
   candidate_id: string
   event_type: string
-  scores: Record<string, number | string>
+  scores: Record<string, number | string | boolean>
   total_score: number
   comment: string | null
   viewed_at?: string | null
@@ -887,13 +887,16 @@ export default function JuryScoring({ juror, session, candidates, existingScores
 }
 
 // ─── Star rating for semifinal jurors ───
-const STAR_LABELS = [
-  { value: 1, label: 'Raté',  color: '#ef4444' },
-  { value: 2, label: 'Moyen', color: '#f59e0b' },
-  { value: 3, label: 'Bien',  color: '#3b82f6' },
-  { value: 4, label: 'Super', color: '#7ec850' },
-  { value: 5, label: 'Top',   color: '#e91e8c' },
-] as const
+const BUZZ_BONUS = 200
+
+// Libellé + emoji selon le score 0-100 (😕 -> 🔥)
+function scoreFeedback(v: number) {
+  if (v >= 80) return { emoji: '🔥', label: 'Exceptionnel', color: '#e91e8c' }
+  if (v >= 60) return { emoji: '😀', label: 'Très bien', color: '#7ec850' }
+  if (v >= 40) return { emoji: '🙂', label: 'Bien', color: '#3b82f6' }
+  if (v >= 20) return { emoji: '😐', label: 'Moyen', color: '#f59e0b' }
+  return { emoji: '😕', label: 'En dessous', color: '#ef4444' }
+}
 
 function StarRatingView({
   juror,
@@ -910,7 +913,8 @@ function StarRatingView({
   }), [liveEventId, juryPush.winnerCandidateId, juryPush.winnerRevealedAt])
   const { winner: revealedWinner, phase: winnerPhase, dismiss: dismissWinner } = useWinnerReveal(winnerEvent, { skipCountdown: true })
   const [scoringId, setScoringId] = useState<string | null>(null)
-  const [stars, setStars] = useState(0)
+  const [score, setScore] = useState(50)
+  const [buzzed, setBuzzed] = useState(false)
   const [comment, setComment] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedIds, setSavedIds] = useState<Set<string>>(
@@ -920,6 +924,15 @@ function StarRatingView({
   const prevPushedRef = useRef<string | null>(null)
 
   const eventType = 'semifinal'
+
+  // Le buzz est unique par juré sur toute la demi-finale.
+  // Renvoie l'id du candidat déjà buzzé (autre que celui en cours), sinon null.
+  function buzzedCandidateId(excludeId?: string): string | null {
+    const found = existingScores.find(
+      (s) => s.event_type === eventType && s.scores?.buzzed === true && s.candidate_id !== excludeId
+    )
+    return found ? found.candidate_id : null
+  }
 
   // Reset scoringId if the candidate no longer exists in the list
   useEffect(() => {
@@ -943,10 +956,12 @@ function StarRatingView({
           (s) => s.candidate_id === currentId && s.event_type === eventType
         )
         if (existing) {
-          setStars((existing.scores?.stars as number) || existing.total_score || 0)
+          setScore((existing.scores?.score as number) ?? 50)
+          setBuzzed((existing.scores?.buzzed as boolean) || false)
           setComment(existing.comment || '')
         } else {
-          setStars(0)
+          setScore(50)
+          setBuzzed(false)
           setComment('')
         }
         setScoringId(currentId)
@@ -963,29 +978,36 @@ function StarRatingView({
       (s) => s.candidate_id === candidateId && s.event_type === eventType
     )
     if (existing) {
-      setStars((existing.scores?.stars as number) || existing.total_score || 0)
+      setScore((existing.scores?.score as number) ?? 50)
+      setBuzzed((existing.scores?.buzzed as boolean) || false)
       setComment(existing.comment || '')
     } else {
-      setStars(0)
+      setScore(50)
+      setBuzzed(false)
       setComment('')
     }
     setJustSavedId(null)
     setScoringId(candidateId)
   }
 
-  function getExistingStars(candidateId: string): number | null {
+  // Renvoie le score 0-100 enregistré pour ce candidat (null si pas encore noté)
+  function getExistingScore(candidateId: string): number | null {
     const existing = existingScores.find(
       (s) => s.candidate_id === candidateId && s.event_type === eventType
     )
     if (!existing) return null
-    return (existing.scores?.stars as number) || existing.total_score || 0
+    return (existing.scores?.score as number) ?? existing.total_score ?? 0
+  }
+
+  function getExistingBuzzed(candidateId: string): boolean {
+    const existing = existingScores.find(
+      (s) => s.candidate_id === candidateId && s.event_type === eventType
+    )
+    return (existing?.scores?.buzzed as boolean) || false
   }
 
   async function handleSaveStars() {
-    if (!scoringId || stars === 0) {
-      alert('Veuillez sélectionner une note avant de valider.')
-      return
-    }
+    if (!scoringId) return
 
     setSaving(true)
     try {
@@ -995,8 +1017,8 @@ function StarRatingView({
       )
 
       const payload = {
-        scores: { stars },
-        total_score: stars,
+        scores: { score, buzzed },
+        total_score: score + (buzzed ? BUZZ_BONUS : 0),
         comment: comment || null,
       }
 
@@ -1035,8 +1057,8 @@ function StarRatingView({
             juror_id: juror.id,
             candidate_id: scoringId,
             event_type: eventType,
-            scores: { stars },
-            total_score: stars,
+            scores: { score, buzzed },
+            total_score: score + (buzzed ? BUZZ_BONUS : 0),
             comment: comment || null,
           })
           setSavedIds((prev) => new Set([...prev, scoringId]))
@@ -1087,7 +1109,10 @@ function StarRatingView({
     const candidate = candidates.find((c) => c.id === scoringId)
     if (!candidate) return null
     const displayName = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
-    const activeLabel = STAR_LABELS.find((l) => l.value === stars)
+    const fb = scoreFeedback(score)
+    const otherBuzzed = buzzedCandidateId(scoringId)
+    const otherBuzzedC = otherBuzzed ? candidates.find((x) => x.id === otherBuzzed) : null
+    const otherBuzzedName = otherBuzzedC ? (otherBuzzedC.stage_name || `${otherBuzzedC.first_name} ${otherBuzzedC.last_name}`) : ''
     const isOnStage = juryPush.currentCandidateId === candidate.id
 
     return (
@@ -1116,51 +1141,53 @@ function StarRatingView({
           </div>
         </div>
 
-        {/* Star rating */}
-        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-6 text-center space-y-4">
+        {/* Note : slider 0-100 */}
+        <div className="bg-[#161228] border border-[#2a2545] rounded-2xl p-6 text-center space-y-5">
           <p className="text-white/40 text-xs uppercase tracking-wider">Votre note</p>
 
-          {/* Stars */}
-          <div className="flex justify-center gap-2 sm:gap-3">
-            {[1, 2, 3, 4, 5].map((value) => (
-              <button
-                key={value}
-                onClick={() => setStars(value)}
-                className={`text-4xl sm:text-5xl transition-all active:scale-110 ${
-                  value <= stars ? '' : 'opacity-20'
-                }`}
-                style={{ color: value <= stars ? '#f5a623' : undefined }}
-              >
-                ★
-              </button>
-            ))}
+          <div className="text-5xl">{fb.emoji}</div>
+          <div className="text-4xl font-bold" style={{ color: fb.color }}>
+            {score}<span className="text-lg text-white/30">/100</span>
           </div>
 
-          {/* Label */}
-          <div className="h-8">
-            {activeLabel && (
-              <span
-                className="text-sm font-bold px-4 py-1.5 rounded-full"
-                style={{ color: activeLabel.color, background: `${activeLabel.color}15` }}
-              >
-                {activeLabel.label}
-              </span>
-            )}
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={score}
+            onChange={(e) => setScore(Number(e.target.value))}
+            className="w-full accent-[#e91e8c] h-2 cursor-pointer"
+          />
+          <div className="flex justify-between text-lg px-1">
+            <span>😕</span><span>😐</span><span>🙂</span><span>😀</span><span>🔥</span>
           </div>
-
-          {/* Star labels for reference */}
-          <div className="flex justify-center gap-2 sm:gap-3">
-            {STAR_LABELS.map((l) => (
-              <span
-                key={l.value}
-                className="text-[9px] w-11 sm:w-14 text-center"
-                style={{ color: stars === l.value ? l.color : 'rgba(255,255,255,0.2)' }}
-              >
-                {l.label}
-              </span>
-            ))}
-          </div>
+          <span
+            className="inline-block text-sm font-bold px-4 py-1.5 rounded-full"
+            style={{ color: fb.color, background: `${fb.color}15` }}
+          >
+            {fb.label}
+          </span>
         </div>
+
+        {/* Buzz : coup de coeur, 1 seul par jure (+200 pts) */}
+        <button
+          type="button"
+          onClick={() => { if (!otherBuzzed) setBuzzed((b) => !b) }}
+          disabled={!!otherBuzzed}
+          className={`w-full py-4 rounded-xl font-bold text-sm transition-all border-2 ${
+            buzzed
+              ? 'bg-[#f5a623] text-[#0d0b1a] border-[#f5a623] shadow-lg shadow-[#f5a623]/30'
+              : otherBuzzed
+                ? 'bg-white/5 text-white/30 border-white/10 cursor-not-allowed'
+                : 'bg-[#f5a623]/10 text-[#f5a623] border-[#f5a623]/40 hover:bg-[#f5a623]/20'
+          }`}
+        >
+          {buzzed
+            ? '⚡ BUZZ activé (+200) — coup de cœur'
+            : otherBuzzed
+              ? `⚡ Buzz déjà utilisé sur ${otherBuzzedName}`
+              : '⚡ Buzz coup de cœur (+200, un seul pour toute la soirée)'}
+        </button>
 
         {/* Comment */}
         <div>
@@ -1178,7 +1205,7 @@ function StarRatingView({
         {/* Validate */}
         <button
           onClick={handleSaveStars}
-          disabled={saving || stars === 0}
+          disabled={saving}
           className="w-full py-4 rounded-xl font-bold text-base bg-gradient-to-r from-[#e91e8c] to-[#c4157a] hover:shadow-lg hover:shadow-[#e91e8c]/20 transition-all disabled:opacity-50"
         >
           {saving ? 'Enregistrement...' : 'Valider la note'}
@@ -1190,7 +1217,8 @@ function StarRatingView({
   // ─── Confirmation after saving (candidate still on stage) ───
   if (justSavedId && juryPush.currentCandidateId === justSavedId) {
     const candidate = candidates.find((c) => c.id === justSavedId)
-    const savedStars = getExistingStars(justSavedId)
+    const savedScore = getExistingScore(justSavedId)
+    const savedBuzz = getExistingBuzzed(justSavedId)
     const displayName = candidate
       ? candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
       : ''
@@ -1204,13 +1232,10 @@ function StarRatingView({
             Note enregistrée !
           </h2>
           <p className="text-white/50 text-sm">{displayName}</p>
-          {savedStars && (
-            <p className="text-2xl tracking-wider">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} className={i <= savedStars ? 'text-[#f5a623]' : 'text-white/15'}>
-                  ★
-                </span>
-              ))}
+          {savedScore !== null && (
+            <p className="text-3xl font-bold text-[#7ec850]">
+              {savedScore}<span className="text-base text-white/30">/100</span>
+              {savedBuzz ? <span className="text-[#f5a623]"> ⚡</span> : null}
             </p>
           )}
           <p className="text-white/30 text-xs">En attente du prochain candidat...</p>
@@ -1357,7 +1382,8 @@ function StarRatingView({
           <div className="divide-y divide-[#2a2545]">
             {scoredCandidates.map((c) => {
               const displayName = c.stage_name || `${c.first_name} ${c.last_name}`
-              const existingStarsVal = getExistingStars(c.id)
+              const existingScoreVal = getExistingScore(c.id)
+              const existingBuzzVal = getExistingBuzzed(c.id)
               return (
                 <button
                   key={c.id}
@@ -1375,13 +1401,10 @@ function StarRatingView({
                     <p className="text-sm text-white/70 truncate">{displayName}</p>
                     <p className="text-[10px] text-white/20">{c.category}</p>
                   </div>
-                  {existingStarsVal && (
-                    <span className="text-sm tracking-wide shrink-0">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <span key={i} className={i <= existingStarsVal ? 'text-[#f5a623]' : 'text-white/15'}>
-                          ★
-                        </span>
-                      ))}
+                  {existingScoreVal !== null && (
+                    <span className="text-sm font-bold text-[#7ec850] shrink-0">
+                      {existingScoreVal}<span className="text-white/25">/100</span>
+                      {existingBuzzVal ? <span className="text-[#f5a623]"> ⚡</span> : null}
                     </span>
                   )}
                   <span className="text-[10px] text-white/20 shrink-0">Modifier</span>
@@ -1446,7 +1469,7 @@ function CriteriaScoringView({
           (s) => s.candidate_id === currentId && s.event_type === eventType
         )
         if (existing) {
-          setScores(existing.scores || {})
+          setScores((existing.scores || {}) as Record<string, number | string>)
           setComment(existing.comment || '')
         } else {
           const initial: Record<string, number> = {}
@@ -1467,7 +1490,7 @@ function CriteriaScoringView({
       (s) => s.candidate_id === candidateId && s.event_type === eventType
     )
     if (existing) {
-      setScores(existing.scores || {})
+      setScores((existing.scores || {}) as Record<string, number | string>)
       setComment(existing.comment || '')
     } else {
       const initial: Record<string, number> = {}
