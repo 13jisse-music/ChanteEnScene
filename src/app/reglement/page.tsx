@@ -94,7 +94,8 @@ export default function ReglementPage() {
           <h2 className="font-bold text-white text-base mb-2">Article 8 — Responsabilité</h2>
           <p>
             L&apos;organisation se réserve le droit de modifier le règlement, d&apos;annuler ou reporter
-            l&apos;événement en cas de force majeure. Toute décision du jury est définitive.
+            l&apos;événement en cas de force majeure. Toute décision du jury est souveraine et sans appel.
+            Les délibérations du jury ainsi que le détail des votes sont confidentiels et ne sont pas communiqués.
           </p>
         </div>
       </div>
