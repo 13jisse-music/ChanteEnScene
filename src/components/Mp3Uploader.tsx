@@ -46,19 +46,32 @@ export default function Mp3Uploader({ candidateId, sessionId, slug, existingMp3U
     setProgress('Upload en cours...')
 
     try {
-      const key = `candidates/${sessionId}/${slug}/mp3`
+      // Upload direct vers Supabase via signed URL (contourne la limite de taille Vercel,
+      // meme mecanisme que les videos d'inscription qui font jusqu'a 50 Mo)
+      const path = `${sessionId}/${slug}/mp3`
 
-      const uploadForm = new FormData()
-      uploadForm.append('file', file, 'audio.mp3')
-      uploadForm.append('key', key)
-      const uploadRes = await fetch('/api/upload-to-r2', { method: 'POST', body: uploadForm })
+      const urlRes = await fetch('/api/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, bucket: 'candidates' }),
+      })
+      const urlData = await urlRes.json()
+      if (!urlRes.ok) throw new Error(urlData.error || 'Erreur préparation upload')
+
+      const uploadRes = await fetch(urlData.signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'audio/mpeg' },
+        body: file,
+      })
       if (!uploadRes.ok) {
-        const errData = await uploadRes.json().catch(() => ({}))
-        throw new Error(`Upload échoué: ${errData.error || 'Upload failed'}`)
+        if (uploadRes.status === 413) {
+          throw new Error(`Le fichier est trop lourd (max ${maxSizeMb} Mo).`)
+        }
+        throw new Error(`Erreur lors de l'envoi (${uploadRes.status}). Réessayez.`)
       }
 
       setProgress('Enregistrement...')
-      const { publicUrl: url } = await uploadRes.json()
+      const url = urlData.publicUrl
 
       const result = await saveMp3Url(candidateId, url)
       if ('error' in result && result.error) throw new Error(result.error)

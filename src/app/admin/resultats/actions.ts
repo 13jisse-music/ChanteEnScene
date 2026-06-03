@@ -483,8 +483,20 @@ export async function autoSelectSemifinalists(sessionId: string, overrideJuryWei
 }
 
 export async function saveMp3Url(candidateId: string, mp3Url: string) {
-  await requireAdmin()
+  // Appele par les candidats eux-memes depuis /upload-mp3/[id] (PAS d'admin requis).
+  // Securite : seul un demi-finaliste existant peut enregistrer son MP3.
   const supabase = createAdminClient()
+
+  const { data: candidate } = await supabase
+    .from('candidates')
+    .select('first_name, last_name, stage_name, status')
+    .eq('id', candidateId)
+    .single()
+
+  if (!candidate) return { error: 'Candidat introuvable.' }
+  if (candidate.status !== 'semifinalist') {
+    return { error: 'Seuls les demi-finalistes peuvent envoyer leur playback.' }
+  }
 
   const { error } = await supabase
     .from('candidates')
@@ -493,6 +505,16 @@ export async function saveMp3Url(candidateId: string, mp3Url: string) {
 
   if (error) return { error: error.message }
 
+  // Notif Telegram : on sait qui vient d'envoyer son MP3
+  try {
+    const { sendTelegram } = await import('@/lib/telegram')
+    const name = candidate.stage_name || `${candidate.first_name} ${candidate.last_name}`
+    await sendTelegram(`🎵 <b>MP3 recu</b>\n${name} vient d'envoyer son playback pour la demi-finale.`, '🎤 CES')
+  } catch {
+    // Fire-and-forget
+  }
+
   revalidatePath('/admin/resultats')
+  revalidatePath('/admin/suivi-mp3')
   return { success: true }
 }

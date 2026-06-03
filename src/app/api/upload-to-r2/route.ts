@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { uploadToR2 } from '@/lib/r2'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25 MB (couvre les MP3 playback jusqu'a 20 Mo + marge)
 const ALLOWED_PREFIXES = ['photos/', 'social/', 'backups/', 'candidates/', 'sponsors/']
 
 export async function POST(request: Request) {
