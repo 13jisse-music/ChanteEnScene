@@ -49,6 +49,7 @@ export default function ChatbotWidget() {
         const { data: fallback } = await supabase
           .from('sessions')
           .select('id')
+          .neq('status', 'draft')
           .order('year', { ascending: false })
           .limit(1)
           .single()

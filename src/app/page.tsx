@@ -88,6 +88,7 @@ export default async function HomePage() {
   const { data: session } = await supabase
     .from("sessions")
     .select("id, slug, status, config")
+    .neq("status", "draft")
     .order("year", { ascending: false })
     .limit(1)
     .single();

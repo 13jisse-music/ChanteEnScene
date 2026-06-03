@@ -68,6 +68,7 @@ export default function InstallPrompt() {
             .from('sessions')
             .select('id, status')
             .neq('status', 'archived')
+            .neq('status', 'draft')
             .order('created_at', { ascending: false })
             .limit(1)
             .single()
