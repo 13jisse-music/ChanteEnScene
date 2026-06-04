@@ -125,15 +125,26 @@ export default async function HomePage() {
   }[] = [];
 
   if (session) {
-    const { data } = await supabase
+    const candidateSelect =
+      "id, first_name, last_name, stage_name, photo_url, slug, accent_color";
+    // Vignettes : une fois la sélection faite, on met en avant les demi-finalistes ;
+    // tant qu'il n'y en a pas, on retombe sur les candidats approuvés.
+    let { data } = await supabase
       .from("candidates")
-      .select(
-        "id, first_name, last_name, stage_name, photo_url, slug, accent_color"
-      )
+      .select(candidateSelect)
       .eq("session_id", session.id)
-      .in("status", ["approved", "semifinalist"])
+      .eq("status", "semifinalist")
       .order("likes_count", { ascending: false })
       .limit(4);
+    if (!data || data.length === 0) {
+      ({ data } = await supabase
+        .from("candidates")
+        .select(candidateSelect)
+        .eq("session_id", session.id)
+        .eq("status", "approved")
+        .order("likes_count", { ascending: false })
+        .limit(4));
+    }
     candidates = data || [];
   }
 
@@ -169,6 +180,12 @@ export default async function HomePage() {
     if (new Date() >= regStart) currentStep = 1;
   }
 
+  // Sélection terminée (demi-finalistes choisis et notifiés) mais session encore "registration_closed" :
+  // on avance la timeline sur la demi-finale sans toucher au statut (éviter le push public "demi-finale").
+  if (currentStep === 2 && sessionConfig.selection_notifications_sent_at) {
+    currentStep = 3;
+  }
+
   const steps = [
     {
       step: "01",
@@ -192,7 +209,7 @@ export default async function HomePage() {
       period: sessionConfig.semifinal_date
         ? formatDate(sessionConfig.semifinal_date)
         : "17 juin 2026",
-      desc: "Prestation live devant le public et le jury",
+      desc: "Prestation live à huis clos, devant le jury",
     },
     {
       step: "04",
