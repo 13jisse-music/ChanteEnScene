@@ -67,6 +67,12 @@ export default function ReglementPage() {
 
         <div>
           <h2 className="font-bold text-white text-base mb-2">Article 5 — Votes du public</h2>
+          <p className="mb-2">
+            Le vote du public accompagne les candidats tout au long du concours : il apporte un premier
+            éclairage lors de la phase en ligne, reflète le soutien de la communauté au fil des étapes,
+            et prend toute son ampleur lors de la grande finale, où le public vote en direct, aux côtés
+            du jury professionnel, et pèse de façon déterminante sur le résultat.
+          </p>
           <ul className="list-disc list-inside space-y-1">
             <li>Les votes sont gratuits et accessibles depuis un smartphone.</li>
             <li>Un vote par appareil et par candidat.</li>
