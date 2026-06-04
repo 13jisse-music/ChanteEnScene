@@ -29,6 +29,8 @@ export default function ReglementPage() {
             <li>Les mineurs doivent fournir une autorisation parentale signée.</li>
             <li>L&apos;inscription se fait en ligne via le formulaire dédié.</li>
             <li>Chaque candidat doit soumettre une vidéo de candidature.</li>
+            <li>Le concours est individuel : il récompense des performances en solo. Les duos et groupes ne sont pas admis.</li>
+            <li>Les prestations scéniques se déroulent sur bande instrumentale (playback) fournie par le candidat ; les instruments en live ne sont pas prévus.</li>
           </ul>
         </div>
 
