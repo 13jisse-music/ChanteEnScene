@@ -16,7 +16,7 @@ type Candidate = {
 
 type Score = {
   total_score: number
-  scores: { decision: string }
+  scores: { decision?: string; score?: number; buzzed?: boolean } | null
   candidates: Candidate
 }
 
@@ -26,10 +26,18 @@ type ExistingPriority = {
   rank: number
 }
 
+type Mode = 'online' | 'semifinal'
+
 type Props = {
   juror: { id: string; firstName: string; lastName: string }
   scores: Score[]
   existingPriorities: ExistingPriority[]
+  // mode 'online' (defaut) = classement qui designe les demi-finalistes (top 10, verdict oui/peut-etre)
+  // mode 'semifinal' = classement demi-finale qui designe les finalistes (top 5, pre-rempli par note slider+buzz)
+  mode?: Mode
+  topN?: number
+  round?: 'semifinal' | 'final'
+  sessionId?: string | null
 }
 
 type CandItem = {
@@ -37,6 +45,9 @@ type CandItem = {
   fn: string
   ln: string
   vote: 'oui' | 'pe'
+  score: number
+  buzzed: boolean
+  total: number
   photo: string
   media: string
 }
@@ -44,20 +55,27 @@ type CandItem = {
 const CATS = ['Ado', 'Adulte', 'Enfant'] as const
 const CAT_EMOJI: Record<string, string> = { Ado: '🎤', Adulte: '🎵', Enfant: '⭐' }
 
-function buildPool(scores: Score[], cat: string): CandItem[] {
+function buildPool(scores: Score[], cat: string, mode: Mode): CandItem[] {
   return scores
     .filter(s => s.candidates?.category === cat)
-    .map(s => ({
-      id: s.candidates.id,
-      fn: s.candidates.first_name,
-      ln: s.candidates.last_name,
-      vote: s.total_score === 2 ? 'oui' : 'pe',
-      photo: s.candidates.photo_url || '',
-      media: s.candidates.video_url || s.candidates.mp3_url || '',
-    }))
+    .map(s => {
+      const buzzed = s.scores?.buzzed === true
+      const score = s.scores?.score ?? (buzzed ? s.total_score - 200 : s.total_score)
+      return {
+        id: s.candidates.id,
+        fn: s.candidates.first_name,
+        ln: s.candidates.last_name,
+        vote: (mode === 'online' && s.total_score === 2 ? 'oui' : 'pe') as 'oui' | 'pe',
+        score,
+        buzzed,
+        total: s.total_score,
+        photo: s.candidates.photo_url || '',
+        media: s.candidates.video_url || s.candidates.mp3_url || '',
+      }
+    })
 }
 
-function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string): CandItem[] {
+function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string, mode: Mode, topN: number): CandItem[] {
   const sorted = existing
     .filter(e => e.category === cat)
     .sort((a, b) => a.rank - b.rank)
@@ -66,10 +84,18 @@ function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string): C
       .map(e => pool.find(c => c.id === e.candidate_id))
       .filter(Boolean) as CandItem[]
   }
-  return pool.filter(c => c.vote === 'oui').slice(0, 10)
+  if (mode === 'semifinal') {
+    // Pre-rempli par la note du jure (slider + buzz) decroissante
+    return [...pool].sort((a, b) => b.total - a.total).slice(0, topN)
+  }
+  return pool.filter(c => c.vote === 'oui').slice(0, topN)
 }
 
-export default function PrioritesClient({ juror, scores, existingPriorities }: Props) {
+export default function PrioritesClient({
+  juror, scores, existingPriorities,
+  mode = 'online', topN: topNProp, round = 'semifinal', sessionId = null,
+}: Props) {
+  const topN = topNProp ?? (mode === 'semifinal' ? 5 : 10)
   const alreadySubmitted = existingPriorities.length > 0
   const [screen, setScreen] = useState<'welcome' | 'main' | 'confirm' | 'readonly'>(
     alreadySubmitted ? 'readonly' : 'welcome'
@@ -79,13 +105,13 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
   const sortableRefs = useRef<Record<string, Sortable | null>>({})
 
   const pools: Record<string, CandItem[]> = {}
-  CATS.forEach(cat => { pools[cat] = buildPool(scores, cat) })
+  CATS.forEach(cat => { pools[cat] = buildPool(scores, cat, mode) })
 
   useEffect(() => {
     if (screen !== 'main') return
     const initial: Record<string, CandItem[]> = {}
     CATS.forEach(cat => {
-      initial[cat] = prefill(pools[cat], existingPriorities, cat)
+      initial[cat] = prefill(pools[cat], existingPriorities, cat, mode, topN)
     })
     setTops(initial)
   }, [screen])
@@ -95,7 +121,8 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
     return pools[cat].filter(c => !topIds.has(c.id))
   }
 
-  const allDone = CATS.every(cat => (tops[cat] || []).length === 10)
+  const allDone = CATS.every(cat => (tops[cat] || []).length === topN)
+  const totalRanked = CATS.length * topN
 
   async function handleSubmit() {
     const priorities = CATS.flatMap(cat =>
@@ -109,7 +136,13 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
     const res = await fetch('/api/jury/save-priorities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ juror_id: juror.id, juror_name: `${juror.firstName} ${juror.lastName}`, priorities }),
+      body: JSON.stringify({
+        juror_id: juror.id,
+        juror_name: `${juror.firstName} ${juror.lastName}`,
+        priorities,
+        round,
+        session_id: sessionId,
+      }),
     })
     if (res.ok) setScreen('confirm')
   }
@@ -121,7 +154,9 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
         <div className="bg-gradient-to-br from-[#1e1b4b] to-[#312e81] px-4 py-5 text-center">
           <div className="text-3xl mb-2">✅</div>
           <h1 className="text-lg font-bold text-white mb-1">Ma sélection — {juror.firstName} {juror.lastName}</h1>
-          <p className="text-[#a78bfa] text-xs">ChantEnScène Aubagne 2026 · Priorités validées</p>
+          <p className="text-[#a78bfa] text-xs">
+            ChantEnScène Aubagne 2026 · {mode === 'semifinal' ? 'Finalistes classés' : 'Priorités validées'}
+          </p>
         </div>
         <div className="max-w-lg mx-auto p-4 space-y-6">
           {CATS.map(cat => {
@@ -179,18 +214,27 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
   }
 
   if (screen === 'welcome') {
+    const title = mode === 'semifinal' ? 'Demi-finale — Choix des finalistes' : 'Sélection finale'
+    const bullets: [string, string, string][] = mode === 'semifinal'
+      ? [
+          ['Vos candidats sont pré-classés selon', `vos notes du soir`, '(note + golden buzz). Réordonnez à votre guise.'],
+          ['Choisissez vos', `${topN} finalistes`, `par catégorie : n°1 = votre favori, n°${topN} = votre dernier choix.`],
+          ['Appuyez sur', '▶', 'pour réécouter un candidat avant de décider.'],
+          ['Complétez les', '3 catégories', 'puis validez. La moyenne des jurés désignera les finalistes.'],
+        ]
+      : [
+          ['Vos candidats OUI sont pré-chargés. Choisissez vos', `${topN} priorités`, 'parmi vos OUI et PEUT-ÊTRE.'],
+          ['Ordonnez-les par préférence :', 'n°1 = votre favori absolu', `, n°${topN} = votre ${topN}ème choix.`],
+          ['Appuyez sur', '▶', 'pour revoir la prestation d\'un candidat avant de décider.'],
+          ['Complétez les', '3 catégories', 'puis validez.'],
+        ]
     return (
       <main className="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
         <div className="text-5xl mb-4">🏆</div>
         <h1 className="text-xl font-bold text-white mb-1">Bonjour {juror.firstName} !</h1>
-        <p className="text-[#a78bfa] text-sm mb-6">ChantEnScène Aubagne 2026 — Sélection finale</p>
+        <p className="text-[#a78bfa] text-sm mb-6">ChantEnScène Aubagne 2026 — {title}</p>
         <div className="bg-white/5 rounded-2xl p-5 w-full max-w-sm mb-6 text-left space-y-4">
-          {[
-            ['Vos candidats OUI sont pré-chargés. Choisissez vos', '10 priorités', 'parmi vos OUI et PEUT-ÊTRE.'],
-            ['Ordonnez-les par préférence :', 'n°1 = votre favori absolu', ', n°10 = votre 10ème choix.'],
-            ['Appuyez sur', '▶', 'pour revoir la prestation d\'un candidat avant de décider.'],
-            ['Complétez les', '3 catégories', 'puis validez.'],
-          ].map(([a, b, c], i) => (
+          {bullets.map(([a, b, c], i) => (
             <div key={i} className="flex gap-3 items-start">
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#a855f7] flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5">{i + 1}</div>
               <p className="text-[#cbd5e1] text-sm leading-relaxed">{a} <strong className="text-white">{b}</strong> {c}</p>
@@ -199,7 +243,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
         </div>
         {alreadySubmitted && (
           <p className="text-[#fde68a] text-xs mb-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2">
-            Vous avez déjà soumis des priorités — vous pouvez les modifier.
+            Vous avez déjà soumis votre classement — vous pouvez le modifier.
           </p>
         )}
         <button
@@ -216,12 +260,14 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
     return (
       <main className="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
         <div className="text-6xl mb-4">✅</div>
-        <h2 className="text-xl font-bold text-white mb-2">Priorités enregistrées !</h2>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {mode === 'semifinal' ? 'Classement enregistré !' : 'Priorités enregistrées !'}
+        </h2>
         <p className="text-[#94a3b8] text-sm leading-relaxed max-w-xs">
           Vos choix ont été sauvegardés. Jean Christophe recevra vos sélections pour la délibération finale.
         </p>
         <div className="mt-5 bg-green-500/10 border border-green-500/20 rounded-xl px-5 py-3 text-xs text-[#86efac]">
-          3 catégories · 30 candidats classés par priorité
+          3 catégories · {totalRanked} candidats classés par priorité
         </div>
       </main>
     )
@@ -237,13 +283,17 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
           </div>
           <div>
             <p className="font-bold text-sm">{juror.firstName} {juror.lastName}</p>
-            <p className="text-[#a78bfa] text-xs">Classez vos 10 priorités par catégorie</p>
+            <p className="text-[#a78bfa] text-xs">
+              {mode === 'semifinal'
+                ? `Classez vos ${topN} finalistes par catégorie`
+                : `Classez vos ${topN} priorités par catégorie`}
+            </p>
           </div>
         </div>
         <div className="flex gap-1">
           {CATS.map(cat => {
             const n = (tops[cat] || []).length
-            const done = n === 10
+            const done = n === topN
             return (
               <button
                 key={cat}
@@ -251,7 +301,7 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
                 className={`flex-1 py-2 rounded-t-lg text-xs font-bold relative transition-colors ${activeTab === cat ? 'bg-[#0f172a] text-white' : 'bg-white/5 text-[#94a3b8]'}`}
               >
                 {CAT_EMOJI[cat]} {cat}
-                <span className="block text-[10px] opacity-70">{n}/10</span>
+                <span className="block text-[10px] opacity-70">{n}/{topN}</span>
                 {done && <span className="absolute top-1.5 right-2 w-1.5 h-1.5 rounded-full bg-green-400" />}
               </button>
             )
@@ -264,6 +314,8 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
         <div key={cat} className={`p-3 ${activeTab === cat ? 'block' : 'hidden'}`}>
           <Panel
             cat={cat}
+            mode={mode}
+            topN={topN}
             tops={tops[cat] || []}
             pool={getPool(cat)}
             sortableRefs={sortableRefs}
@@ -279,7 +331,9 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
           disabled={!allDone}
           className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${allDone ? 'bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white' : 'bg-white/8 text-[#475569]'}`}
         >
-          {allDone ? 'Valider mes priorités' : 'Complétez les 3 catégories pour valider'}
+          {allDone
+            ? (mode === 'semifinal' ? 'Valider mon classement' : 'Valider mes priorités')
+            : 'Complétez les 3 catégories pour valider'}
         </button>
       </div>
     </main>
@@ -287,9 +341,11 @@ export default function PrioritesClient({ juror, scores, existingPriorities }: P
 }
 
 function Panel({
-  cat, tops, pool, sortableRefs, onChange
+  cat, mode, topN, tops, pool, sortableRefs, onChange
 }: {
   cat: string
+  mode: Mode
+  topN: number
   tops: CandItem[]
   pool: CandItem[]
   sortableRefs: React.MutableRefObject<Record<string, Sortable | null>>
@@ -301,7 +357,7 @@ function Panel({
   const allCandsRef = useRef<CandItem[]>([])
   allCandsRef.current = [...tops, ...pool]
 
-  // Drag uniquement pour réordonner dans le top 10 — stable, ne se recrée qu'au changement de tab
+  // Drag uniquement pour réordonner dans le top — stable, ne se recrée qu'au changement de tab
   useEffect(() => {
     if (!topRef.current) return
     try { sortableRefs.current[`top-${cat}`]?.destroy() } catch (_) {}
@@ -325,10 +381,10 @@ function Panel({
   }, [cat])
 
   const n = tops.length
-  const full = n >= 10
+  const full = n >= topN
 
   const addToTop = (c: CandItem) => {
-    if (topsRef.current.length >= 10) return
+    if (topsRef.current.length >= topN) return
     onChange([...topsRef.current, c])
   }
 
@@ -336,17 +392,19 @@ function Panel({
     onChange(topsRef.current.filter(c => c.id !== id))
   }
 
+  const poolLabel = mode === 'semifinal' ? 'Autres candidats notés' : 'Autres candidats positifs'
+
   return (
     <div>
       <div className="bg-white/5 rounded-xl p-3 mb-3 flex items-center gap-3">
         <span className="text-xl font-bold" style={{ color: full ? '#22c55e' : '#a78bfa' }}>
-          {n}<span className="text-xs text-white/40">/10</span>
+          {n}<span className="text-xs text-white/40">/{topN}</span>
         </span>
         <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] transition-all" style={{ width: `${n * 10}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] transition-all" style={{ width: `${(n / topN) * 100}%` }} />
         </div>
         <span className="text-xs" style={{ color: full ? '#22c55e' : '#64748b' }}>
-          {full ? 'Complet !' : `${10 - n} restants`}
+          {full ? 'Complet !' : `${topN - n} restants`}
         </span>
       </div>
 
@@ -354,25 +412,27 @@ function Panel({
         n°1 = votre favori absolu · glissez pour réordonner · ▶ pour revoir
       </p>
 
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[#7c3aed] mb-2">Mes 10 priorités</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[#7c3aed] mb-2">
+        {mode === 'semifinal' ? `Mes ${topN} finalistes` : `Mes ${topN} priorités`}
+      </p>
       <div ref={topRef} className="min-h-14 bg-[#7c3aed]/8 border-2 border-dashed border-[#7c3aed]/30 rounded-xl p-1.5 mb-4">
         {tops.length === 0 && (
           <p className="text-center py-4 text-[#475569] text-xs italic">Appuyez sur + pour ajouter un candidat</p>
         )}
         {tops.map((c, i) => (
-          <Card key={c.id} c={c} rank={i + 1} onAction={() => removeFromTop(c.id)} actionType="remove" />
+          <Card key={c.id} c={c} rank={i + 1} mode={mode} onAction={() => removeFromTop(c.id)} actionType="remove" />
         ))}
       </div>
 
       <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748b] mb-2">
-        Autres candidats positifs <span className="font-normal text-[#475569]">({pool.length})</span>
+        {poolLabel} <span className="font-normal text-[#475569]">({pool.length})</span>
       </p>
       <div className="min-h-10 bg-white/3 border border-white/7 rounded-xl p-1.5">
         {pool.length === 0 && (
           <p className="text-center py-3 text-[#475569] text-xs italic">Tous vos candidats sont sélectionnés</p>
         )}
         {pool.map(c => (
-          <Card key={c.id} c={c} rank={0}
+          <Card key={c.id} c={c} rank={0} mode={mode}
             onAction={full ? undefined : () => addToTop(c)}
             actionType="add"
             disabled={full}
@@ -383,9 +443,10 @@ function Panel({
   )
 }
 
-function Card({ c, rank, onAction, actionType, disabled }: {
+function Card({ c, rank, mode, onAction, actionType, disabled }: {
   c: CandItem
   rank: number
+  mode: Mode
   onAction?: () => void
   actionType?: 'add' | 'remove'
   disabled?: boolean
@@ -408,9 +469,20 @@ function Card({ c, rank, onAction, actionType, disabled }: {
       )}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold truncate">{c.fn} {c.ln}</p>
-        <span className={`text-[9px] font-bold rounded-full px-1.5 py-0.5 ${c.vote === 'oui' ? 'bg-green-500/15 text-green-300' : 'bg-yellow-500/15 text-yellow-300'}`}>
-          {c.vote === 'oui' ? 'OUI' : 'PEUT-ÊTRE'}
-        </span>
+        {mode === 'semifinal' ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="text-[9px] font-bold rounded-full px-1.5 py-0.5 bg-[#7c3aed]/20 text-[#c4b5fd]">
+              {c.score}/100
+            </span>
+            {c.buzzed && (
+              <span className="text-[9px] font-bold rounded-full px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300">⚡ Buzz</span>
+            )}
+          </span>
+        ) : (
+          <span className={`text-[9px] font-bold rounded-full px-1.5 py-0.5 ${c.vote === 'oui' ? 'bg-green-500/15 text-green-300' : 'bg-yellow-500/15 text-yellow-300'}`}>
+            {c.vote === 'oui' ? 'OUI' : 'PEUT-ÊTRE'}
+          </span>
+        )}
       </div>
       {c.media && (
         <button

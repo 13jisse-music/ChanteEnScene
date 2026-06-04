@@ -20,20 +20,37 @@ type Priority = {
 }
 
 export async function POST(req: Request) {
-  const { juror_id, juror_name, priorities } = await req.json() as {
+  const { juror_id, juror_name, priorities, round } = await req.json() as {
     juror_id: string
     juror_name: string
     priorities: Priority[]
+    round?: string
   }
 
   if (!juror_id || !priorities?.length) {
     return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
   }
 
+  // round 'semifinal' = classement online qui designe les demi-finalistes (defaut, retrocompat)
+  // round 'final'     = classement demi-finale qui designe les finalistes
+  const roundValue = round === 'final' ? 'final' : 'semifinal'
+
   const supabase = createAdminClient()
 
-  // Supprime les anciens et ré-insère (upsert propre)
-  await supabase.from('jury_priorities').delete().eq('juror_id', juror_id)
+  // Recupere la session du jure pour lier les priorites (source de verite serveur)
+  const { data: jurorRow } = await supabase
+    .from('jurors')
+    .select('session_id')
+    .eq('id', juror_id)
+    .single()
+  const sessionId = jurorRow?.session_id ?? null
+
+  // Supprime les anciens du MEME round et re-insere (upsert propre, sans ecraser l'autre round)
+  await supabase
+    .from('jury_priorities')
+    .delete()
+    .eq('juror_id', juror_id)
+    .eq('round', roundValue)
 
   const { error } = await supabase.from('jury_priorities').insert(
     priorities.map(p => ({
@@ -41,7 +58,8 @@ export async function POST(req: Request) {
       candidate_id: p.candidate_id,
       category: p.category,
       rank: p.rank,
-      session_id: null,
+      round: roundValue,
+      session_id: sessionId,
     }))
   )
 
@@ -63,8 +81,12 @@ export async function POST(req: Request) {
       })
       .join('\n')
 
+  const title = roundValue === 'final'
+    ? `🏆 <b>${juror_name}</b> a classé ses finalistes (demi-finale) !`
+    : `🏆 <b>${juror_name}</b> a soumis ses priorités !`
+
   const msg = [
-    `🏆 <b>${juror_name}</b> a soumis ses priorités !`,
+    title,
     '',
     `🎤 <b>ADO</b>\n${bycat('Ado')}`,
     '',

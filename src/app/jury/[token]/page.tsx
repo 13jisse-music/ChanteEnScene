@@ -95,17 +95,36 @@ export default async function JuryPage({ params }: { params: Params }) {
   }
 
   // Mode priorités : activé par l'admin via juror.show_priorities
+  // - juré 'semifinal' => classement demi-finale (top 5, round 'final', pré-rempli par note slider+buzz)
+  // - juré 'online'    => classement qui désigne les demi-finalistes (top 10, round 'semifinal')
   if (juror.show_priorities) {
-    const { data: scores } = await supabase
+    const isSemifinalJuror = juror.role === 'semifinal'
+    const eventType = isSemifinalJuror ? 'semifinal' : 'online'
+    const round = isSemifinalJuror ? 'final' : 'semifinal'
+
+    const sessionForPriorities = (juror as Record<string, unknown>).sessions as {
+      id: string
+      config?: { finalists_per_category?: number; semifinalists_per_category?: number }
+    } | null
+    const topN = isSemifinalJuror
+      ? (sessionForPriorities?.config?.finalists_per_category ?? 5)
+      : (sessionForPriorities?.config?.semifinalists_per_category ?? 10)
+
+    let scoresQuery = supabase
       .from('jury_scores')
       .select(`total_score, scores, candidates(id, first_name, last_name, stage_name, category, photo_url, video_url, mp3_url)`)
       .eq('juror_id', juror.id)
-      .gt('total_score', 0)
+      .eq('event_type', eventType)
+    // En ligne : on exclut les "non" (total_score 0). En demi-finale : on garde tout candidat noté
+    // (un juré peut donner une note basse sans que ce soit un rejet).
+    if (!isSemifinalJuror) scoresQuery = scoresQuery.gt('total_score', 0)
+    const { data: scores } = await scoresQuery
 
     const { data: existingPriorities } = await supabase
       .from('jury_priorities')
       .select('candidate_id, category, rank')
       .eq('juror_id', juror.id)
+      .eq('round', round)
       .order('rank')
 
     return (
@@ -114,6 +133,10 @@ export default async function JuryPage({ params }: { params: Params }) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         scores={(scores || []).filter(s => s.candidates) as any}
         existingPriorities={existingPriorities || []}
+        mode={isSemifinalJuror ? 'semifinal' : 'online'}
+        topN={topN}
+        round={round}
+        sessionId={(juror as Record<string, unknown>).session_id as string}
       />
     )
   }

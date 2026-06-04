@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import RegieSemifinale from '@/components/RegieSemifinale'
 import FinalisteSelection from '@/components/FinalisteSelection'
+import FinalistesParPriorites from '@/components/FinalistesParPriorites'
 import CreateEventButton from '@/components/CreateEventButton'
+import { getFinalistPriorityRanking } from './actions'
 
 export const metadata = { title: 'Régie Demi-finale — ChanteEnScène Admin' }
 
@@ -63,7 +65,7 @@ export default async function RegieSemifinalePage() {
   // Get semifinal jurors only
   const { data: jurors } = await supabase
     .from('jurors')
-    .select('id, first_name, last_name, role, is_active')
+    .select('id, first_name, last_name, role, is_active, show_priorities, show_results')
     .eq('session_id', session.id)
     .eq('role', 'semifinal')
     .eq('is_active', true)
@@ -85,6 +87,17 @@ export default async function RegieSemifinalePage() {
     .order('last_name')
 
   const config = (session.config || {}) as Record<string, unknown>
+  const categories = ((config.age_categories as { name: string }[]) || []).map(c => c.name)
+
+  // Phase courante des jurés de demi-finale (déduite de leurs flags show_priorities/show_results)
+  const semiJurors = jurors || []
+  const allResults = semiJurors.length > 0 && semiJurors.every(j => j.show_results)
+  const allPriorities = semiJurors.length > 0 && semiJurors.every(j => j.show_priorities && !j.show_results)
+  const noFlags = semiJurors.every(j => !j.show_priorities && !j.show_results)
+  const currentPhase: 'vote' | 'priorities' | 'results' | 'mixed' =
+    allResults ? 'results' : allPriorities ? 'priorities' : noFlags ? 'vote' : 'mixed'
+
+  const ranking = await getFinalistPriorityRanking(session.id)
 
   return (
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
@@ -97,6 +110,14 @@ export default async function RegieSemifinalePage() {
         juryScores={juryScores || []}
       />
 
+      <FinalistesParPriorites
+        sessionId={session.id}
+        ranking={ranking}
+        categories={categories}
+        currentPhase={currentPhase}
+        notificationsSentAt={(config.finale_notifications_sent_at as string) || null}
+      />
+
       {event.status === 'completed' && (
         <FinalisteSelection
           session={session}
@@ -107,7 +128,7 @@ export default async function RegieSemifinalePage() {
           juryScores={juryScores || []}
           finalistsPerCategory={(config.finalists_per_category as number) || 5}
           notificationsSentAt={(config.finale_notifications_sent_at as string) || null}
-          categories={((config.age_categories as { name: string }[]) || []).map(c => c.name)}
+          categories={categories}
         />
       )}
     </div>

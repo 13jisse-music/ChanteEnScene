@@ -542,6 +542,153 @@ export async function reopenSemifinal(eventId: string) {
   return { success: true }
 }
 
+// ─── Pilotage des phases jury demi-finale (vote -> classement -> resultats) ───
+
+export async function setSemifinalJuryPhase(sessionId: string, phase: 'vote' | 'priorities' | 'results') {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  // vote : ni classement ni resultats — priorities : classement ouvert — results : page de remerciement
+  const flags =
+    phase === 'priorities' ? { show_priorities: true, show_results: false }
+    : phase === 'results' ? { show_priorities: false, show_results: true }
+    : { show_priorities: false, show_results: false }
+
+  const { error } = await supabase
+    .from('jurors')
+    .update(flags)
+    .eq('session_id', sessionId)
+    .eq('role', 'semifinal')
+    .eq('is_active', true)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/demi-finale')
+  return { success: true }
+}
+
+// ─── Agregation des classements demi-finale (round 'final') -> finalistes ───
+
+interface RankedCandidate {
+  id: string
+  first_name: string
+  last_name: string
+  stage_name: string | null
+  category: string
+  photo_url: string | null
+  status: string
+  points: number      // score de preference (Borda) : rang 1 = topN pts ... rang topN = 1 pt, somme sur les jures
+  meanRank: number | null
+  ballots: number     // nombre de jures qui l'ont classe
+}
+
+// Calcule le classement par categorie a partir des priorites round 'final' des jures de demi-finale.
+// Methode points de preference (identique a la selection des demi-finalistes, validee par Jisse) :
+// plus robuste que la moyenne brute des rangs car un candidat non classe par un jure ne fausse pas la moyenne.
+async function computeFinalRanking(
+  supabase: ReturnType<typeof createAdminClient>,
+  sessionId: string,
+  topN: number,
+): Promise<{ byCategory: Record<string, RankedCandidate[]>; jurorsSubmitted: number; jurorsTotal: number }> {
+  const { data: jurors } = await supabase
+    .from('jurors')
+    .select('id')
+    .eq('session_id', sessionId)
+    .eq('role', 'semifinal')
+    .eq('is_active', true)
+  const jurorIds = (jurors || []).map(j => j.id)
+  const jurorsTotal = jurorIds.length
+
+  const { data: priorities } = await supabase
+    .from('jury_priorities')
+    .select('juror_id, candidate_id, category, rank')
+    .eq('session_id', sessionId)
+    .eq('round', 'final')
+
+  const validPriorities = (priorities || []).filter(p => jurorIds.includes(p.juror_id))
+  const jurorsSubmitted = new Set(validPriorities.map(p => p.juror_id)).size
+
+  const { data: candidates } = await supabase
+    .from('candidates')
+    .select('id, first_name, last_name, stage_name, category, photo_url, status')
+    .eq('session_id', sessionId)
+    .in('status', ['semifinalist', 'finalist'])
+
+  const byCategory: Record<string, RankedCandidate[]> = {}
+  for (const c of candidates || []) {
+    const ranks = validPriorities.filter(p => p.candidate_id === c.id).map(p => p.rank)
+    const points = ranks.reduce((sum, r) => sum + Math.max(0, topN - r + 1), 0)
+    const meanRank = ranks.length ? ranks.reduce((a, r) => a + r, 0) / ranks.length : null
+    const ranked: RankedCandidate = { ...c, points, meanRank, ballots: ranks.length }
+    ;(byCategory[c.category] ||= []).push(ranked)
+  }
+
+  // Tri : points decroissants, puis plus de bulletins, puis meilleur rang moyen
+  for (const cat of Object.keys(byCategory)) {
+    byCategory[cat].sort((a, b) =>
+      b.points - a.points
+      || b.ballots - a.ballots
+      || (a.meanRank ?? 99) - (b.meanRank ?? 99)
+    )
+  }
+
+  return { byCategory, jurorsSubmitted, jurorsTotal }
+}
+
+export async function getFinalistPriorityRanking(sessionId: string) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('config')
+    .eq('id', sessionId)
+    .single()
+  const config = (session?.config || {}) as SessionConfig
+  const topN = config.finalists_per_category ?? 5
+
+  const ranking = await computeFinalRanking(supabase, sessionId, topN)
+  return { ...ranking, topN }
+}
+
+export async function declareFinalistsFromPriorities(sessionId: string) {
+  await requireAdmin()
+  const supabase = createAdminClient()
+
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('config')
+    .eq('id', sessionId)
+    .single()
+  const config = (session?.config || {}) as SessionConfig
+  if (config.finale_notifications_sent_at) {
+    return { error: 'Les notifications finale ont deja ete envoyees — finalistes verrouilles.' }
+  }
+  const topN = config.finalists_per_category ?? 5
+
+  const { byCategory, jurorsSubmitted } = await computeFinalRanking(supabase, sessionId, topN)
+  if (jurorsSubmitted === 0) {
+    return { error: 'Aucun classement de jure de demi-finale soumis pour le moment.' }
+  }
+
+  const promoted: { name: string; category: string }[] = []
+  for (const cat of Object.keys(byCategory)) {
+    // top N de la categorie ayant recu au moins un classement, actuellement demi-finalistes
+    const winners = byCategory[cat].filter(c => c.points > 0).slice(0, topN)
+    const toPromote = winners.filter(c => c.status === 'semifinalist').map(c => c.id)
+    if (toPromote.length) {
+      await supabase.from('candidates').update({ status: 'finalist' }).in('id', toPromote)
+      winners
+        .filter(c => c.status === 'semifinalist')
+        .forEach(c => promoted.push({ name: c.stage_name || `${c.first_name} ${c.last_name}`, category: cat }))
+    }
+  }
+
+  revalidatePath('/admin/demi-finale')
+  revalidatePath('/admin/resultats')
+  return { success: true, promoted, jurorsSubmitted }
+}
+
 export async function sendFinaleNotifications(sessionId: string) {
   await requireAdmin()
   const supabase = createAdminClient()
