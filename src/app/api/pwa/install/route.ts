@@ -105,24 +105,8 @@ export async function POST(request: NextRequest) {
         candidateInfo,
         '🎤 CES'
       )
-    } else {
-      // OUVERTURE PWA — utilisateur existant qui reouvre l'app
-      let userName = ''
-      const { data: candidate } = await supabase
-        .from('candidates')
-        .select('first_name, last_name')
-        .eq('fingerprint', fingerprint)
-        .maybeSingle()
-      if (candidate) {
-        userName = ` — ${candidate.first_name} ${candidate.last_name}`
-      }
-
-      await sendTelegram(
-        `🔄 <b>Ouverture PWA</b>${userName}\n` +
-        `${platformLabel} · ${city || '?'}`,
-        '🎤 CES'
-      )
     }
+    // Reouverture PWA : tracking conserve en base, mais plus de notif Telegram (desactivee a la demande).
 
     return NextResponse.json({ ok: true })
   } catch {
