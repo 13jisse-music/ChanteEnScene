@@ -6,6 +6,15 @@ Tenu sans coordonnees (pas d'adresses mail), informations sensibles anonymisees.
 Demi-finale : mercredi 17 juin 2026, 16h-19h, Espace des Arts et de la Culture, Aubagne (huis clos).
 Deadline playback MP3 : 13 juin. Rappel automatique renforce le 8 juin.
 
+## 9 juin 2026
+- Mael Capocci Guilbaud (Enfant) : fichier MP3 recu par mail, enregistre manuellement (bonne version, "Etre un homme comme vous" de Ben l'Oncle Soul, transpose +3). mp3_url remis en base. Accuse de reception envoye + question posee a la famille sur le titre (inscrit "I got a woman" / Ray Charles, mais playback recu = "Etre un homme comme vous"). Titre non modifie tant que la famille n'a pas confirme.
+- Bug de depot MP3 identifie et corrige : la signed URL d'upload ne permettait pas l'ecrasement d'un fichier deja present (le chemin sessionId/slug/mp3 est fixe par candidat), donc tout 2e depot echouait. C'est ce qui bloquait Gagliano et Mael. Fix : createSignedUploadUrl avec upsert:true + header x-upsert cote client. Les candidats peuvent desormais remplacer leur MP3.
+
+## 8 juin 2026
+- Selena Espinosa (Enfant) : changement de morceau pour la demi-finale, passe a "Voila" de Barbara Pravi (mis a jour en base, demande explicite de la famille). Lien de depot renvoye. Reponse envoyee.
+- Patricia Montmartin (Adulte) : confirme l'envoi de son playback "Il est mort le soleil" demain apres-midi (dans les temps). Accuse de reception envoye.
+- Mael Capocci Guilbaud (Enfant) : le depot MP3 rebloque malgre la reinitialisation de la veille (capture d'erreur jointe). Invite a renvoyer son fichier audio par mail pour enregistrement manuel. Reponse envoyee.
+
 ## 7 juin 2026
 - Olivier Gagliano (parent de Lola Gagliano, Enfant) : avait depose le mauvais MP3 et n'arrivait plus a le remplacer. Depot reinitialise, puis le bon fichier (envoye en piece jointe) enregistre manuellement via la porte de secours admin. Reponse envoyee.
 - Elisea Gomez (Ado) : confirme sa presence et signale la coquille de jour. Playback MP3 deja recu. Reponse envoyee (la demi-finale est bien le mercredi 17 juin).

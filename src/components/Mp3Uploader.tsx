@@ -60,7 +60,7 @@ export default function Mp3Uploader({ candidateId, sessionId, slug, existingMp3U
 
       const uploadRes = await fetch(urlData.signedUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type || 'audio/mpeg' },
+        headers: { 'Content-Type': file.type || 'audio/mpeg', 'x-upsert': 'true' },
         body: file,
       })
       if (!uploadRes.ok) {

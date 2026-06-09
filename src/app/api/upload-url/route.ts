@@ -28,9 +28,11 @@ export async function POST(request: Request) {
     const filePath = path
 
     // Create a signed upload URL using Supabase service role (bypasses RLS)
+    // upsert: true autorise le remplacement d'un fichier existant au meme chemin
+    // (sinon le 2e depot d'un candidat echoue car le path sessionId/slug/mp3 est fixe)
     const { data, error } = await supabaseAdmin.storage
       .from(bucket)
-      .createSignedUploadUrl(filePath)
+      .createSignedUploadUrl(filePath, { upsert: true })
 
     if (error || !data) {
       console.error('Signed URL error:', error?.message)
