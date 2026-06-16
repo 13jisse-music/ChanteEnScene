@@ -272,7 +272,9 @@ export default function InstallPrompt() {
   }
 
   if (dismissed) return null
-  if (phase === 'install' && !deferredPrompt && !isIOS) return null
+  // iOS : on n'affiche plus le tutoriel d'installation manuel (penible, ne marche
+  // pas en 1 clic et gachait la vue). Android garde son prompt natif (deferredPrompt).
+  if (phase === 'install' && !deferredPrompt) return null
   if (phase === 'open-browser') {
     // In-app browser detected — show prompt to open in real browser
     const platform = detectPlatform()
