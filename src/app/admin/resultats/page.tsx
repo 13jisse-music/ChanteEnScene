@@ -1,21 +1,17 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveSession } from '@/lib/active-session'
 import ResultsView from '@/components/ResultsView'
 
 async function getData() {
   const supabase = createAdminClient()
 
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('id, name, config')
-    .order('year', { ascending: false })
-    .limit(1)
+  // Resultats : session de test en repetition locale, sinon la plus recente
+  const { data: session } = await getActiveSession<{ id: string; name: string; config: Record<string, unknown> }>(supabase, 'id, name, config', { fallback: 'latest' })
 
-  if (!sessions || sessions.length === 0)
+  if (!session)
     return { session: null, candidates: [], jurors: [], scores: [], votes: [], liveVotes: [], events: [] }
-
-  const session = sessions[0]
 
   const { data: candidates } = await supabase
     .from('candidates')
@@ -57,7 +53,8 @@ async function getData() {
   }
 
   return {
-    session,
+    // config typee dynamiquement (colonnes en chaine) : cast vers le type strict attendu par ResultsView
+    session: session as Parameters<typeof ResultsView>[0]['session'],
     candidates: candidates || [],
     jurors: jurors || [],
     scores: scores || [],

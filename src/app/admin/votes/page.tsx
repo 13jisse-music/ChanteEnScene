@@ -1,18 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveSession } from '@/lib/active-session'
 import Link from 'next/link'
 
 async function getVotesData() {
   const supabase = createAdminClient()
 
-  // Session active
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('id')
-    .eq('is_active', true)
+  // Session active (regie : session de test en repetition locale)
+  const { data: activeSession } = await getActiveSession<{ id: string }>(supabase, 'id')
 
-  let sessionId = sessions?.[0]?.id
+  let sessionId = activeSession?.id
   if (!sessionId) {
     const { data: fallback } = await supabase
       .from('sessions')

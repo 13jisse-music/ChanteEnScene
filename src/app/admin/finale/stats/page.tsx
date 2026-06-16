@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveSession } from '@/lib/active-session'
 import { redirect } from 'next/navigation'
 import FinaleStats from '@/components/FinaleStats'
 
@@ -7,14 +8,8 @@ export const metadata = { title: 'Stats Finale — ChanteEnScène Admin' }
 export default async function FinaleStatsPage() {
   const supabase = await createClient()
 
-  // Get active session
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, name, slug, config')
-    .eq('is_active', true)
-    .order('year', { ascending: false })
-    .limit(1)
-    .single()
+  // Get active session (regie : session de test en repetition locale)
+  const { data: session } = await getActiveSession<{ id: string; name: string; slug: string; config: Record<string, unknown> }>(supabase, 'id, name, slug, config')
 
   if (!session) redirect('/admin')
 

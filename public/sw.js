@@ -1,35 +1,53 @@
-const CACHE_NAME = 'ces-live-v1'
+const CACHE_NAME = 'ces-live-v2'
 const OFFLINE_URL = '/offline.html'
 
-// Install: pre-cache offline page
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll([OFFLINE_URL]))
-  )
-  self.skipWaiting()
-})
+const host = self.location.hostname
+const IS_LOCAL =
+  host === 'localhost' ||
+  host === '127.0.0.1' ||
+  host.startsWith('192.168.') ||
+  host.startsWith('10.') ||
+  host.endsWith('.trycloudflare.com')
 
-// Activate: clean old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+if (IS_LOCAL) {
+  // Repetition locale : AUCUN cache. Le SW s'auto-desinscrit, vide les caches et
+  // recharge les pages ouvertes pour toujours servir le code frais pendant les tests.
+  self.addEventListener('install', () => self.skipWaiting())
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(
+      (async () => {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((k) => caches.delete(k)))
+        await self.registration.unregister()
+        const windowClients = await self.clients.matchAll({ type: 'window' })
+        windowClients.forEach((c) => c.navigate(c.url))
+      })()
     )
-  )
-  self.clients.claim()
-})
+  })
+} else {
+  // Production : comportement normal (network-first navigations + page offline).
+  self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([OFFLINE_URL])))
+    self.skipWaiting()
+  })
 
-// Fetch: network-first for navigations, fallback to offline page
-self.addEventListener('fetch', (event) => {
-  // Only handle navigation requests (page loads)
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
     )
-  }
-})
+    self.clients.claim()
+  })
 
-// ─── Push Notifications ───
+  self.addEventListener('fetch', (event) => {
+    if (event.request.mode === 'navigate') {
+      event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)))
+    }
+  })
+}
+
+// ─── Push Notifications (inchange, actif en prod) ───
 
 self.addEventListener('push', (event) => {
   if (!event.data) return

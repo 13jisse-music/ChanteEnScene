@@ -87,3 +87,7 @@ scripts/youtube-token.json
 .claude/
 
 .vercel
+
+# Repetition demi-finale locale (branche test)
+repet-demo.sh
+repet-lancer.sh

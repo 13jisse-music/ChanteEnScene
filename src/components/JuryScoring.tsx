@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { addToOfflineQueue } from '@/lib/jury-offline-queue'
+import { randomId } from '@/lib/utils'
 import { useRealtimeJuryPush } from '@/hooks/useRealtimeJuryPush'
 import { useWinnerReveal } from '@/hooks/useWinnerReveal'
 import JuryWinnerBanner from '@/components/JuryWinnerBanner'
@@ -264,7 +265,7 @@ function TikTokFeed({
         })
         if (error) throw new Error(error.message)
         existingScores.push({
-          id: crypto.randomUUID(),
+          id: randomId(),
           candidate_id: candidate.id,
           event_type: eventType,
           ...payload,
@@ -1038,7 +1039,7 @@ function StarRatingView({
         }).select('id').single()
         if (error) throw new Error(error.message)
         existingScores.push({
-          id: data?.id || crypto.randomUUID(),
+          id: data?.id || randomId(),
           candidate_id: scoringId,
           event_type: eventType,
           ...payload,
@@ -1553,7 +1554,7 @@ function CriteriaScoringView({
         }).select('id').single()
         if (error) throw new Error(error.message)
         existingScores.push({
-          id: data?.id || crypto.randomUUID(),
+          id: data?.id || randomId(),
           candidate_id: scoringId,
           event_type: eventType,
           ...payload,

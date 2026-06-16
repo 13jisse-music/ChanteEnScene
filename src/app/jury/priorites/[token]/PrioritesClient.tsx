@@ -73,6 +73,8 @@ function buildPool(scores: Score[], cat: string, mode: Mode): CandItem[] {
         media: s.candidates.video_url || s.candidates.mp3_url || '',
       }
     })
+    // Reserve triee par note du jure decroissante : il pioche ses mieux-notes en premier
+    .sort((a, b) => b.total - a.total)
 }
 
 function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string, mode: Mode, topN: number): CandItem[] {
@@ -85,8 +87,9 @@ function prefill(pool: CandItem[], existing: ExistingPriority[], cat: string, mo
       .filter(Boolean) as CandItem[]
   }
   if (mode === 'semifinal') {
-    // Pre-rempli par la note du jure (slider + buzz) decroissante
-    return [...pool].sort((a, b) => b.total - a.total).slice(0, topN)
+    // Liste volontairement VIDE : le jure construit lui-meme son classement avec le
+    // bouton + (evite la validation reflexe d'une liste pre-remplie sans la relire).
+    return []
   }
   return pool.filter(c => c.vote === 'oui').slice(0, topN)
 }
@@ -121,8 +124,12 @@ export default function PrioritesClient({
     return pools[cat].filter(c => !topIds.has(c.id))
   }
 
-  const allDone = CATS.every(cat => (tops[cat] || []).length === topN)
-  const totalRanked = CATS.length * topN
+  // Objectif par categorie : topN, mais plafonne au nombre de candidats que CE jure
+  // a notes dans la categorie (sinon une categorie avec moins de topN candidats
+  // rendrait le bouton "Valider" impossible a activer).
+  const targetFor = (cat: string) => Math.min(topN, pools[cat]?.length ?? 0)
+  const allDone = CATS.every(cat => (tops[cat] || []).length >= targetFor(cat))
+  const totalRanked = CATS.reduce((sum, cat) => sum + targetFor(cat), 0)
 
   async function handleSubmit() {
     const priorities = CATS.flatMap(cat =>
@@ -217,7 +224,7 @@ export default function PrioritesClient({
     const title = mode === 'semifinal' ? 'Demi-finale — Choix des finalistes' : 'Sélection finale'
     const bullets: [string, string, string][] = mode === 'semifinal'
       ? [
-          ['Vos candidats sont pré-classés selon', `vos notes du soir`, '(note + golden buzz). Réordonnez à votre guise.'],
+          ['La liste démarre', `vide`, ': ajoutez vous-même vos finalistes avec le bouton +.'],
           ['Choisissez vos', `${topN} finalistes`, `par catégorie : n°1 = votre favori, n°${topN} = votre dernier choix.`],
           ['Appuyez sur', '▶', 'pour réécouter un candidat avant de décider.'],
           ['Complétez les', '3 catégories', 'puis validez. La moyenne des jurés désignera les finalistes.'],
@@ -293,7 +300,7 @@ export default function PrioritesClient({
         <div className="flex gap-1">
           {CATS.map(cat => {
             const n = (tops[cat] || []).length
-            const done = n === topN
+            const done = n >= targetFor(cat)
             return (
               <button
                 key={cat}
@@ -381,7 +388,8 @@ function Panel({
   }, [cat])
 
   const n = tops.length
-  const full = n >= topN
+  // "Complet" si on a atteint topN OU s'il n'y a plus de candidat disponible a ajouter
+  const full = n >= topN || pool.length === 0
 
   const addToTop = (c: CandItem) => {
     if (topsRef.current.length >= topN) return

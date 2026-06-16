@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { checkinCandidate } from '@/app/admin/demi-finale/actions'
+import { selfCheckin } from '@/app/checkin/actions'
 
 interface Props {
   candidateId: string
@@ -67,7 +67,7 @@ export default function CheckinView({ candidateId, eventId, eventStatus, checked
     setLoading(true)
     setError(null)
 
-    const result = await checkinCandidate(eventId, candidateId)
+    const result = await selfCheckin(eventId, candidateId)
 
     if (result.error) {
       setError(result.error)

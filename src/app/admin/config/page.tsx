@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveSession } from '@/lib/active-session'
 import { redirect } from 'next/navigation'
 import AdminConfig from '@/components/AdminConfig'
 import { autoAdvanceSessionStatus } from '@/lib/auto-advance'
@@ -10,13 +11,7 @@ export const metadata = { title: 'Configuration — ChanteEnScène Admin' }
 export default async function ConfigPage() {
   const supabase = createAdminClient()
 
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, name, status, config')
-    .eq('is_active', true)
-    .order('year', { ascending: false })
-    .limit(1)
-    .single()
+  const { data: session } = await getActiveSession<{ id: string; name: string; status: string; config: Record<string, unknown> }>(supabase, 'id, name, status, config')
 
   if (!session) redirect('/admin/sessions')
 

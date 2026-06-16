@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import QRCode from 'qrcode'
 import { checkinCandidate } from '@/app/admin/demi-finale/actions'
+import { createClient } from '@/lib/supabase/client'
 
 interface Candidate {
   id: string
@@ -72,8 +73,22 @@ export default function CheckinManager({ session, eventId, eventStatus, candidat
 
   useEffect(() => {
     if (!eventId) return
-    const interval = setInterval(pollCheckins, 5000)
-    return () => clearInterval(interval)
+    // Temps reel : une arrivee (insert dans lineup) declenche un refresh IMMEDIAT
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`checkin-mgr-${eventId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'lineup', filter: `live_event_id=eq.${eventId}` },
+        () => { pollCheckins() }
+      )
+      .subscribe()
+    // Poll de secours (3s) si le temps reel decroche
+    const interval = setInterval(pollCheckins, 3000)
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [eventId, pollCheckins])
 
   function saveBaseUrl(url: string) {

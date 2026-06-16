@@ -15,9 +15,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Repetition locale (branche test uniquement) : autorise les requetes dev +
+  // Server Actions venant du tunnel cloudflared ET du reseau local (telephones en WiFi).
+  allowedDevOrigins: ['*.trycloudflare.com', '192.168.1.38'],
   experimental: {
     serverActions: {
       bodySizeLimit: '25MB',
+      allowedOrigins: ['*.trycloudflare.com', '192.168.1.38:3000', '192.168.1.38:3001'],
     },
   },
   async headers() {

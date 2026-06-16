@@ -1,3 +1,13 @@
+// Genere un identifiant unique. crypto.randomUUID n'existe que dans un contexte
+// securise (HTTPS ou localhost) ; en repetition reseau local (HTTP), on retombe
+// sur un fallback. En production (HTTPS), crypto.randomUUID est toujours utilise.
+export function randomId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

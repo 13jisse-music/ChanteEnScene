@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { checkinCandidate } from '@/app/admin/demi-finale/actions'
+import { useState, useEffect } from 'react'
+import { selfCheckin } from '@/app/checkin/actions'
+import LogoRing from '@/components/LogoRing'
+import { createClient } from '@/lib/supabase/client'
 
 interface Candidate {
   id: string
@@ -10,6 +12,8 @@ interface Candidate {
   stage_name: string | null
   category: string
   photo_url: string | null
+  song_title: string | null
+  song_artist: string | null
 }
 
 interface Props {
@@ -17,14 +21,47 @@ interface Props {
   eventStatus: string | null
   candidates: Candidate[]
   initialCheckedInIds: string[]
+  initialCurrentCandidateId: string | null
 }
 
-export default function SelfCheckin({ eventId, eventStatus, candidates, initialCheckedInIds }: Props) {
+export default function SelfCheckin({ eventId, eventStatus, candidates, initialCheckedInIds, initialCurrentCandidateId }: Props) {
   const [search, setSearch] = useState('')
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set(initialCheckedInIds))
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [currentCandidateId, setCurrentCandidateId] = useState<string | null>(initialCurrentCandidateId)
+  const [confirmedId, setConfirmedId] = useState<string | null>(null)
+
+  // Temps reel : on suit le candidat actuellement appele sur scene (bouton "Appeler" de la regie)
+  useEffect(() => {
+    if (!eventId) return
+    let supabase: ReturnType<typeof createClient> | null = null
+    let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null
+    try {
+      supabase = createClient()
+      channel = supabase
+        .channel(`checkin-call-${eventId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'live_events', filter: `id=eq.${eventId}` },
+          (payload) => {
+            const row = payload.new as { current_candidate_id: string | null }
+            setCurrentCandidateId(row.current_candidate_id)
+          }
+        )
+        .subscribe()
+    } catch {
+      // Realtime indisponible : la fiche reste sur "Prepare-toi" (non bloquant)
+    }
+    return () => {
+      try {
+        if (supabase && channel) supabase.removeChannel(channel)
+      } catch {
+        // ignore
+      }
+    }
+  }, [eventId])
 
   if (!eventId || !eventStatus) {
     return (
@@ -51,23 +88,24 @@ export default function SelfCheckin({ eventId, eventStatus, candidates, initialC
         const name = normalizeSearch(`${c.first_name} ${c.last_name} ${c.stage_name || ''}`)
         return name.includes(query)
       })
-    : []
+    : candidates
 
   async function handleCheckin(candidateId: string) {
     if (!eventId) return
     setLoadingId(candidateId)
     setError(null)
 
-    const result = await checkinCandidate(eventId, candidateId)
+    const result = await selfCheckin(eventId, candidateId)
 
     if (result.error) {
+      // On reste sur l'ecran de confirmation pour que l'erreur soit visible
       setError(result.error)
       setLoadingId(null)
-      setConfirming(null)
       return
     }
 
     setCheckedInIds((prev) => new Set([...prev, candidateId]))
+    setConfirmedId(candidateId)
     setLoadingId(null)
     setConfirming(null)
     setSearch('')
@@ -119,88 +157,120 @@ export default function SelfCheckin({ eventId, eventStatus, candidates, initialC
     )
   }
 
-  // Success state — show after checkin
-  const justCheckedIn = candidates.find((c) => checkedInIds.has(c.id) && !initialCheckedInIds.includes(c.id))
+  // Ecran FINAL apres check-in : plus de liste, plus de choix possible (acces coupe)
+  const justCheckedIn = confirmedId ? (candidates.find((c) => c.id === confirmedId) ?? null) : null
+
+  if (justCheckedIn) {
+    const isCalled = currentCandidateId === justCheckedIn.id
+    return (
+      <div className="bg-[#161228]/80 backdrop-blur-sm border border-[#7ec850]/30 rounded-2xl p-8 text-center space-y-5">
+        <LogoRing size={72} />
+        <div className="w-16 h-16 mx-auto rounded-full bg-[#7ec850]/15 flex items-center justify-center">
+          <span className="text-3xl">✓</span>
+        </div>
+        <p className="text-[#7ec850] font-bold text-lg">Arrivée enregistrée !</p>
+
+        {/* Fiche du candidat */}
+        <div className="bg-[#0d0b1a] rounded-2xl p-5 space-y-3">
+          <div className="w-20 h-20 mx-auto rounded-full bg-[#1a1533] overflow-hidden border-2 border-[#e91e8c]/40">
+            {justCheckedIn.photo_url ? (
+              <img src={justCheckedIn.photo_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white/10 text-3xl">🎤</div>
+            )}
+          </div>
+          <div>
+            <p className="font-bold text-white text-lg">{displayName(justCheckedIn)}</p>
+            <p className="text-xs text-[#e91e8c]">{justCheckedIn.category}</p>
+          </div>
+          {justCheckedIn.song_title && (
+            <div className="bg-[#161228] rounded-xl py-3 px-4">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Ta chanson</p>
+              <p className="text-white font-medium mt-0.5">🎵 {justCheckedIn.song_title}</p>
+              {justCheckedIn.song_artist && (
+                <p className="text-white/40 text-xs">{justCheckedIn.song_artist}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isCalled ? (
+          <div className="bg-[#e91e8c]/15 border border-[#e91e8c]/50 rounded-2xl p-5 animate-pulse">
+            <p className="text-[#e91e8c] font-bold text-2xl">🎤 C&apos;est à toi !</p>
+            <p className="text-white/80 text-sm mt-1">Rends-toi sur scène, c&apos;est ton tour de chanter !</p>
+          </div>
+        ) : (
+          <div className="bg-[#1a1533]/60 rounded-2xl p-5 space-y-1">
+            <p className="text-white font-medium">⏳ Prépare-toi…</p>
+            <p className="text-white/50 text-sm">Reste dans les environs, on t&apos;appellera sur scène quand ce sera ton tour.</p>
+            <p className="text-[#7ec850] text-sm font-medium pt-1">Donne tout, on croit en toi ! 💪</p>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
-      {justCheckedIn && (
-        <div className="bg-[#161228]/80 backdrop-blur-sm border border-[#7ec850]/30 rounded-2xl p-6 text-center space-y-3">
-          <div className="w-14 h-14 mx-auto rounded-full bg-[#7ec850]/15 flex items-center justify-center">
-            <span className="text-2xl">✓</span>
-          </div>
-          <p className="text-[#7ec850] font-bold">Arrivée enregistrée !</p>
-          <p className="text-white/40 text-xs">
-            <span className="text-white/60 font-medium">{displayName(justCheckedIn)}</span>, vous êtes dans la liste d&apos;attente. Restez dans les environs, on vous appellera.
-          </p>
-        </div>
-      )}
-
-      {/* Search input */}
+      {/* Liste de check-in : tout le monde est visible, on tape juste sur son nom (recherche facultative) */}
       <div className="bg-[#161228]/80 backdrop-blur-sm border border-[#2a2545] rounded-2xl p-5 space-y-4">
         <p className="text-white/50 text-sm text-center">
-          Tapez votre nom pour vous enregistrer
+          Trouvez votre nom et appuyez dessus
         </p>
 
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Votre nom..."
-          autoFocus
-          className="w-full px-4 py-4 rounded-xl bg-[#0d0b1a] border border-[#2a2545] text-white text-lg placeholder:text-white/20 focus:outline-none focus:border-[#e91e8c]/40 text-center"
+          placeholder="Rechercher (facultatif)..."
+          className="w-full px-4 py-3 rounded-xl bg-[#0d0b1a] border border-[#2a2545] text-white placeholder:text-white/20 focus:outline-none focus:border-[#e91e8c]/40 text-center"
         />
 
-        {/* Results */}
-        {query.length > 0 && (
-          <div className="space-y-2">
-            {filtered.length === 0 ? (
-              <p className="text-white/30 text-xs text-center py-4">
-                Aucun candidat trouvé pour &laquo; {search} &raquo;
-              </p>
-            ) : (
-              filtered.map((c) => {
-                const isCheckedIn = checkedInIds.has(c.id)
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="text-white/30 text-xs text-center py-4">
+              Aucun candidat trouvé pour &laquo; {search} &raquo;
+            </p>
+          ) : (
+            filtered.map((c) => {
+              const isCheckedIn = checkedInIds.has(c.id)
 
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => !isCheckedIn && setConfirming(c.id)}
-                    disabled={isCheckedIn}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
-                      isCheckedIn
-                        ? 'bg-[#7ec850]/5 border border-[#7ec850]/20 opacity-60'
-                        : 'bg-[#0d0b1a] border border-[#2a2545] hover:border-[#e91e8c]/30 active:scale-[0.98]'
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-full bg-[#1a1533] overflow-hidden shrink-0 border border-white/10">
-                      {c.photo_url ? (
-                        <img src={c.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/10">🎤</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white text-sm truncate">{displayName(c)}</p>
-                      <p className="text-[10px] text-[#e91e8c]">{c.category}</p>
-                    </div>
-                    {isCheckedIn ? (
-                      <span className="text-[#7ec850] text-xs font-medium shrink-0">Arrivé(e) ✓</span>
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => !isCheckedIn && setConfirming(c.id)}
+                  disabled={isCheckedIn}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
+                    isCheckedIn
+                      ? 'bg-[#7ec850]/5 border border-[#7ec850]/20 opacity-60'
+                      : 'bg-[#0d0b1a] border border-[#2a2545] hover:border-[#e91e8c]/30 active:scale-[0.98]'
+                  }`}
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#1a1533] overflow-hidden shrink-0 border border-white/10">
+                    {c.photo_url ? (
+                      <img src={c.photo_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[#e91e8c] text-xs shrink-0">Check-in →</span>
+                      <div className="w-full h-full flex items-center justify-center text-white/10">🎤</div>
                     )}
-                  </button>
-                )
-              })
-            )}
-          </div>
-        )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-white text-sm truncate">{displayName(c)}</p>
+                    <p className="text-[10px] text-[#e91e8c]">{c.category}</p>
+                  </div>
+                  {isCheckedIn ? (
+                    <span className="text-[#7ec850] text-xs font-medium shrink-0">Arrivé(e) ✓</span>
+                  ) : (
+                    <span className="text-[#e91e8c] text-xs shrink-0">Check-in →</span>
+                  )}
+                </button>
+              )
+            })
+          )}
+        </div>
 
-        {query.length === 0 && (
-          <p className="text-white/20 text-[10px] text-center">
-            {candidates.length} candidats attendus — {checkedInIds.size} arrivés
-          </p>
-        )}
+        <p className="text-white/20 text-[10px] text-center">
+          {candidates.length} candidats attendus — {checkedInIds.size} arrivés
+        </p>
       </div>
     </div>
   )

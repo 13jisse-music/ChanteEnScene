@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { randomId } from '@/lib/utils'
 
 interface Toast {
   id: string
@@ -29,7 +30,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
   }, [])
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = crypto.randomUUID()
+    const id = randomId()
     setToasts((prev) => [...prev, { ...toast, id }])
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))

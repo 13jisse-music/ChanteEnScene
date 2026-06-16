@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveSession } from '@/lib/active-session'
 import { redirect } from 'next/navigation'
 import CheckinManager from '@/components/CheckinManager'
 
@@ -7,13 +8,7 @@ export const metadata = { title: 'Check-in Demi-finale — ChanteEnScène Admin'
 export default async function AdminCheckinPage() {
   const supabase = await createClient()
 
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, name, slug, config')
-    .eq('is_active', true)
-    .order('year', { ascending: false })
-    .limit(1)
-    .single()
+  const { data: session } = await getActiveSession<{ id: string; name: string; slug: string; config: Record<string, unknown> }>(supabase, 'id, name, slug, config')
 
   if (!session) redirect('/admin')
 

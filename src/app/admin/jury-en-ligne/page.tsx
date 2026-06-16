@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getActiveSession } from '@/lib/active-session'
 import { redirect } from 'next/navigation'
 import RegieEnLigne from '@/components/RegieEnLigne'
 
@@ -7,14 +8,8 @@ export const metadata = { title: 'Régie Jury En Ligne — ChanteEnScène Admin'
 export default async function JuryEnLignePage() {
   const supabase = await createClient()
 
-  // Get active session
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, name, slug, status, config')
-    .eq('is_active', true)
-    .order('year', { ascending: false })
-    .limit(1)
-    .single()
+  // Get active session (regie : session de test en repetition locale)
+  const { data: session } = await getActiveSession<{ id: string; name: string; slug: string; status: string; config: Record<string, unknown> }>(supabase, 'id, name, slug, status, config')
 
   if (!session) redirect('/admin')
 

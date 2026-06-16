@@ -3,6 +3,8 @@
  * when the network is unavailable during live events.
  */
 
+import { randomId } from '@/lib/utils'
+
 export interface PendingScore {
   id: string
   session_id: string
@@ -40,7 +42,7 @@ export function addToOfflineQueue(score: Omit<PendingScore, 'id' | 'timestamp' |
 
   const entry: PendingScore = {
     ...score,
-    id: crypto.randomUUID(),
+    id: randomId(),
     timestamp: Date.now(),
     synced: false,
   }

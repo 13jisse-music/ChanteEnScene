@@ -6,8 +6,9 @@ export async function generateMetadata() {
   return { title: 'Check-in Demi-finale — ChanteEnScène' }
 }
 
-export default async function CheckinSearchPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CheckinSearchPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ cat?: string }> }) {
   const { slug } = await params
+  const { cat } = await searchParams
   const supabase = await createClient()
 
   const { data: session } = await supabase
@@ -21,7 +22,7 @@ export default async function CheckinSearchPage({ params }: { params: Promise<{ 
   // Get active semifinal event
   const { data: event } = await supabase
     .from('live_events')
-    .select('id, status')
+    .select('id, status, current_candidate_id')
     .eq('session_id', session.id)
     .eq('event_type', 'semifinal')
     .in('status', ['pending', 'live', 'paused'])
@@ -29,13 +30,14 @@ export default async function CheckinSearchPage({ params }: { params: Promise<{ 
     .limit(1)
     .maybeSingle()
 
-  // Get all semifinalists
-  const { data: candidates } = await supabase
+  // Get semifinalists (filtres par categorie si ?cat= present : 1 QR par categorie)
+  let candidatesQuery = supabase
     .from('candidates')
-    .select('id, first_name, last_name, stage_name, category, photo_url')
+    .select('id, first_name, last_name, stage_name, category, photo_url, song_title, song_artist')
     .eq('session_id', session.id)
     .eq('status', 'semifinalist')
-    .order('last_name')
+  if (cat) candidatesQuery = candidatesQuery.eq('category', cat)
+  const { data: candidates } = await candidatesQuery.order('last_name')
 
   // Get already checked-in candidate IDs
   let checkedInIds: string[] = []
@@ -78,6 +80,7 @@ export default async function CheckinSearchPage({ params }: { params: Promise<{ 
           eventStatus={event?.status || null}
           candidates={candidates || []}
           initialCheckedInIds={checkedInIds}
+          initialCurrentCandidateId={event?.current_candidate_id || null}
         />
 
         <p className="text-white/15 text-[10px] text-center">

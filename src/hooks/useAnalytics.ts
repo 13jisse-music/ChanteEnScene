@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { getFingerprint } from '@/lib/fingerprint'
+import { randomId } from '@/lib/utils'
 
 // --- Types ---
 interface AnalyticsEvent {
@@ -16,7 +17,7 @@ function getSessionId(): string {
   const key = 'ces_analytics_session'
   let sid = sessionStorage.getItem(key)
   if (!sid) {
-    sid = crypto.randomUUID()
+    sid = randomId()
     sessionStorage.setItem(key, sid)
   }
   return sid
