@@ -53,7 +53,7 @@ export default function FinalistesReveal({ token, isOlivier, byCat }: Props) {
   }
 
   return (
-    <main className="min-h-screen text-white pb-20" style={{ background: 'radial-gradient(1100px 560px at 50% -8%, #2a1840 0%, transparent 60%), radial-gradient(800px 460px at 88% 16%, #3a1030 0%, transparent 55%), #0d0b1a' }}>
+    <main className="fixed inset-0 z-[100] text-white overflow-y-auto pb-20" style={{ background: 'radial-gradient(1100px 560px at 50% -8%, #2a1840 0%, transparent 60%), radial-gradient(800px 460px at 88% 16%, #3a1030 0%, transparent 55%), #0d0b1a' }}>
       {/* Image héros */}
       <div className="max-w-[820px] mx-auto px-4 pt-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
