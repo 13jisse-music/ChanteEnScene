@@ -33,7 +33,7 @@ export default function SuiviDashboard({ token, rows }: { token: string; rows: S
     t ? `${t}${a ? ' — ' + a : ''}${k ? ' (' + k + ')' : ''}` : '—'
 
   return (
-    <main className="min-h-screen bg-[#0d0b1a] text-white px-3 py-6">
+    <main className="fixed inset-0 z-[100] overflow-y-auto bg-[#0d0b1a] text-white px-3 py-6">
       <div className="max-w-[1000px] mx-auto">
         <h1 className="text-2xl font-black text-center">Suivi des finalistes</h1>
         <p className="text-center text-white/50 text-sm mt-1 mb-5">Chansons, téléphones et vérifications pour la finale</p>
