@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { saveFinalePicks } from './actions'
 import type { FinaleItem } from './page'
 
 interface Props {
@@ -35,7 +34,11 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
     setSaving(true); setError(null)
     const picks: { id: string; cat: string }[] = []
     for (const cat of ORDER) for (const it of byCat[cat] || []) if (sel.has(it.id)) picks.push({ id: it.id, cat })
-    const res = await saveFinalePicks(token, picks)
+    const res = await fetch('/api/jf/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, picks }),
+    }).then(r => r.json()).catch(() => ({ error: 'Problème de connexion, réessaie.' }))
     setSaving(false)
     if (res?.error) { setError(res.error); return }
     setDone(true)
