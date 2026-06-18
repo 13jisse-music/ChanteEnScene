@@ -23,14 +23,20 @@ export async function POST(req: Request) {
 
   if (!picks?.length) return NextResponse.json({ success: true, count: 0 })
 
-  const rows = picks.map((p, i) => ({
-    juror_id: juror.id,
-    candidate_id: p.id,
-    category: p.cat,
-    rank: i + 1,
-    round: 'final',
-    session_id: juror.session_id,
-  }))
+  // Rang PAR catégorie (1..N) : une contrainte check limite la valeur du rang,
+  // un rang global (1..14) la violerait.
+  const rankByCat: Record<string, number> = {}
+  const rows = picks.map((p) => {
+    rankByCat[p.cat] = (rankByCat[p.cat] || 0) + 1
+    return {
+      juror_id: juror.id,
+      candidate_id: p.id,
+      category: p.cat,
+      rank: rankByCat[p.cat],
+      round: 'final',
+      session_id: juror.session_id,
+    }
+  })
   const { error } = await sb.from('jury_priorities').insert(rows)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, count: rows.length })
