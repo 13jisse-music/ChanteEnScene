@@ -50,6 +50,9 @@ export default function FinaleForm({ token, nom, initial, alreadySubmitted }: Pr
   const field = 'w-full bg-[#0d0b1a] border border-[#2a2545] rounded-xl px-4 py-3 text-white placeholder-white/30 focus:border-[#e91e8c] outline-none'
   const label = 'block text-sm font-semibold text-white/70 mb-1.5'
 
+  // Bouton actif seulement quand téléphone + les 2 chansons (titre + interprète) sont remplis
+  const canSubmit = !!(f.phone.trim() && f.fastTitle.trim() && f.fastArtist.trim() && f.slowTitle.trim() && f.slowArtist.trim())
+
   return (
     <main className="fixed inset-0 z-[100] bg-[#0d0b1a] text-white overflow-y-auto">
       <div className="max-w-[560px] mx-auto pb-28">
@@ -108,8 +111,11 @@ export default function FinaleForm({ token, nom, initial, alreadySubmitted }: Pr
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-3 z-[101] bg-gradient-to-t from-[#0d0b1a] to-transparent">
-        <button onClick={submit} disabled={saving}
-          className="w-full max-w-[536px] mx-auto block py-4 rounded-2xl font-black text-base bg-gradient-to-r from-[#e91e8c] to-[#7c3aed] text-white disabled:opacity-50">
+        {!canSubmit && (
+          <p className="text-center text-white/45 text-xs mb-2">Renseigne ton téléphone et tes 2 chansons (titre + interprète) pour valider.</p>
+        )}
+        <button onClick={submit} disabled={saving || !canSubmit}
+          className="w-full max-w-[536px] mx-auto block py-4 rounded-2xl font-black text-base bg-gradient-to-r from-[#e91e8c] to-[#7c3aed] text-white disabled:opacity-40 disabled:cursor-not-allowed">
           {saving ? 'Enregistrement…' : '✓ Valider ma fiche'}
         </button>
       </div>
