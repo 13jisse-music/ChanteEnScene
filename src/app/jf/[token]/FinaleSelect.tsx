@@ -46,7 +46,7 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
 
   if (done) {
     return (
-      <main className="fixed inset-0 z-50 bg-[#0d0b1a] flex flex-col items-center justify-center text-center px-6 text-white">
+      <main className="fixed inset-0 z-[110] bg-[#0d0b1a] flex flex-col items-center justify-center text-center px-6 text-white">
         <div className="text-6xl mb-4">✅</div>
         <h1 className="text-2xl font-bold mb-2">Sélection enregistrée !</h1>
         <p className="text-white/60 max-w-xs">Merci {jurorName}. Tes finalistes sont bien transmis. Jean-Christophe finalise la liste ce soir.</p>
@@ -55,7 +55,8 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
   }
 
   return (
-    <main className="min-h-screen bg-[#0d0b1a] text-white max-w-[560px] mx-auto px-3 pt-4 pb-28">
+    <main className="fixed inset-0 z-[100] bg-[#0d0b1a] text-white overflow-y-auto">
+      <div className="max-w-[560px] mx-auto px-3 pt-4 pb-28">
       <div className="text-center mb-3">
         <div className="font-[family-name:var(--font-montserrat)] font-black text-xl">
           <span>Chant</span><span className="text-[#7ec850]">En</span><span className="text-[#e91e8c]">Scène</span>
@@ -118,8 +119,9 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
       })}
 
       {error && <p className="text-red-400 text-sm text-center mb-3">{error}</p>}
+      </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0d0b1a] to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-3 z-[101] bg-gradient-to-t from-[#0d0b1a] to-transparent">
         <button
           onClick={submit}
           disabled={saving}
