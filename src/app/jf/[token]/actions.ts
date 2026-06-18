@@ -16,6 +16,8 @@ export async function saveFinalePicks(token: string, picks: { id: string; cat: s
     .single()
   if (!juror || juror.role !== 'semifinal') return { error: 'Accès invalide.' }
 
+  console.log('[jf] picks recus:', picks.length, 'juror:', juror.id, 'session:', juror.session_id)
+
   await sb.from('jury_priorities').delete().eq('juror_id', juror.id).eq('round', 'final')
 
   if (!picks.length) return { success: true, count: 0 }
@@ -29,6 +31,10 @@ export async function saveFinalePicks(token: string, picks: { id: string; cat: s
     session_id: juror.session_id,
   }))
   const { error } = await sb.from('jury_priorities').insert(rows)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[jf] insert error:', error.message, '| sample row:', JSON.stringify(rows[0]))
+    return { error: error.message }
+  }
+  console.log('[jf] insere', rows.length, 'lignes')
   return { success: true, count: rows.length }
 }
