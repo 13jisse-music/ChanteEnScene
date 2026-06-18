@@ -16,25 +16,28 @@ export async function saveFinalePicks(token: string, picks: { id: string; cat: s
     .single()
   if (!juror || juror.role !== 'semifinal') return { error: 'Accès invalide.' }
 
-  console.log('[jf] picks recus:', picks.length, 'juror:', juror.id, 'session:', juror.session_id)
+  try {
+    console.log('[jf] picks:', picks.length, '| juror:', juror.id, '| session:', juror.session_id)
 
-  await sb.from('jury_priorities').delete().eq('juror_id', juror.id).eq('round', 'final')
+    const del = await sb.from('jury_priorities').delete().eq('juror_id', juror.id).eq('round', 'final')
+    console.log('[jf] delete err:', del.error?.message ?? 'ok')
 
-  if (!picks.length) return { success: true, count: 0 }
+    if (!picks.length) return { success: true, count: 0 }
 
-  const rows = picks.map((p, i) => ({
-    juror_id: juror.id,
-    candidate_id: p.id,
-    category: p.cat,
-    rank: i + 1,
-    round: 'final',
-    session_id: juror.session_id,
-  }))
-  const { error } = await sb.from('jury_priorities').insert(rows)
-  if (error) {
-    console.error('[jf] insert error:', error.message, '| sample row:', JSON.stringify(rows[0]))
-    return { error: error.message }
+    const rows = picks.map((p, i) => ({
+      juror_id: juror.id,
+      candidate_id: p.id,
+      category: p.cat,
+      rank: i + 1,
+      round: 'final',
+      session_id: juror.session_id,
+    }))
+    const ins = await sb.from('jury_priorities').insert(rows)
+    console.log('[jf] insert err:', ins.error?.message ?? 'ok', '| row0:', JSON.stringify(rows[0]))
+    if (ins.error) return { error: ins.error.message }
+    return { success: true, count: rows.length }
+  } catch (e) {
+    console.error('[jf] THROW:', e instanceof Error ? `${e.message} :: ${e.stack}` : String(e))
+    return { error: 'Erreur serveur lors de l\'enregistrement.' }
   }
-  console.log('[jf] insere', rows.length, 'lignes')
-  return { success: true, count: rows.length }
 }
