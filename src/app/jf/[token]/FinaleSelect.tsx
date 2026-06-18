@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FinaleItem } from './page'
 
 interface Props {
@@ -22,6 +22,16 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [capMsg, setCapMsg] = useState<string | null>(null)
+
+  // Signale (Telegram, anti-spam côté serveur) que le juré a ouvert son interface
+  useEffect(() => {
+    fetch('/api/jf/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const toggle = (id: string, cat: string) => {
     // Décocher : toujours autorisé
