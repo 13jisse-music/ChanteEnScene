@@ -58,5 +58,5 @@ export async function GET(request: Request) {
     sent_by: 'cron-finale-push',
   })
 
-  return NextResponse.json({ sent: true, ...result })
+  return NextResponse.json({ ok: true, ...result })
 }
