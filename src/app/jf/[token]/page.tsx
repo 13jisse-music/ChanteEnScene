@@ -68,11 +68,24 @@ export default async function Page({ params }: { params: Promise<{ token: string
 
   const { data: juror } = await sb
     .from('jurors')
-    .select('id, first_name, role, is_active')
+    .select('id, first_name, role, is_active, jf_locked')
     .eq('qr_token', token)
     .eq('is_active', true)
     .single()
   if (!juror || juror.role !== 'semifinal') notFound()
+
+  // Sélection clôturée par l'admin : on affiche un message d'attente, plus d'édition possible
+  if (juror.jf_locked) {
+    return (
+      <main className="fixed inset-0 z-[100] bg-[#0d0b1a] flex flex-col items-center justify-center text-center px-6 text-white">
+        <div className="text-6xl mb-5">🙏</div>
+        <h1 className="text-2xl font-bold mb-3">Merci de votre choix</h1>
+        <p className="text-white/60 max-w-sm leading-relaxed">
+          Nous agrégeons les résultats. Vous serez informé(e) dès que tous les classements seront connus.
+        </p>
+      </main>
+    )
+  }
 
   const ids = Object.keys(CLIP)
   const { data: cands } = await sb
