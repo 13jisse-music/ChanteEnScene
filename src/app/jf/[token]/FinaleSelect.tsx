@@ -21,11 +21,21 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [capMsg, setCapMsg] = useState<string | null>(null)
 
-  const toggle = (id: string) => {
+  const toggle = (id: string, cat: string) => {
     setSel(prev => {
       const n = new Set(prev)
-      if (n.has(id)) n.delete(id); else n.add(id)
+      if (n.has(id)) { n.delete(id); return n }
+      // Cap dur par catégorie : on ne peut pas dépasser 4/6/4
+      const inCat = (byCat[cat] || []).filter(it => n.has(it.id)).length
+      const max = keep[cat] ?? 4
+      if (inCat >= max) {
+        setCapMsg(`${cat} : maximum ${max} retenus. Décoche d'abord un candidat pour en ajouter un autre.`)
+        setTimeout(() => setCapMsg(null), 3800)
+        return prev
+      }
+      n.add(id)
       return n
     })
   }
@@ -57,6 +67,11 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
   return (
     <main className="fixed inset-0 z-[100] bg-[#0d0b1a] text-white overflow-y-auto">
       <div className="max-w-[560px] mx-auto px-3 pt-4 pb-28">
+      {capMsg && (
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[105] bg-[#e91e8c] text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-black/40 max-w-[92%] text-center">
+          {capMsg}
+        </div>
+      )}
       <div className="text-center mb-3">
         <div className="font-[family-name:var(--font-montserrat)] font-black text-xl">
           <span>Chant</span><span className="text-[#7ec850]">En</span><span className="text-[#e91e8c]">Scène</span>
@@ -79,7 +94,7 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
           <section key={cat} className="mb-5">
             <h2 className="flex items-center justify-between text-lg font-bold uppercase pl-2 mb-3" style={{ color: c, borderLeft: `5px solid ${c}` }}>
               <span>{CAT_EMOJI[cat]} {cat}</span>
-              <span className="text-xs font-semibold text-white/50">{n} retenu(s) · suggéré : {keep[cat] ?? 4}</span>
+              <span className="text-xs font-semibold text-white/50">{n} / {keep[cat] ?? 4} max</span>
             </h2>
             <div className="space-y-3">
               {rows.map((it, i) => {
@@ -104,7 +119,7 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
                       <video controls playsInline preload="none" src={it.clip} className="w-full rounded-xl bg-black" />
                     )}
                     <button
-                      onClick={() => toggle(it.id)}
+                      onClick={() => toggle(it.id, cat)}
                       className="w-full mt-2 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
                       style={on ? { background: c, color: '#fff' } : { background: '#0d0b1a', color: '#cbd5e1', border: '1px solid #2a2545' }}
                     >
