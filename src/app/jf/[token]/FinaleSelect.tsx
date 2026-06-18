@@ -24,20 +24,20 @@ export default function FinaleSelect({ token, jurorName, byCat, keep, preselecte
   const [capMsg, setCapMsg] = useState<string | null>(null)
 
   const toggle = (id: string, cat: string) => {
-    setSel(prev => {
-      const n = new Set(prev)
-      if (n.has(id)) { n.delete(id); return n }
-      // Cap dur par catégorie : on ne peut pas dépasser 4/6/4
-      const inCat = (byCat[cat] || []).filter(it => n.has(it.id)).length
-      const max = keep[cat] ?? 4
-      if (inCat >= max) {
-        setCapMsg(`${cat} : maximum ${max} retenus. Décoche d'abord un candidat pour en ajouter un autre.`)
-        setTimeout(() => setCapMsg(null), 3800)
-        return prev
-      }
-      n.add(id)
-      return n
-    })
+    // Décocher : toujours autorisé
+    if (sel.has(id)) {
+      setSel(prev => { const n = new Set(prev); n.delete(id); return n })
+      return
+    }
+    // Cocher : cap dur par catégorie (4/6/4), sinon message
+    const inCat = (byCat[cat] || []).filter(it => sel.has(it.id)).length
+    const max = keep[cat] ?? 4
+    if (inCat >= max) {
+      setCapMsg(`${cat} : maximum ${max} retenus. Décoche d'abord un candidat pour en ajouter un autre.`)
+      setTimeout(() => setCapMsg(null), 3800)
+      return
+    }
+    setSel(prev => { const n = new Set(prev); n.add(id); return n })
   }
 
   async function submit() {
