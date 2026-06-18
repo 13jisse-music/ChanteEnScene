@@ -41,13 +41,16 @@ export default async function CandidatsPage({ params }: { params: Params }) {
     .in('status', ['approved', 'semifinalist', 'finalist', 'winner'])
     .order('likes_count', { ascending: false })
 
-  // Une fois la selection faite, on n'affiche que les demi-finalistes et au-dela.
-  // Tant qu'aucun demi-finaliste n'existe (phase de vote), on garde les candidats valides.
-  const SELECTED_STATUSES = ['semifinalist', 'finalist', 'winner']
-  const hasSelected = (allCandidates || []).some((c) => SELECTED_STATUSES.includes(c.status))
-  const candidates = hasSelected
-    ? (allCandidates || []).filter((c) => SELECTED_STATUSES.includes(c.status))
-    : allCandidates
+  // On affiche le niveau le plus avance present : finalistes (+ gagnant) > demi-finalistes > tous.
+  const FINALE_STATUSES = ['finalist', 'winner']
+  const hasFinalist = (allCandidates || []).some((c) => FINALE_STATUSES.includes(c.status))
+  const hasSemi = (allCandidates || []).some((c) => c.status === 'semifinalist')
+  const candidates = hasFinalist
+    ? (allCandidates || []).filter((c) => FINALE_STATUSES.includes(c.status))
+    : hasSemi
+      ? (allCandidates || []).filter((c) => c.status === 'semifinalist')
+      : allCandidates
+  const isFinale = hasFinalist
 
   const config = session.config as { age_categories: { name: string }[] }
   const categories = config.age_categories.map((c: { name: string }) => c.name)
@@ -62,8 +65,17 @@ export default async function CandidatsPage({ params }: { params: Params }) {
             className="font-[family-name:var(--font-montserrat)] font-black text-3xl md:text-4xl text-white mt-4 mb-2"
             style={{ textShadow: '0 0 15px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.7)' }}
           >
-            <span>Nos </span>
-            <span className="text-gradient-gold" style={{ textShadow: 'none' }}>Candidats</span>
+            {isFinale ? (
+              <>
+                <span>Les </span>
+                <span className="text-gradient-gold" style={{ textShadow: 'none' }}>Finalistes</span>
+              </>
+            ) : (
+              <>
+                <span>Nos </span>
+                <span className="text-gradient-gold" style={{ textShadow: 'none' }}>Candidats</span>
+              </>
+            )}
           </h1>
           <p
             className="text-white text-sm"
@@ -71,6 +83,18 @@ export default async function CandidatsPage({ params }: { params: Params }) {
           >
             {session.name}
           </p>
+          {isFinale && (
+            <div
+              className="mt-6 mx-auto max-w-3xl rounded-2xl px-5 py-4 flex items-center gap-4 text-left"
+              style={{ background: 'linear-gradient(100deg, #e91e8c, #7c3aed)' }}
+            >
+              <div className="text-3xl flex-shrink-0">🔥</div>
+              <div>
+                <div className="font-extrabold text-white text-lg leading-tight">La finale est lancée — votez pour vos finalistes&nbsp;!</div>
+                <div className="text-white/90 text-sm mt-1">Le vote du public repart à zéro. Cette fois, chaque voix compte plus que jamais.</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {candidates && candidates.length > 0 ? (
