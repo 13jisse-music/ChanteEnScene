@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import LiveView from '@/components/LiveView'
 import LiveEventWatcher from '@/components/LiveEventWatcher'
 import PageTracker from '@/components/PageTracker'
@@ -58,7 +59,23 @@ function NoLiveSection({ slug, session }: { slug: string; session: any }) {
 
       {/* Info text */}
       <div className="text-center py-8">
-        <div className="text-5xl mb-4">📺</div>
+        {/* Affiche de la finale (en attendant l'événement live) */}
+        <a
+          href="/images/affiche-finale-2026.png"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mb-6 inline-block"
+        >
+          <Image
+            src="/images/affiche-finale-2026.png"
+            alt="Affiche de la Grande Finale ChanteEnScène 2026"
+            width={300}
+            height={425}
+            priority
+            className="mx-auto w-auto h-auto max-w-[230px] sm:max-w-[280px] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 transition-transform group-hover:-translate-y-0.5"
+          />
+          <span className="mt-2 block text-xs text-white/40">Touchez l&apos;affiche pour l&apos;agrandir</span>
+        </a>
         <p
           className="text-white text-lg font-medium"
           style={{ textShadow: '0 0 10px rgba(0,0,0,0.7)' }}
