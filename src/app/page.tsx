@@ -240,7 +240,7 @@ export default async function HomePage() {
         "addressCountry": "FR"
       }
     },
-    "image": "https://www.chantenscene.fr/images/affiche-chantenscene-2026.png",
+    "image": "https://www.chantenscene.fr/images/affiche-finale-2026.png",
     "url": "https://www.chantenscene.fr",
     "organizer": {
       "@type": "Person",
@@ -780,13 +780,13 @@ export default async function HomePage() {
             La finale sur sc&egrave;ne &agrave; Aubagne — 16 juillet 2026
           </p>
           <img
-            src="/images/affiche-chantenscene-2026.png"
+            src="/images/affiche-finale-2026.png"
             alt="Affiche ChanteEnScène — Concours de chant Aubagne 2026"
             className="mx-auto rounded-2xl shadow-2xl shadow-black/30 max-w-md w-full"
           />
           <a
-            href="/images/affiche-chantenscene-2026.png"
-            download="Affiche-ChanteEnScene-2026.png"
+            href="/images/affiche-finale-2026.png"
+            download="Affiche-ChanteEnScene-Finale-2026.png"
             className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-full text-sm font-semibold text-white/70 border border-white/15 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>

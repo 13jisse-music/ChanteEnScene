@@ -40,13 +40,13 @@ export const metadata: Metadata = {
     siteName: "ChanteEnScène",
     title: "ChanteEnScène — Concours de chant",
     description: "Concours de chant live avec musiciens, votes du public et jury professionnel. Aubagne.",
-    images: [{ url: "/images/affiche-chantenscene-2026.png", width: 1024, height: 1536, alt: "ChanteEnScène — Concours de chant Aubagne 2026" }],
+    images: [{ url: "/images/affiche-finale-2026.png", width: 1054, height: 1492, alt: "ChanteEnScène — Grande Finale Aubagne 2026" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ChanteEnScène — Concours de chant",
     description: "Concours de chant live avec musiciens, votes du public et jury professionnel.",
-    images: ["/images/affiche-chantenscene-2026.png"],
+    images: ["/images/affiche-finale-2026.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -73,7 +73,7 @@ const eventJsonLd = {
     },
   },
   "description": "Concours de chant live avec musiciens, jury professionnel et votes du public. Ouvert à tous, toute la France.",
-  "image": "https://www.chantenscene.fr/images/affiche-chantenscene-2026.png",
+  "image": "https://www.chantenscene.fr/images/affiche-finale-2026.png",
   "organizer": {
     "@type": "Organization",
     "name": "ChanteEnScène",

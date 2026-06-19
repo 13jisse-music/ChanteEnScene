@@ -101,14 +101,14 @@ export default function PressePage() {
           </p>
           <div className="flex justify-center">
             <img
-              src="/images/affiche-chantenscene-2026.png"
+              src="/images/affiche-finale-2026.png"
               alt="Affiche ChanteEnScène 2026"
               className="rounded-xl shadow-lg max-w-xs w-full"
             />
           </div>
           <div className="flex justify-center mt-4">
             <a
-              href="/images/affiche-chantenscene-2026.png"
+              href="/images/affiche-finale-2026.png"
               download="Affiche-ChanteEnScene-2026.png"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#e91e8c] hover:bg-[#d4187e] transition-colors"
             >
